@@ -27,4 +27,4 @@ USER appuser
 EXPOSE 5001  # Updated exposed port to 5001
 
 # Start the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5150", "app:app"]  # Updated to bind to port 5150 for create VM app

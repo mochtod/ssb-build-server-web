@@ -4,7 +4,7 @@ services:
   web:
     build: .
     ports:
-      - "5150:5000"
+      - "5150:5150"  # Updated to avoid conflicts for create VM app
     volumes:
       - .:/app
       - ./configs:/app/configs
@@ -28,7 +28,7 @@ services:
     volumes:
       - ./configs:/app/configs  # Map host's ./configs to container's /app/configs
     ports:
-      - "6000:5001"  # Updated host port to 6000 and container port to 5001
+      - "5001:5001"  # Updated to avoid conflicts for config app
 
 volumes:
   configs:
