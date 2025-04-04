@@ -28,7 +28,7 @@ services:
     volumes:
       - ./configs:/app/configs  # Map host's ./configs to container's /app/configs
     ports:
-      - "5000:5000"
+      - "5001:5001"
 
 volumes:
   configs:
