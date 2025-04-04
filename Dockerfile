@@ -17,14 +17,9 @@ RUN pip show gunicorn || (echo "gunicorn not installed" && exit 1)
 # Copy the application files from the current directory
 COPY . /app
 
+# Remove the appuser and permission changes
 # Update volume mapping to ensure configs are written to the host
-RUN mkdir -p /app/configs && \
-    useradd -m appuser && \
-    chown -R appuser:appuser /app /app/configs && \
-    chmod -R 775 /app/configs
-
-# Switch to the non-root user
-USER appuser
+RUN mkdir -p /app/configs
 
 # Expose the application port
 # Corrected to match the port used in CMD
