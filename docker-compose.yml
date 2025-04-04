@@ -28,7 +28,7 @@ services:
     volumes:
       - ./configs:/app/configs  # Map host's ./configs to container's /app/configs
     ports:
-      - "5001:5001"
+      - "6000:5001"  # Updated host port to 6000 and container port to 5001
 
 volumes:
   configs:

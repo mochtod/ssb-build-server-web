@@ -24,7 +24,7 @@ RUN mkdir -p /app/configs && \
 USER appuser
 
 # Expose the application port
-EXPOSE 5000
+EXPOSE 5001  # Updated exposed port to 5001
 
 # Start the application
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
