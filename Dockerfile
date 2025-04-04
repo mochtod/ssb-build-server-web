@@ -24,7 +24,8 @@ RUN mkdir -p /app/configs && \
 USER appuser
 
 # Expose the application port
-EXPOSE 5001  # Updated exposed port to 5001
+# Corrected to match the port used in CMD
+EXPOSE 5000
 
 # Start the application
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]  # Updated to bind to port 5150 for create VM app
