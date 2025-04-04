@@ -1,10 +1,8 @@
-version: '3.8'
-
 services:
   web:
     build: .
     ports:
-      - "5150:5150"  # Updated to avoid conflicts for create VM app
+      - "5150:5150"  # Ensure proper port mapping for create VM app
     volumes:
       - .:/app
       - ./configs:/app/configs
@@ -28,7 +26,7 @@ services:
     volumes:
       - ./configs:/app/configs  # Map host's ./configs to container's /app/configs
     ports:
-      - "5001:5001"  # Updated to avoid conflicts for config app
+      - "5001:5001"  # Ensure proper port mapping for config app
 
 volumes:
   configs:
