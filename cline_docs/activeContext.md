@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-The current focus is on testing and validating the end-to-end workflow with the containerized Atlantis setup. We have successfully implemented the Terraform module generation functionality and updated the Atlantis integration to work with a containerized setup.
+The current focus is on testing and validating the end-to-end workflow with the combined repository structure. We have successfully combined the SSB Build Server Web application and the VM workspace into a single repository with a containerized Atlantis setup.
 
 ## Recent Changes
 
@@ -12,6 +12,8 @@ The current focus is on testing and validating the end-to-end workflow with the 
 - Implementation of the `generate_variables_file()` function
 - Update of Atlantis integration functions for containerized setup
 - Creation of detailed documentation for containerized Atlantis setup
+- Combination of the SSB Build Server Web and VM workspace repositories
+- Configuration of Docker Compose for the combined setup
 
 ## Current State
 

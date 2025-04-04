@@ -81,6 +81,9 @@ The SSB Build Server Web application is currently in development with partial fu
 - Implementation of the variables file generation function
 - Update of Atlantis integration for containerized setup
 - Creation of detailed documentation for containerized Atlantis setup
+- Combination of the SSB Build Server Web and VM workspace repositories
+- Configuration of Docker Compose for the combined setup
+- Creation of directory structure for the combined repository
 
 ## Blockers
 

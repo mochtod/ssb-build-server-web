@@ -1,0 +1,18 @@
+# Atlantis repository configuration
+repos:
+  - id: /.*/
+    apply_requirements: [approved]
+    workflow: custom
+    allowed_overrides: [workflow]
+    allow_custom_workflows: true
+
+workflows:
+  custom:
+    plan:
+      steps:
+        - init
+        - plan:
+            extra_args: ["-var-file=terraform.tfvars"]
+    apply:
+      steps:
+        - apply

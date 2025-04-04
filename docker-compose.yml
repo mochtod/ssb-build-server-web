@@ -15,10 +15,39 @@ services:
       - USERS_FILE=/app/users.json
       - DEBUG=True
       # Atlantis integration
-      - ATLANTIS_URL=https://atlantis.chrobinson.com
-      - ATLANTIS_TOKEN=your-atlantis-token
+      - ATLANTIS_URL=http://atlantis:4141
+      - ATLANTIS_TOKEN=your-atlantis-api-secret
       - TIMEOUT=120
+    depends_on:
+      - atlantis
+    networks:
+      - app-network
     restart: unless-stopped
+
+  atlantis:
+    image: ghcr.io/runatlantis/atlantis:latest
+    ports:
+      - "4141:4141"
+    volumes:
+      - ./atlantis-config:/etc/atlantis
+      - ./terraform:/terraform
+      - ./vm-workspace:/vm-workspace
+    environment:
+      - ATLANTIS_PORT=4141
+      - ATLANTIS_ATLANTIS_URL=http://atlantis:4141
+      - ATLANTIS_REPO_ALLOWLIST=*
+      - ATLANTIS_ENABLE_POLICY_CHECKS=false
+      - ATLANTIS_AUTOPLAN_FILE_LIST=*.tf,*.tfvars
+      - ATLANTIS_WRITE_GIT_CREDS=false
+      - ATLANTIS_REPO_CONFIG=/etc/atlantis/repo-config.yaml
+      - ATLANTIS_API_SECRET=your-atlantis-api-secret
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   configs:
