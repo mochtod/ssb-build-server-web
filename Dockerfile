@@ -11,6 +11,9 @@ RUN apt-get update && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Verify gunicorn installation
+RUN pip show gunicorn || (echo "gunicorn not installed" && exit 1)
+
 # Copy the application files from the current directory
 COPY . /app
 
