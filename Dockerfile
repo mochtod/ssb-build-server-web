@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Git, curl, and other dependencies
+# Install Git, curl, and other dependencies (remove if not needed)
 RUN apt-get update && \
     apt-get install -y git curl && \
     apt-get clean && \
@@ -23,10 +23,6 @@ RUN mkdir -p /app/configs /app/terraform && \
 
 # Switch to the non-root user
 USER appuser
-
-# Configure Git for the non-root user
-RUN git config --global user.name "VM Provision Bot" && \
-    git config --global user.email "vm-provision@chrobinson.com"
 
 # Expose the application port
 EXPOSE 5000
