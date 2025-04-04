@@ -2,9 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Git, curl, and other dependencies (remove if not needed)
+# Remove Git and curl installation as they are not needed
 RUN apt-get update && \
-    apt-get install -y git curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -15,11 +14,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application files from the current directory
 COPY . /app
 
-# Create directories for persistent storage and set permissions
-RUN mkdir -p /app/configs /app/terraform && \
+# Update volume mapping to ensure configs are written to the host
+RUN mkdir -p /app/configs && \
     useradd -m appuser && \
-    chown -R appuser:appuser /app /app/configs /app/terraform && \
-    chmod -R 775 /app/configs /app/terraform
+    chown -R appuser:appuser /app /app/configs && \
+    chmod -R 775 /app/configs
 
 # Switch to the non-root user
 USER appuser
