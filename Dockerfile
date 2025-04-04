@@ -15,12 +15,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application files from the current directory
 COPY . /app
 
-# Create directories for persistent storage if they don't exist
-RUN mkdir -p /app/configs /app/terraform
-
-# Run as non-root user for better security
-RUN useradd -m appuser && \
-    chown -R appuser:appuser /app /app/configs /app/terraform
+# Create directories for persistent storage and set permissions
+RUN mkdir -p /app/configs /app/terraform && \
+    useradd -m appuser && \
+    chown -R appuser:appuser /app /app/configs /app/terraform && \
+    chmod -R 775 /app/configs /app/terraform
 
 # Switch to the non-root user
 USER appuser
