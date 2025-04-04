@@ -20,14 +20,6 @@ services:
       - TIMEOUT=120
     restart: unless-stopped
 
-  app:
-    build:
-      context: .
-    volumes:
-      - ./configs:/app/configs  # Map host's ./configs to container's /app/configs
-    ports:
-      - "5001:5001"  # Ensure proper port mapping for config app
-
 volumes:
   configs:
   terraform:
