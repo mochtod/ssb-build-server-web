@@ -25,11 +25,11 @@ RUN useradd -m appuser && \
 # Switch to the non-root user
 USER appuser
 
-# Configure Git for the non-root user
-RUN git config --global user.name "VM Provision Bot" && \
-    git config --global user.email "vm-provision@chrobinson.com"
+# # Configure Git for the non-root user
+# RUN git config --global user.name "VM Provision Bot" && \
+#     git config --global user.email "vm-provision@chrobinson.com"
 
-# Expose the application port
+# # Expose the application port
 EXPOSE 5000
 
 # Start the application
