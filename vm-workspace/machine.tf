@@ -108,7 +108,8 @@ data "external" "next_ip" {
   program = ["python", "fetch_next_ip.py"]
   query = {
     range = "192.168.1.0/24"
-    token = "some_token"
+    token = var.netbox_token
+    api_url = var.netbox_api_url
   }
 }
 

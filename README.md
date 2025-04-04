@@ -57,23 +57,31 @@ The VM workspace contains the Terraform configurations for VM provisioning:
 ### Configuration
 
 1. **Environment Variables**:
-   - Update the environment variables in `docker-compose.yml`
-   - Set the `ATLANTIS_TOKEN` to a secure value
-   - Configure VMware vSphere credentials
+   - Create a `.env` file based on the provided `.env.example`
+   - Set the `FLASK_SECRET_KEY` to a secure random value
+   - Set the `ATLANTIS_TOKEN` to a secure random value
+   - Configure VMware vSphere credentials and resources
+   - Configure NetBox and Vault authentication as needed
 
 2. **VM Workspace**:
    - Update the VM workspace files in `vm-workspace/` as needed
    - Configure the vSphere provider settings
+   - Ensure the modules/machine directory is properly configured
 
 ### Deployment
 
-Run the following command to start the application:
+1. **Create Environment File**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual values
+   ```
 
-```bash
-docker-compose up -d
-```
+2. **Start the Application**:
+   ```bash
+   docker-compose up -d
+   ```
 
-This will start both the web application and the Atlantis server.
+This will start both the web application and the Atlantis server with the configured environment variables.
 
 ### Access
 
@@ -133,3 +141,33 @@ This will start both the web application and the Atlantis server.
 - Change default passwords in production
 - Use secure values for all tokens and secrets
 - Implement proper access controls
+- Store sensitive environment variables in a secure location
+- Consider using a secrets management solution like Vault for production deployments
+
+## Required Environment Variables
+
+The following environment variables are required for the application to function properly:
+
+### Core Application
+- `FLASK_SECRET_KEY`: Secret key for Flask sessions
+- `ATLANTIS_TOKEN`: Authentication token for Atlantis API
+
+### vSphere Integration
+- `VSPHERE_USER`: vSphere username
+- `VSPHERE_PASSWORD`: vSphere password
+- `VSPHERE_SERVER`: vSphere server address
+- `RESOURCE_POOL_ID`: ID of the resource pool
+- `DATASTORE_ID`: ID of the datastore
+- `NETWORK_ID`: ID of the network
+- `TEMPLATE_UUID`: UUID of the VM template
+
+### NetBox Integration
+- `NETBOX_TOKEN`: Authentication token for NetBox API
+- `NETBOX_API_URL`: URL for NetBox API
+
+### Vault Authentication (Optional)
+- `VAULT_TOKEN`: Token for Vault authentication
+- `VAULT_ROLE_ID` and `VAULT_SECRET_ID`: Credentials for AppRole authentication
+- `VAULT_K8S_ROLE`: Role for Kubernetes authentication
+
+See `.env.example` for a complete list of environment variables.

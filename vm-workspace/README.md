@@ -11,7 +11,6 @@ This directory contains the Terraform configurations for VM provisioning in the 
 - **tfvars.tf**: Defines input variables
 - **machine_inputs.tfvars**: Example input variables for VM creation
 - **fetch_next_ip.py**: Python script for IP address allocation
-- **atlantis.cfg**: Atlantis configuration file
 
 ## Integration with Web Application
 
