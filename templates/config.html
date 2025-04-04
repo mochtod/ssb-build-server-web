@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Configuration - {{ config.server_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <header>
+            <h1>VM Configuration</h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Create VM</a></li>
+                    <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
+                    {% if user_role == 'admin' %}
+                    <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2>VM Configuration Details</h2>
+                
+                <div class="config-summary">
+                    <div class="config-item">
+                        <strong>Server Name:</strong>
+                        <span>{{ config.server_name }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Quantity:</strong>
+                        <span>{{ config.quantity }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Starting Number:</strong>
+                        <span>{{ config.start_number }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>CPU Cores:</strong>
+                        <span>{{ config.num_cpus }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Memory:</strong>
+                        <span>{{ config.memory }} MB</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Primary Disk:</strong>
+                        <span>{{ config.disk_size }} GB</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Environment:</strong>
+                        <span>{{ config.environment }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Plan Status:</strong>
+                        <span class="build-status {{ config.plan_status }}">{{ config.plan_status|capitalize }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Approval Status:</strong>
+                        <span class="build-status {{ config.approval_status }}">{{ config.approval_status|capitalize }}</span>
+                    </div>
+                    <div class="config-item full-width">
+                        <strong>Additional Disks:</strong>
+                        <span>
+                            {% if config.additional_disks %}
+                                <ul>
+                                {% for disk in config.additional_disks %}
+                                    <li>{{ disk.size }} GB ({{ disk.type }})</li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <h3>Generated VMs</h3>
+                <div class="vm-list">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>VM Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(config.quantity) %}
+                                <tr>
+                                    <td>{{ config.server_name }}-{{ '%05d' | format(config.start_number + i) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h3>Terraform Configuration</h3>
+                <div class="code-block">
+                    <pre><code>{{ machine_tf }}</code></pre>
+                    <button class="btn-small copy-code">Copy Code</button>
+                </div>
+                
+                {% if config.plan_status == 'pending' and (is_owner or user_role == 'admin') %}
+                <div class="plan-section">
+                    <h3>Run Terraform Plan</h3>
+                    <p>Run Terraform plan to validate the configuration and view what resources will be created.</p>
+                    
+                    <form action="{{ url_for('plan_config', request_id=request_id, timestamp=timestamp) }}" method="post" class="plan-form">
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Run Terraform Plan</button>
+                        </div>
+                    </form>
+                </div>
+                {% elif config.plan_status == 'completed' %}
+                <div class="plan-status-section completed">
+                    <h3>Plan Completed</h3>
+                    <p>Terraform plan has been run successfully.</p>
+                    <a href="{{ url_for('show_plan', request_id=request_id, timestamp=timestamp) }}" class="btn btn-primary">View Plan Results</a>
+                </div>
+                {% elif config.plan_status == 'planning' %}
+                <div class="plan-status-section planning" data-request-id="{{ request_id }}" data-timestamp="{{ timestamp }}">
+                    <h3>Plan In Progress</h3>
+                    <p>Terraform plan is currently running...</p>
+                    <div class="loader"></div>
+                </div>
+                {% elif config.plan_status == 'failed' %}
+                <div class="plan-status-section failed">
+                    <h3>Plan Failed</h3>
+                    <p>Error: {{ config.plan_error }}</p>
+                    {% if is_owner or user_role == 'admin' %}
+                    <form action="{{ url_for('plan_config', request_id=request_id, timestamp=timestamp) }}" method="post">
+                        <button type="submit" class="btn">Retry Plan</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="form-actions">
+                    <button id="download-btn" class="btn" onclick="downloadConfig('{{ request_id }}', '{{ timestamp }}')">Download Configuration</button>
+                    <a href="{{ url_for('index') }}" class="btn">Create Another VM</a>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 CH Robinson - RHEL9 VM Provisioning Tool</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

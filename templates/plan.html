@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, text-size-adjust=100%">
+    <title>Terraform Plan - {{ config.server_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <header>
+            <h1>Terraform Plan</h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Create VM</a></li>
+                    <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
+                    {% if user_role == 'admin' %}
+                    <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2>Terraform Plan for {{ config.server_name }}</h2>
+                
+                <div class="config-summary">
+                    <div class="config-item">
+                        <strong>Server Name:</strong>
+                        <span>{{ config.server_name }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Quantity:</strong>
+                        <span>{{ config.quantity }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>CPU Cores:</strong>
+                        <span>{{ config.num_cpus }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Memory:</strong>
+                        <span>{{ config.memory }} MB</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Primary Disk:</strong>
+                        <span>{{ config.disk_size }} GB</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Environment:</strong>
+                        <span>{{ config.environment }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Plan Status:</strong>
+                        <span class="build-status {{ config.plan_status }}">{{ config.plan_status|capitalize }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Approval Status:</strong>
+                        <span class="build-status {{ config.approval_status }}">{{ config.approval_status|capitalize }}</span>
+                    </div>
+                    <div class="config-item">
+                        <strong>Owner:</strong>
+                        <span>{{ config.build_owner }}</span>
+                    </div>
+                </div>
+
+                <h3>Terraform Plan Output</h3>
+                <div class="plan-output">
+                    <pre>{{ config.plan_log }}</pre>
+                </div>
+                
+                {% if config.atlantis_url %}
+                <div class="atlantis-link">
+                    <strong>View in Atlantis:</strong>
+                    <a href="{{ config.atlantis_url }}" target="_blank" class="external-link">{{ config.atlantis_url }}</a>
+                </div>
+                {% endif %}
+                
+                {% if user_role == 'admin' and config.plan_status == 'completed' and config.approval_status == 'pending' %}
+                <div class="admin-actions">
+                    <h3>Administrator Approval</h3>
+                    <div class="approval-actions">
+                        <form action="{{ url_for('approve_config', request_id=request_id, timestamp=timestamp) }}" method="post" class="approval-form">
+                            <div class="form-group">
+                                <label for="approval_notes">Approval Notes:</label>
+                                <textarea id="approval_notes" name="approval_notes" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success">Approve Build</button>
+                        </form>
+                        
+                        <form action="{{ url_for('reject_config', request_id=request_id, timestamp=timestamp) }}" method="post" class="rejection-form">
+                            <div class="form-group">
+                                <label for="rejection_reason">Rejection Reason:</label>
+                                <textarea id="rejection_reason" name="rejection_reason" rows="3" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger">Reject Build</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if config.approval_status == 'approved' %}
+                <div class="approval-details success-box">
+                    <h3>Approved for Build</h3>
+                    <p><strong>Approved by:</strong> {{ config.approved_by }}</p>
+                    <p><strong>Approved on:</strong> {{ config.approved_at }}</p>
+                    {% if config.approval_notes %}
+                    <p><strong>Notes:</strong> {{ config.approval_notes }}</p>
+                    {% endif %}
+                    
+                    {% if is_owner and config.build_status == 'pending' %}
+                    <form action="{{ url_for('build_config', request_id=request_id, timestamp=timestamp) }}" method="post" class="build-form">
+                        <button type="submit" class="btn btn-primary">Initiate Build</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% elif config.approval_status == 'rejected' %}
+                <div class="rejection-details error-box">
+                    <h3>Build Rejected</h3>
+                    <p><strong>Rejected by:</strong> {{ config.rejected_by }}</p>
+                    <p><strong>Rejected on:</strong> {{ config.rejected_at }}</p>
+                    <p><strong>Reason:</strong> {{ config.rejection_reason }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="form-actions">
+                    <a href="{{ url_for('show_config', request_id=request_id, timestamp=timestamp) }}" class="btn">Back to Configuration</a>
+                    <a href="{{ url_for('list_configs') }}" class="btn">View All Configurations</a>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 CH Robinson - RHEL9 VM Provisioning Tool</p>
+        </footer>
+    </div>
+</body>
+</html>

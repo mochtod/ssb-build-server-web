@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Configurations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <header>
+            <h1>VM Configurations</h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Create VM</a></li>
+                    <li><a href="{{ url_for('list_configs') }}" class="active">View Configurations</a></li>
+                    {% if user_role == 'admin' %}
+                    <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2>VM Configurations</h2>
+                
+                {% if configs %}
+                <div class="config-list">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Server Name</th>
+                                <th>Environment</th>
+                                <th>Owner</th>
+                                <th>Plan Status</th>
+                                <th>Approval</th>
+                                <th>Build Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for config in configs %}
+                                <tr>
+                                    <td>{{ config.timestamp }}</td>
+                                    <td>{{ config.server_name }}</td>
+                                    <td>{{ config.environment }}</td>
+                                    <td>{{ config.build_owner }}</td>
+                                    <td><span class="status-badge {{ config.plan_status }}">{{ config.plan_status|capitalize }}</span></td>
+                                    <td><span class="status-badge {{ config.approval_status }}">{{ config.approval_status|capitalize }}</span></td>
+                                    <td><span class="status-badge {{ config.build_status }}">{{ config.build_status|capitalize }}</span></td>
+                                    <td class="actions-cell">
+                                        <a href="{{ url_for('show_config', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">View</a>
+                                        {% if config.plan_status == 'completed' %}
+                                        <a href="{{ url_for('show_plan', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Plan</a>
+                                        {% endif %}
+                                        {% if config.build_status == 'submitted' %}
+                                        <a href="{{ url_for('show_build_receipt', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Receipt</a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No configurations found</p>
+                    <a href="{{ url_for('index') }}" class="btn">Create your first VM</a>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 CH Robinson - RHEL9 VM Provisioning Tool</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Receipt - {{ config.server_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <header>
+            <h1>VM Build Receipt</h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Create VM</a></li>
+                    <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
+                    {% if user_role == 'admin' %}
+                    <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2>Build Receipt for {{ config.server_name }}</h2>
+                
+                <div class="receipt-box">
+                    <pre id="receipt-text">{{ config.build_receipt }}</pre>
+                    <button id="copy-receipt" class="btn btn-primary">Copy Receipt</button>
+                </div>
+                
+                <div class="build-links">
+                    {% if config.build_url %}
+                    <div class="link-item">
+                        <strong>Build Status URL:</strong>
+                        <a href="{{ config.build_url }}" target="_blank" class="external-link">{{ config.build_url }}</a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if config.atlantis_url %}
+                    <div class="link-item">
+                        <strong>Atlantis Plan:</strong>
+                        <a href="{{ config.atlantis_url }}" target="_blank" class="external-link">{{ config.atlantis_url }}</a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="status-box {{ config.build_status }}">
+                    <h3>Build Status: {{ config.build_status|capitalize }}</h3>
+                    <p><strong>Owner:</strong> {{ config.build_owner }}</p>
+                    <p><strong>Approved By:</strong> {{ config.approved_by }}</p>
+                    <p><strong>Server Name:</strong> {{ config.server_name }}</p>
+                    <p><strong>Environment:</strong> {{ config.environment }}</p>
+                    <p><strong>Request ID:</strong> {{ config.request_id }}</p>
+                    <p><strong>Time Initiated:</strong> {{ config.build_completed_at }}</p>
+                </div>
+                
+                <h3>VM Details Summary</h3>
+                <div class="vm-summary">
+                    <div class="summary-row">
+                        <div class="summary-label">Number of VMs:</div>
+                        <div class="summary-value">{{ config.quantity }}</div>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-label">CPU Cores:</div>
+                        <div class="summary-value">{{ config.num_cpus }}</div>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-label">Memory:</div>
+                        <div class="summary-value">{{ config.memory }} MB</div>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-label">Primary Disk:</div>
+                        <div class="summary-value">{{ config.disk_size }} GB</div>
+                    </div>
+                    <div class="summary-row">
+                        <div class="summary-label">Additional Disks:</div>
+                        <div class="summary-value">
+                            {% if config.additional_disks %}
+                                <ul>
+                                {% for disk in config.additional_disks %}
+                                    <li>{{ disk.size }} GB ({{ disk.type }})</li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                None
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>Generated VMs</h3>
+                <div class="vm-list">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>VM Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(config.quantity) %}
+                                <tr>
+                                    <td>{{ config.server_name }}-{{ '%05d' | format(config.start_number + i) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="{{ url_for('index') }}" class="btn">Create New VM</a>
+                    <a href="{{ url_for('list_configs') }}" class="btn">View All Configurations</a>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 CH Robinson - RHEL9 VM Provisioning Tool</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

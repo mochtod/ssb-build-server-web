@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5150:5000"
+    volumes:
+      - .:/app
+      - ./configs:/app/configs
+      - ./terraform:/app/terraform
+      - ./users.json:/app/users.json
+    environment:
+      - FLASK_SECRET_KEY=change_this_to_a_random_secure_key
+      - CONFIG_DIR=/app/configs
+      - TERRAFORM_DIR=/app/terraform
+      - USERS_FILE=/app/users.json
+      - DEBUG=True
+      # Atlantis integration
+      - ATLANTIS_URL=https://atlantis.chrobinson.com
+      - ATLANTIS_TOKEN=your-atlantis-token
+      - TIMEOUT=120
+    restart: unless-stopped
+
+volumes:
+  configs:
+  terraform:

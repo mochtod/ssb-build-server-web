@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RHEL9 VM Provisioning</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dark-mode">
+    <div class="container">
+        <header>
+            <h1>RHEL9 VM Provisioning</h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}" class="active">Create VM</a></li>
+                    <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
+                    {% if user_role == 'admin' %}
+                    <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2>Create New Virtual Machine</h2>
+                <form action="{{ url_for('submit') }}" method="post">
+                    <div class="form-section">
+                        <h3>VM Identification</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="server_prefix">Server Environment:</label>
+                                <select id="server_prefix" name="server_prefix" required>
+                                    <option value="">Select environment</option>
+                                    <optgroup label="Non-Production">
+                                        {% for prefix in environments.nonprod %}
+                                            <option value="{{ prefix }}">{{ prefix }} ({{ server_prefixes[prefix] }})</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    <optgroup label="Production">
+                                        {% for prefix in environments.prod %}
+                                            <option value="{{ prefix }}">{{ prefix }} ({{ server_prefixes[prefix] }})</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="app_name">Application Name (3-5 chars):</label>
+                                <input type="text" id="app_name" name="app_name" maxlength="5" minlength="3" required>
+                                <small>Example: web, app, db, ssbs</small>
+                            </div>
+                        </div>
+                        <p class="preview">Preview: <span id="name_preview">lin2xx-app-10001</span></p>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>VM Specifications</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="quantity">Number of VMs:</label>
+                                <input type="number" id="quantity" name="quantity" min="1" max="10" value="1">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="num_cpus">CPU Cores:</label>
+                                <select id="num_cpus" name="num_cpus">
+                                    <option value="1">1 Core</option>
+                                    <option value="2" selected>2 Cores</option>
+                                    <option value="4">4 Cores</option>
+                                    <option value="8">8 Cores</option>
+                                    <option value="16">16 Cores</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="memory">Memory (MB):</label>
+                                <select id="memory" name="memory">
+                                    <option value="2048">2 GB</option>
+                                    <option value="4096" selected>4 GB</option>
+                                    <option value="8192">8 GB</option>
+                                    <option value="16384">16 GB</option>
+                                    <option value="32768">32 GB</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Storage Configuration</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="disk_size">Primary Disk (GB):</label>
+                                <select id="disk_size" name="disk_size">
+                                    <option value="20">20 GB</option>
+                                    <option value="50" selected>50 GB</option>
+                                    <option value="100">100 GB</option>
+                                    <option value="200">200 GB</option>
+                                    <option value="500">500 GB</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="additional_disks">
+                            <h4>Additional Disks <button type="button" id="add_disk" class="btn-small">Add Disk</button></h4>
+                            <div class="disk-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>User Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="build_owner">Your Name:</label>
+                                <input type="text" id="build_owner" name="build_owner" value="{{ user_name }}" readonly>
+                                <small>This name will be associated with the VM configuration</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create VM Configuration</button>
+                        <button type="reset" class="btn">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 CH Robinson - RHEL9 VM Provisioning Tool</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
