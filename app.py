@@ -780,7 +780,8 @@ def admin_test_connection(service):
                         'Authorization': f'Token {netbox_token}',
                         'Accept': 'application/json'
                     }
-                    response = requests.get(f"{netbox_url}/status/", headers=headers, timeout=5)
+                    # Disable SSL verification for NetBox API since it's using an internal certificate
+                    response = requests.get(f"{netbox_url}/status/", headers=headers, timeout=5, verify=False)
                     if response.status_code == 200:
                         message = "Successfully connected to NetBox API"
                         result = True

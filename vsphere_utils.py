@@ -48,8 +48,7 @@ def test_vsphere_connection(server, username, password, port=443, timeout=5):
             user=username,
             pwd=password,
             port=port,
-            sslContext=context,
-            connectionTimeout=timeout
+            sslContext=context
         )
         
         if not service_instance:

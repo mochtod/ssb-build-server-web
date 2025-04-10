@@ -195,7 +195,7 @@
                                         {% endif %}
                                     {% endfor %}
                                 {% endwith %}
-                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'contains', 'vSphere')|list %}
+                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'in', ['vSphere'])|list %}
                                     <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
                                     <small class="text-muted">Not Tested</small>
                                 {% endif %}
@@ -224,7 +224,7 @@
                                         {% endif %}
                                     {% endfor %}
                                 {% endwith %}
-                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'contains', 'Atlantis')|list %}
+                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'in', ['Atlantis'])|list %}
                                     <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
                                     <small class="text-muted">Not Tested</small>
                                 {% endif %}
@@ -253,7 +253,7 @@
                                         {% endif %}
                                     {% endfor %}
                                 {% endwith %}
-                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'contains', 'NetBox')|list %}
+                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'in', ['NetBox'])|list %}
                                     <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
                                     <small class="text-muted">Not Tested</small>
                                 {% endif %}
