@@ -18,7 +18,7 @@ COPY . /app
 # Create directories for persistent storage if they don't exist
 RUN mkdir -p /app/configs /app/terraform
 
-# Run as non-root user for better security
+# Run as non-root user for better securitye4
 RUN useradd -m appuser && \
     chown -R appuser:appuser /app /app/configs /app/terraform
 
