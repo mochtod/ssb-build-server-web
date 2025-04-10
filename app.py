@@ -621,36 +621,54 @@ def run_atlantis_plan(config_data, tf_directory):
         vm_hostname = f"{config_data['server_name']}-{config_data['start_number']}"
         
         # Prepare the Atlantis payload for the file-based setup
-        atlantis_payload = {
-            # Required fields for Atlantis API even in file-based mode
-            'repo': {
-                'owner': 'fake',
-                'name': 'terraform-repo',
-                'clone_url': 'https://github.com/fake/terraform-repo.git'
-            },
-            'pull_request': {
-                'num': 1,  # Dummy value
-                'branch': 'main',
-                'author': config_data['build_owner']
-            },
-            'head_commit': 'abcd1234',  # Dummy commit hash
-            'pull_num': 1,  # Dummy value
-            'pull_author': config_data['build_owner'],
-            'repo_rel_dir': tf_dir_name,
+        # The format must match exactly what Atlantis expects
+        try:
+            # Load the known working test payload as a reference
+            test_payload_path = 'test-payload-fixed.json'
+            if os.path.exists(test_payload_path):
+                with open(test_payload_path, 'r') as f:
+                    test_payload = json.load(f)
+                    logger.info("Loaded test payload template for reference")
+            else:
+                logger.warning(f"Could not find test payload template at {test_payload_path}")
+                test_payload = None
+                
+            # Create payload following the known working structure
+            atlantis_payload = {
+                'repo': {
+                    'owner': 'fake',
+                    'name': 'terraform-repo',
+                    'clone_url': 'https://github.com/fake/terraform-repo.git'
+                },
+                'pull_request': {
+                    'num': 1,  # Dummy value
+                    'branch': 'main',
+                    'author': config_data['build_owner']
+                },
+                'head_commit': 'abcd1234',  # Dummy commit hash
+                'pull_num': 1,  # Dummy value
+                'pull_author': config_data['build_owner'],
+                'repo_rel_dir': tf_dir_name,
+                'workspace': config_data['environment'],
+                'project_name': vm_hostname,
+                'terraform_files': tf_files,
+                'plan_only': True,
+                'comment': f"VM Provisioning Plan: {vm_hostname}",
+                'user': config_data['build_owner'],
+                'verbose': True
+            }
             
-            # Project information - use the hostname as the project name
-            'workspace': config_data['environment'],
-            'project_name': vm_hostname,
-            
-            # Terraform content
-            'terraform_files': tf_files,
-            
-            # Operation settings
-            'plan_only': True,  # Only run plan, don't apply
-            'comment': f"VM Provisioning Plan: {vm_hostname}",
-            'user': config_data['build_owner'],
-            'verbose': True
-        }
+            # Validate against known working structure if available
+            if test_payload:
+                for key in test_payload.keys():
+                    if key not in atlantis_payload and key != 'terraform_files':
+                        logger.warning(f"Missing required field in payload: {key}")
+                        atlantis_payload[key] = test_payload[key]
+                        
+            logger.info(f"Prepared Atlantis payload with keys: {', '.join(atlantis_payload.keys())}")
+        except Exception as e:
+            logger.error(f"Error preparing Atlantis payload: {str(e)}")
+            raise
         
         # Call Atlantis API to plan
         headers = {
@@ -658,8 +676,12 @@ def run_atlantis_plan(config_data, tf_directory):
             'X-Atlantis-Token': ATLANTIS_TOKEN
         }
         
+        # Ensure proper JSON serialization with commas between fields
+        # Fix the issue where json.dumps doesn't add commas in some fields
+        payload_string = json.dumps(atlantis_payload, ensure_ascii=False, separators=(',', ':'))
+        
         logger.info(f"Sending plan request to Atlantis for {config_data['server_name']}")
-        response = requests.post(f"{ATLANTIS_URL}/api/plan", json=atlantis_payload, headers=headers)
+        response = requests.post(f"{ATLANTIS_URL}/api/plan", data=payload_string, headers=headers)
         
         if response.status_code != 200:
             error_message = f"Failed to trigger Atlantis plan: {response.text}"
@@ -788,23 +810,52 @@ def apply_atlantis_plan(config_data, tf_directory):
         tf_dir_name = os.path.basename(tf_directory)
         
         # Prepare the Atlantis payload for the file-based setup
-        atlantis_payload = {
-            # Required fields for Atlantis API even in file-based mode
-            'repo': {
-                'owner': 'fake',
-                'name': 'terraform-repo',
-                'clone_url': 'https://github.com/fake/terraform-repo.git'
-            },
-            'pull_num': 1,  # Dummy value
-            'pull_author': config_data['build_owner'],
-            'repo_rel_dir': tf_dir_name,
-            'plan_id': plan_id,
-            'comment': f"Applying approved VM config: {config_data['server_name']}",
-            'user': config_data['build_owner'],
-            'workspace': config_data['environment'],
-            'project_name': config_data['server_name'],
-            'verbose': True
-        }
+        try:
+            # Load the known working test payload as a reference
+            test_payload_path = 'test-payload-fixed.json'
+            if os.path.exists(test_payload_path):
+                with open(test_payload_path, 'r') as f:
+                    test_payload = json.load(f)
+                    logger.info("Loaded test payload template for reference")
+            else:
+                logger.warning(f"Could not find test payload template at {test_payload_path}")
+                test_payload = None
+                
+            # Create payload following the known working structure
+            atlantis_payload = {
+                'repo': {
+                    'owner': 'fake',
+                    'name': 'terraform-repo',
+                    'clone_url': 'https://github.com/fake/terraform-repo.git'
+                },
+                'pull_request': {
+                    'num': 1,  # Dummy value
+                    'branch': 'main',
+                    'author': config_data['build_owner']
+                },
+                'head_commit': 'abcd1234',  # Dummy commit hash
+                'pull_num': 1,  # Dummy value
+                'pull_author': config_data['build_owner'],
+                'repo_rel_dir': tf_dir_name,
+                'plan_id': plan_id,
+                'comment': f"Applying approved VM config: {config_data['server_name']}",
+                'user': config_data['build_owner'],
+                'workspace': config_data['environment'],
+                'project_name': config_data['server_name'],
+                'verbose': True
+            }
+            
+            # Validate against known working structure if available
+            if test_payload:
+                for key in test_payload.keys():
+                    if key not in atlantis_payload and key != 'terraform_files':
+                        logger.warning(f"Missing required field in payload: {key}")
+                        atlantis_payload[key] = test_payload[key]
+                        
+            logger.info(f"Prepared Atlantis apply payload with keys: {', '.join(atlantis_payload.keys())}")
+        except Exception as e:
+            logger.error(f"Error preparing Atlantis apply payload: {str(e)}")
+            raise
         
         # Call Atlantis API to apply
         headers = {
@@ -812,8 +863,11 @@ def apply_atlantis_plan(config_data, tf_directory):
             'X-Atlantis-Token': ATLANTIS_TOKEN
         }
         
+        # Ensure proper JSON serialization with commas between fields
+        payload_string = json.dumps(atlantis_payload, ensure_ascii=False, separators=(',', ':'))
+        
         logger.info(f"Sending apply request to Atlantis for {config_data['server_name']} with plan ID: {plan_id}")
-        response = requests.post(f"{ATLANTIS_URL}/api/apply", json=atlantis_payload, headers=headers)
+        response = requests.post(f"{ATLANTIS_URL}/api/apply", data=payload_string, headers=headers)
         
         if response.status_code != 200:
             error_message = f"Failed to trigger Atlantis apply: {response.text}"
