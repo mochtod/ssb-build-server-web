@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 # Atlantis API configuration
 ATLANTIS_URL = "http://localhost:4141"
-ATLANTIS_TOKEN = os.environ.get("ATLANTIS_TOKEN", "lkajsdf;lkasd;kljasdf")
+ATLANTIS_TOKEN = os.environ.get("ATLANTIS_TOKEN", "lkajsdflkasdkljasdf")  # Updated to match .env file
 
 def test_atlantis_plan_with_fixes():
     """Test the Atlantis API plan endpoint with our fixes"""
@@ -84,13 +84,37 @@ def test_atlantis_plan_with_fixes():
     }
     
     logger.info(f"Sending plan request to Atlantis with updated payload structure")
+    
+    # Use a more robust method for JSON serialization
     try:
-        # Use our improved serialization method
-        payload_string = json.dumps(atlantis_payload, ensure_ascii=False, indent=None, separators=(',', ':'))
+        # Convert the terraform_files content to a separate JSON
+        terraform_files_json = json.dumps(atlantis_payload['terraform_files'])
+        
+        # Remove the terraform_files temporarily
+        temp_payload = atlantis_payload.copy()
+        del temp_payload['terraform_files']
+        
+        # Create a properly formatted JSON string for the main payload
+        payload_string = json.dumps(temp_payload, ensure_ascii=False, indent=2)
+        
+        # Insert the terraform_files back in
+        # Find the closing brace position
+        closing_brace_pos = payload_string.rstrip().rfind('}')
+        
+        # Insert terraform_files before the closing brace
+        payload_string = payload_string[:closing_brace_pos] + ',\n  "terraform_files": ' + terraform_files_json + payload_string[closing_brace_pos:]
         
         # Display part of the payload for debugging
         logger.info(f"First 100 chars of payload: {payload_string[:100]}...")
-        
+    except Exception as e:
+        logger.error(f"Error creating JSON payload: {e}")
+        return {
+            'status': 'error',
+            'message': f"Error creating JSON payload: {e}"
+        }
+    
+    # Make the API request
+    try:
         response = requests.post(
             f"{ATLANTIS_URL}/api/plan", 
             data=payload_string, 
