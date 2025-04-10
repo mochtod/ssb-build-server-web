@@ -16,7 +16,61 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Plan status checking
     initializePlanStatusCheck();
+    
+    // Theme toggle functionality
+    initializeThemeToggle();
 });
+
+/**
+ * Initialize theme toggle functionality
+ */
+function initializeThemeToggle() {
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeIconDark = document.getElementById('theme-icon-dark');
+    const themeIconLight = document.getElementById('theme-icon-light');
+    const themeText = document.getElementById('theme-text');
+    
+    if (themeToggleBtn && themeIconDark && themeIconLight && themeText) {
+        // Check for saved theme preference or use default
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        
+        // Apply the saved theme
+        setTheme(savedTheme);
+        
+        // Handle theme toggle click
+        themeToggleBtn.addEventListener('click', function() {
+            // Check current theme
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            
+            // Toggle theme
+            if (isDarkMode) {
+                setTheme('light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                setTheme('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+    }
+    
+    /**
+     * Set theme and update UI elements
+     * @param {string} theme - 'dark' or 'light'
+     */
+    function setTheme(theme) {
+        if (theme === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeIconDark.style.display = 'none';
+            themeIconLight.style.display = 'inline-block';
+            themeText.textContent = 'Light Mode'; // Shows what mode will be switched to
+        } else {
+            document.body.classList.remove('dark-mode');
+            themeIconDark.style.display = 'inline-block';
+            themeIconLight.style.display = 'none';
+            themeText.textContent = 'Dark Mode'; // Shows what mode will be switched to
+        }
+    }
+}
 
 /**
  * Initialize server name preview functionality

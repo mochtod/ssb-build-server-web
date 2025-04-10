@@ -1,18 +1,55 @@
 :root {
-  --bg-color: #121212;
-  --card-bg: #1e1e1e;
-  --text-color: #e0e0e0;
-  --text-muted: #909090;
-  --border-color: #333;
+  /* Light theme colors (default) */
+  --bg-color: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-color: #212529;
+  --text-muted: #6c757d;
+  --border-color: #dee2e6;
   --primary-color: #4a6da7;
   --secondary-color: #2e5eaa;
   --success-color: #28a745;
   --error-color: #dc3545;
   --warning-color: #ffc107;
+  --input-bg: #f8f9fa;
+  --input-border: #ced4da;
+  --header-bg: #e9ecef;
+  --hover-color: #e2e6ea;
+}
+
+/* Dark theme colors */
+body.dark-mode {
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --text-color: #e0e0e0;
+  --text-muted: #909090;
+  --border-color: #333;
   --input-bg: #2d2d2d;
   --input-border: #444;
   --header-bg: #1a1a1a;
   --hover-color: #2c2c2c;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: var(--text-color);
+  padding: 6px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.theme-toggle:hover {
+  background-color: var(--hover-color);
+}
+
+.theme-toggle svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
 }
 
 * {
@@ -26,6 +63,13 @@ body {
   line-height: 1.6;
   background-color: var(--bg-color);
   color: var(--text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Apply transitions to elements that change with theme */
+.card, header, footer, button, input, select, textarea, .code-block, table th, table td,
+.disk-item, .preview, .config-item, .plan-output, .approval-form, .rejection-form {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .container {
