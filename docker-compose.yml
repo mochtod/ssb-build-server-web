@@ -36,9 +36,8 @@ services:
       - ATLANTIS_AUTOPLAN_FILE_LIST=*.tf,*.tfvars
       - ATLANTIS_WRITE_GIT_CREDS=false
       - ATLANTIS_REPO_CONFIG=/etc/atlantis/repo-config.yaml
-      - GH_USER=dummy-user
-      - GH_TOKEN=dummy-token
-    command: ["server", "--disable-repo-locking"]
+      - ATLANTIS_API_SECRET=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
+    command: ["server", "--disable-repo-locking", "--repo-config=/etc/atlantis/repo-config.yaml", "--atlantis-url=http://atlantis:4141"]
     volumes:
       - ./atlantis-config:/etc/atlantis
       - ./terraform:/terraform
