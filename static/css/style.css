@@ -473,6 +473,47 @@ footer {
   100% { transform: rotate(360deg); }
 }
 
+/* Connection status indicators */
+.connection-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 0 auto;
+}
+
+.connection-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 70px;
+}
+
+.bg-success {
+  background-color: var(--success-color);
+}
+
+.bg-danger {
+  background-color: var(--error-color);
+}
+
+.bg-secondary {
+  background-color: var(--text-muted);
+}
+
+.text-success {
+  color: var(--success-color);
+}
+
+.text-danger {
+  color: var(--error-color);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
 @media (max-width: 768px) {
   header {
     flex-direction: column;

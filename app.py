@@ -14,6 +14,7 @@ from functools import wraps
 from git import Repo
 from git.exc import GitCommandError
 import logging
+from vsphere_utils import test_vsphere_connection
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
@@ -716,21 +717,31 @@ def admin_test_connection(service):
     """Test connection to external services"""
     result = False
     message = ""
+    details = {}
     
     try:
         if service == 'vsphere':
-            # Test vSphere connection
+            # Test vSphere connection using our utility
             vsphere_server = os.environ.get('VSPHERE_SERVER')
             vsphere_user = os.environ.get('VSPHERE_USER')
             vsphere_password = os.environ.get('VSPHERE_PASSWORD')
             
-            if not vsphere_server or not vsphere_user or not vsphere_password:
-                message = "vSphere connection information is incomplete"
-            else:
-                # For now, just check if the variables are set
-                # In a real implementation, you would use a vSphere client library
-                message = f"vSphere connection variables are set for server: {vsphere_server}"
-                result = True
+            connection_result = test_vsphere_connection(
+                server=vsphere_server, 
+                username=vsphere_user, 
+                password=vsphere_password
+            )
+            
+            result = connection_result['success']
+            message = connection_result['message']
+            details = connection_result.get('details', {})
+            
+            # Log additional details if connection was successful
+            if result and details:
+                logger.info(f"vSphere version: {details.get('version')}")
+                logger.info(f"vSphere build: {details.get('build')}")
+                if 'datacenters' in details:
+                    logger.info(f"vSphere datacenters: {', '.join(details['datacenters'])}")
                 
         elif service == 'atlantis':
             # Test Atlantis connection

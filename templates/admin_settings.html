@@ -178,19 +178,91 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-4 mb-3">
-                    <form method="POST" action="{{ url_for('admin_test_connection', service='vsphere') }}">
-                        <button type="submit" class="btn btn-outline-primary w-100">Test vSphere Connection</button>
-                    </form>
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">vSphere Connection</h5>
+                            <div class="connection-status mb-3">
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% for category, message in messages %}
+                                        {% if 'vSphere' in message %}
+                                            {% if category == 'success' %}
+                                                <div class="connection-indicator bg-success mb-2" title="Connected"></div>
+                                                <small class="text-success">Connected</small>
+                                            {% else %}
+                                                <div class="connection-indicator bg-danger mb-2" title="Not Connected"></div>
+                                                <small class="text-danger">Not Connected</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'contains', 'vSphere')|list %}
+                                    <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
+                                    <small class="text-muted">Not Tested</small>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_test_connection', service='vsphere') }}">
+                                <button type="submit" class="btn btn-primary w-100">Test Connection</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <form method="POST" action="{{ url_for('admin_test_connection', service='atlantis') }}">
-                        <button type="submit" class="btn btn-outline-primary w-100">Test Atlantis Connection</button>
-                    </form>
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Atlantis Connection</h5>
+                            <div class="connection-status mb-3">
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% for category, message in messages %}
+                                        {% if 'Atlantis' in message %}
+                                            {% if category == 'success' %}
+                                                <div class="connection-indicator bg-success mb-2" title="Connected"></div>
+                                                <small class="text-success">Connected</small>
+                                            {% else %}
+                                                <div class="connection-indicator bg-danger mb-2" title="Not Connected"></div>
+                                                <small class="text-danger">Not Connected</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'contains', 'Atlantis')|list %}
+                                    <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
+                                    <small class="text-muted">Not Tested</small>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_test_connection', service='atlantis') }}">
+                                <button type="submit" class="btn btn-primary w-100">Test Connection</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <form method="POST" action="{{ url_for('admin_test_connection', service='netbox') }}">
-                        <button type="submit" class="btn btn-outline-primary w-100">Test NetBox Connection</button>
-                    </form>
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">NetBox Connection</h5>
+                            <div class="connection-status mb-3">
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% for category, message in messages %}
+                                        {% if 'NetBox' in message %}
+                                            {% if category == 'success' %}
+                                                <div class="connection-indicator bg-success mb-2" title="Connected"></div>
+                                                <small class="text-success">Connected</small>
+                                            {% else %}
+                                                <div class="connection-indicator bg-danger mb-2" title="Not Connected"></div>
+                                                <small class="text-danger">Not Connected</small>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'contains', 'NetBox')|list %}
+                                    <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
+                                    <small class="text-muted">Not Tested</small>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_test_connection', service='netbox') }}">
+                                <button type="submit" class="btn btn-primary w-100">Test Connection</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
