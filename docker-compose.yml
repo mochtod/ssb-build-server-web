@@ -36,7 +36,8 @@ services:
       - ATLANTIS_AUTOPLAN_FILE_LIST=*.tf,*.tfvars
       - ATLANTIS_WRITE_GIT_CREDS=false
       - ATLANTIS_REPO_CONFIG=/etc/atlantis/repo-config.yaml
-      - ATLANTIS_API_SECRET=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
+      - GH_USER=dummy-user
+      - GH_TOKEN=dummy-token
     command: ["server", "--disable-repo-locking"]
     volumes:
       - ./atlantis-config:/etc/atlantis
