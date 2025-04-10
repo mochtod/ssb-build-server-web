@@ -1,35 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RHEL9 VM Provisioning</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body class="dark-mode">
-    <div class="container">
-        <header>
-            <h1>RHEL9 VM Provisioning</h1>
-            <nav>
-                <ul>
-                    <li><a href="{{ url_for('index') }}" class="active">Create VM</a></li>
-                    <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
-                    {% if user_role == 'admin' %}
-                    <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
-                    {% endif %}
-                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                </ul>
-            </nav>
-        </header>
+{% extends "base.html" %}
 
-        <main>
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
+{% block title %}Create VM - RHEL9 VM Provisioning{% endblock %}
+
+{% block content %}
 
             <div class="card">
                 <h2>Create New Virtual Machine</h2>
@@ -132,13 +105,4 @@
                     </div>
                 </form>
             </div>
-        </main>
-
-        <footer>
-            <p>&copy; 2025 CH Robinson - RHEL9 VM Provisioning Tool</p>
-        </footer>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
-</html>
+{% endblock %}

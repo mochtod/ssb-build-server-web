@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Settings{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Application Settings</h1>
+    <p>Manage environment variables and system settings</p>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2>Environment Variables</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin_save_settings') }}">
+                <div class="accordion" id="settingsAccordion">
+                    <!-- Flask Application Section -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="flaskHeading">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#flaskSettings" aria-expanded="true" aria-controls="flaskSettings">
+                                Flask Application
+                            </button>
+                        </h2>
+                        <div id="flaskSettings" class="accordion-collapse collapse show" aria-labelledby="flaskHeading">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="FLASK_SECRET_KEY" class="form-label">Flask Secret Key</label>
+                                    <input type="text" class="form-control" id="FLASK_SECRET_KEY" name="FLASK_SECRET_KEY" value="{{ env_vars.get('FLASK_SECRET_KEY', '') }}">
+                                    <div class="form-text">Secret key for Flask sessions</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="TIMEOUT" class="form-label">Timeout (seconds)</label>
+                                    <input type="number" class="form-control" id="TIMEOUT" name="TIMEOUT" value="{{ env_vars.get('TIMEOUT', '120') }}">
+                                    <div class="form-text">API request timeout in seconds</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Atlantis Integration Section -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="atlantisHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#atlantisSettings" aria-expanded="false" aria-controls="atlantisSettings">
+                                Atlantis Integration
+                            </button>
+                        </h2>
+                        <div id="atlantisSettings" class="accordion-collapse collapse" aria-labelledby="atlantisHeading">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="ATLANTIS_URL" class="form-label">Atlantis URL</label>
+                                    <input type="text" class="form-control" id="ATLANTIS_URL" name="ATLANTIS_URL" value="{{ env_vars.get('ATLANTIS_URL', '') }}">
+                                    <div class="form-text">URL for the Atlantis server</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="ATLANTIS_TOKEN" class="form-label">Atlantis Token</label>
+                                    <input type="password" class="form-control" id="ATLANTIS_TOKEN" name="ATLANTIS_TOKEN" value="{{ env_vars.get('ATLANTIS_TOKEN', '') }}">
+                                    <div class="form-text">Authentication token for Atlantis API</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- vSphere Connection Section -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="vsphereHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#vsphereSettings" aria-expanded="false" aria-controls="vsphereSettings">
+                                vSphere Connection
+                            </button>
+                        </h2>
+                        <div id="vsphereSettings" class="accordion-collapse collapse" aria-labelledby="vsphereHeading">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="VSPHERE_USER" class="form-label">vSphere User</label>
+                                    <input type="text" class="form-control" id="VSPHERE_USER" name="VSPHERE_USER" value="{{ env_vars.get('VSPHERE_USER', '') }}">
+                                    <div class="form-text">vSphere username</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="VSPHERE_PASSWORD" class="form-label">vSphere Password</label>
+                                    <input type="password" class="form-control" id="VSPHERE_PASSWORD" name="VSPHERE_PASSWORD" value="{{ env_vars.get('VSPHERE_PASSWORD', '') }}">
+                                    <div class="form-text">vSphere password</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="VSPHERE_SERVER" class="form-label">vSphere Server</label>
+                                    <input type="text" class="form-control" id="VSPHERE_SERVER" name="VSPHERE_SERVER" value="{{ env_vars.get('VSPHERE_SERVER', '') }}">
+                                    <div class="form-text">vSphere server address</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- VM Location Section -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="vmLocationHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#vmLocationSettings" aria-expanded="false" aria-controls="vmLocationSettings">
+                                VM Location Details
+                            </button>
+                        </h2>
+                        <div id="vmLocationSettings" class="accordion-collapse collapse" aria-labelledby="vmLocationHeading">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="RESOURCE_POOL_ID" class="form-label">Production Resource Pool ID</label>
+                                    <input type="text" class="form-control" id="RESOURCE_POOL_ID" name="RESOURCE_POOL_ID" value="{{ env_vars.get('RESOURCE_POOL_ID', '') }}">
+                                    <div class="form-text">Resource pool ID for production environments</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="DEV_RESOURCE_POOL_ID" class="form-label">Development Resource Pool ID</label>
+                                    <input type="text" class="form-control" id="DEV_RESOURCE_POOL_ID" name="DEV_RESOURCE_POOL_ID" value="{{ env_vars.get('DEV_RESOURCE_POOL_ID', '') }}">
+                                    <div class="form-text">Resource pool ID for development environments</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="DATASTORE_ID" class="form-label">Datastore ID</label>
+                                    <input type="text" class="form-control" id="DATASTORE_ID" name="DATASTORE_ID" value="{{ env_vars.get('DATASTORE_ID', '') }}">
+                                    <div class="form-text">Datastore ID for VM storage</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="NETWORK_ID_PROD" class="form-label">Production Network ID</label>
+                                    <input type="text" class="form-control" id="NETWORK_ID_PROD" name="NETWORK_ID_PROD" value="{{ env_vars.get('NETWORK_ID_PROD', '') }}">
+                                    <div class="form-text">Network ID for production VMs</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="NETWORK_ID_DEV" class="form-label">Development Network ID</label>
+                                    <input type="text" class="form-control" id="NETWORK_ID_DEV" name="NETWORK_ID_DEV" value="{{ env_vars.get('NETWORK_ID_DEV', '') }}">
+                                    <div class="form-text">Network ID for development VMs</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="TEMPLATE_UUID" class="form-label">VM Template UUID</label>
+                                    <input type="text" class="form-control" id="TEMPLATE_UUID" name="TEMPLATE_UUID" value="{{ env_vars.get('TEMPLATE_UUID', '') }}">
+                                    <div class="form-text">UUID of the VM template to clone</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- NetBox Integration Section -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="netboxHeading">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#netboxSettings" aria-expanded="false" aria-controls="netboxSettings">
+                                NetBox Integration
+                            </button>
+                        </h2>
+                        <div id="netboxSettings" class="accordion-collapse collapse" aria-labelledby="netboxHeading">
+                            <div class="accordion-body">
+                                <div class="mb-3">
+                                    <label for="NETBOX_TOKEN" class="form-label">NetBox Token</label>
+                                    <input type="password" class="form-control" id="NETBOX_TOKEN" name="NETBOX_TOKEN" value="{{ env_vars.get('NETBOX_TOKEN', '') }}">
+                                    <div class="form-text">Authentication token for NetBox API</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="NETBOX_URL" class="form-label">NetBox URL</label>
+                                    <input type="text" class="form-control" id="NETBOX_URL" name="NETBOX_URL" value="{{ env_vars.get('NETBOX_URL', '') }}">
+                                    <div class="form-text">URL for the NetBox API</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 d-flex justify-content-between">
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">Back to User Management</a>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h2>Connection Tests</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <form method="POST" action="{{ url_for('admin_test_connection', service='vsphere') }}">
+                        <button type="submit" class="btn btn-outline-primary w-100">Test vSphere Connection</button>
+                    </form>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <form method="POST" action="{{ url_for('admin_test_connection', service='atlantis') }}">
+                        <button type="submit" class="btn btn-outline-primary w-100">Test Atlantis Connection</button>
+                    </form>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <form method="POST" action="{{ url_for('admin_test_connection', service='netbox') }}">
+                        <button type="submit" class="btn btn-outline-primary w-100">Test NetBox Connection</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

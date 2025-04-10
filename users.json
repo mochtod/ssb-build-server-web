@@ -1,12 +1,22 @@
 {
-    "admin": {
-        "password": "admin123",
-        "role": "admin",
-        "name": "Admin User"
-    },
-    "builder": {
-        "password": "builder123",
-        "role": "builder",
-        "name": "Builder User"
-    }
+  "admin": {
+    "password": "admin123",
+    "role": "admin",
+    "name": "Admin User"
+  },
+  "builder": {
+    "password": "builder123",
+    "role": "builder",
+    "name": "Builder User"
+  },
+  "mochtod": {
+    "password": "abcd1234",
+    "role": "admin",
+    "name": "Todd Mochamer"
+  },
+  "billy": {
+    "password": "billy",
+    "role": "builder",
+    "name": "billy"
+  }
 }
