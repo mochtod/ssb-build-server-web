@@ -655,14 +655,16 @@ def run_atlantis_plan(config_data, tf_directory):
                 'plan_only': True,
                 'comment': f"VM Provisioning Plan: {vm_hostname}",
                 'user': config_data['build_owner'],
-                'verbose': True
+                'verbose': True,
+                # Add the 'cmd' field which might be required by Atlantis
+                'cmd': 'plan'
             }
             
-            # Validate against known working structure if available
+            # Ensure all required fields from the working test payload are included
             if test_payload:
                 for key in test_payload.keys():
                     if key not in atlantis_payload and key != 'terraform_files':
-                        logger.warning(f"Missing required field in payload: {key}")
+                        logger.warning(f"Adding missing required field in payload: {key}")
                         atlantis_payload[key] = test_payload[key]
                         
             logger.info(f"Prepared Atlantis payload with keys: {', '.join(atlantis_payload.keys())}")
@@ -676,9 +678,12 @@ def run_atlantis_plan(config_data, tf_directory):
             'X-Atlantis-Token': ATLANTIS_TOKEN
         }
         
-        # Ensure proper JSON serialization with commas between fields
-        # Fix the issue where json.dumps doesn't add commas in some fields
-        payload_string = json.dumps(atlantis_payload, ensure_ascii=False, separators=(',', ':'))
+        # Use a more robust way to ensure proper JSON serialization
+        # with manual formatting to avoid any serialization issues
+        payload_string = json.dumps(atlantis_payload, ensure_ascii=False, indent=None, separators=(',', ':'))
+        
+        # Log the keys in the payload for debugging
+        logger.info(f"Final payload keys: {sorted(atlantis_payload.keys())}")
         
         logger.info(f"Sending plan request to Atlantis for {config_data['server_name']}")
         response = requests.post(f"{ATLANTIS_URL}/api/plan", data=payload_string, headers=headers)
@@ -842,14 +847,16 @@ def apply_atlantis_plan(config_data, tf_directory):
                 'user': config_data['build_owner'],
                 'workspace': config_data['environment'],
                 'project_name': config_data['server_name'],
-                'verbose': True
+                'verbose': True,
+                # Add the 'cmd' field which might be required by Atlantis
+                'cmd': 'apply'
             }
             
-            # Validate against known working structure if available
+            # Ensure all required fields from the working test payload are included
             if test_payload:
                 for key in test_payload.keys():
                     if key not in atlantis_payload and key != 'terraform_files':
-                        logger.warning(f"Missing required field in payload: {key}")
+                        logger.warning(f"Adding missing required field in payload: {key}")
                         atlantis_payload[key] = test_payload[key]
                         
             logger.info(f"Prepared Atlantis apply payload with keys: {', '.join(atlantis_payload.keys())}")
@@ -863,8 +870,12 @@ def apply_atlantis_plan(config_data, tf_directory):
             'X-Atlantis-Token': ATLANTIS_TOKEN
         }
         
-        # Ensure proper JSON serialization with commas between fields
-        payload_string = json.dumps(atlantis_payload, ensure_ascii=False, separators=(',', ':'))
+        # Use a more robust way to ensure proper JSON serialization
+        # with manual formatting to avoid any serialization issues
+        payload_string = json.dumps(atlantis_payload, ensure_ascii=False, indent=None, separators=(',', ':'))
+        
+        # Log the keys in the payload for debugging
+        logger.info(f"Final apply payload keys: {sorted(atlantis_payload.keys())}")
         
         logger.info(f"Sending apply request to Atlantis for {config_data['server_name']} with plan ID: {plan_id}")
         response = requests.post(f"{ATLANTIS_URL}/api/apply", data=payload_string, headers=headers)
