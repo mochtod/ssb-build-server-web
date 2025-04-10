@@ -4,6 +4,28 @@
  * Handles dynamic behavior for the VM provisioning web application.
  */
 
+// Apply theme as early as possible to prevent flash of wrong theme
+(function() {
+    // Try to get theme from localStorage first
+    let savedTheme = localStorage.getItem('theme');
+    
+    // If theme not in localStorage, try to get it from cookie
+    if (!savedTheme) {
+        const themeCookie = document.cookie.split('; ').find(row => row.startsWith('theme='));
+        if (themeCookie) {
+            savedTheme = themeCookie.split('=')[1];
+        }
+    }
+    
+    // If still no theme, default to light
+    savedTheme = savedTheme || 'light';
+    
+    // Apply theme immediately
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
     // Server name preview
     initializeServerNamePreview();
@@ -32,7 +54,7 @@ function initializeThemeToggle() {
     
     if (themeToggleBtn && themeIconDark && themeIconLight && themeText) {
         // Check for saved theme preference or use default
-        const savedTheme = localStorage.getItem('theme') || 'dark';
+        const savedTheme = localStorage.getItem('theme') || 'light';
         
         // Apply the saved theme
         setTheme(savedTheme);
@@ -42,14 +64,22 @@ function initializeThemeToggle() {
             // Check current theme
             const isDarkMode = document.body.classList.contains('dark-mode');
             
-            // Toggle theme
-            if (isDarkMode) {
-                setTheme('light');
-                localStorage.setItem('theme', 'light');
-            } else {
-                setTheme('dark');
-                localStorage.setItem('theme', 'dark');
-            }
+            // Determine new theme
+            const newTheme = isDarkMode ? 'light' : 'dark';
+            
+            // Set theme in UI
+            setTheme(newTheme);
+            
+            // Store theme preference in localStorage
+            localStorage.setItem('theme', newTheme);
+            
+            // Also update server-side cookie
+            fetch(`/set_theme/${newTheme}`, { 
+                method: 'GET',
+                credentials: 'same-origin'
+            }).catch(error => {
+                console.error('Error setting theme cookie:', error);
+            });
         });
     }
     

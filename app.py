@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, make_response
 import os
 import json
 import uuid
@@ -1426,6 +1426,26 @@ output "vm_ids" {{
 """
     
     return tf_config
+
+@app.route('/set_theme/<theme>', methods=['GET'])
+def set_theme(theme):
+    """Set theme preference cookie"""
+    if theme not in ['light', 'dark']:
+        return jsonify({"status": "error", "message": "Invalid theme"})
+    
+    # Create response with redirect to referring page or home
+    response = make_response(redirect(request.referrer or url_for('index')))
+    
+    # Set theme cookie for 1 year
+    response.set_cookie('theme', theme, max_age=31536000)
+    
+    return response
+
+@app.route('/get_theme', methods=['GET'])
+def get_theme():
+    """Get theme preference from cookie"""
+    theme = request.cookies.get('theme', 'light')
+    return jsonify({"theme": theme})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5150)
