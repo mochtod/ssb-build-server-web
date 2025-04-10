@@ -86,33 +86,35 @@ workflows:
 
 ### GitHub Credentials
 
-Atlantis requires GitHub credentials to function properly. For testing purposes, you can use dummy credentials:
+Atlantis requires GitHub credentials to function properly. The current setup supports real GitHub integration through environment variables:
 
 ```
-# GitHub integration for Atlantis (using dummy values for testing)
-GITHUB_USER=fake
-GITHUB_TOKEN=fake
+# GitHub integration for Atlantis
+GITHUB_USER=your-github-username
+GITHUB_TOKEN=your-github-personal-access-token
+GH_WEBHOOK_SECRET=your-webhook-secret
 ```
 
-In the docker-compose.yml file, these dummy credentials are used directly in both the environment variables and the command:
+In the docker-compose.yml file, these variables are referenced:
 
 ```yaml
 environment:
-  # Other environment variables...
-  - ATLANTIS_GH_USER=fake
-  - ATLANTIS_GH_TOKEN=fake
-command: ["server", "--disable-repo-locking", "--repo-config=/etc/atlantis/repo-config.yaml", "--atlantis-url=http://atlantis:4141", "--gh-user=fake", "--gh-token=fake", "--repo-allowlist=*"]
+  # GitHub repository configuration
+  - ATLANTIS_REPO_ALLOWLIST=github.com/${GITHUB_USER:-your-username}/*
+  # GitHub authentication
+  - ATLANTIS_GH_USER=${GITHUB_USER:-your-github-username}
+  - ATLANTIS_GH_TOKEN=${GITHUB_TOKEN:-your-github-personal-access-token}
+  # GitHub webhook configuration
+  - ATLANTIS_GH_WEBHOOK_SECRET=${GH_WEBHOOK_SECRET:-your-webhook-secret}
 ```
 
-For production use, you'll need real GitHub credentials with the following permissions:
+GitHub credentials require the following permissions:
 - `repo` scope (full control of private repositories)
 - If you're using GitHub organizations, it will also need the `read:org` scope
 
-To generate a Personal Access Token (PAT) in GitHub:
-1. Go to GitHub → Settings → Developer settings → Personal access tokens → Generate new token
-2. Select the required permissions
-3. Generate the token and copy it
-4. Replace the dummy values in your `.env` file and docker-compose.yml
+For detailed instructions on:
+1. Creating a Personal Access Token (PAT): See `github-pat-setup.md`
+2. Setting up webhooks: See `github-webhook-setup.md`
 
 ### Repository Configuration
 

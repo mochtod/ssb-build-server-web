@@ -31,26 +31,22 @@ services:
     environment:
       - ATLANTIS_PORT=4141
       - ATLANTIS_ATLANTIS_URL=http://atlantis:4141
-      # Simplify and make more permissive for local development
-      - ATLANTIS_REPO_ALLOWLIST=*
+      # GitHub repository configuration
+      - ATLANTIS_REPO_ALLOWLIST=github.com/${GITHUB_USER:-your-username}/*
       - ATLANTIS_ENABLE_POLICY_CHECKS=false
       - ATLANTIS_AUTOPLAN_FILE_LIST=*.tf,*.tfvars
-      - ATLANTIS_WRITE_GIT_CREDS=false
+      - ATLANTIS_WRITE_GIT_CREDS=true
       - ATLANTIS_REPO_CONFIG=/etc/atlantis/repo-config.yaml
       - ATLANTIS_API_SECRET=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
-      # Disable GitHub webhook server to focus on API
-      - ATLANTIS_GH_WEBHOOK_SECRET=disabled
-      - ATLANTIS_GITLAB_WEBHOOK_SECRET=disabled
-      - ATLANTIS_BITBUCKET_WEBHOOK_SECRET=disabled
-      - ATLANTIS_BITBUCKET_USER=disabled
-      - ATLANTIS_BITBUCKET_TOKEN=disabled
-      - ATLANTIS_GH_USER=fake
-      - ATLANTIS_GH_TOKEN=fake
-      # These are critical for file-based operation without Git
+      # GitHub webhook configuration
+      - ATLANTIS_GH_WEBHOOK_SECRET=${GH_WEBHOOK_SECRET:-your-webhook-secret}
+      # GitHub authentication
+      - ATLANTIS_GH_USER=${GITHUB_USER:-your-github-username}
+      - ATLANTIS_GH_TOKEN=${GITHUB_TOKEN:-your-github-personal-access-token}
+      # Additional configuration
       - ATLANTIS_ALLOW_REPO_CONFIG=true
       - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=true
       - ATLANTIS_HIDE_PREV_PLAN_COMMENTS=true
-      - ATLANTIS_WRITE_MODE=file
       # Project directory configuration
       - ATLANTIS_DATA_DIR=/tmp
       - ATLANTIS_PROJECT_DIR=/terraform
@@ -60,9 +56,9 @@ services:
       "--disable-repo-locking", 
       "--repo-config=/etc/atlantis/repo-config.yaml", 
       "--atlantis-url=http://atlantis:4141", 
-      "--gh-user=fake",
-      "--gh-token=fake",
-      "--repo-allowlist=*",
+      "--gh-user=${GITHUB_USER:-your-github-username}",
+      "--gh-token=${GITHUB_TOKEN:-your-github-personal-access-token}",
+      "--repo-allowlist=github.com/${GITHUB_USER:-your-username}/*",
       "--web-basic-auth=false",
       "--tf-download=true"
     ]

@@ -603,14 +603,12 @@ def run_atlantis_plan(config_data, tf_directory):
     """Run a Terraform plan in Atlantis"""
     try:
         # Read the Terraform files
-        machine_tf_file = os.path.join(tf_directory, "machine.tf")
-        variables_file = os.path.join(tf_directory, "terraform.tfvars")
-        
-        with open(machine_tf_file, 'r') as f:
-            machine_tf_content = f.read()
-        
-        with open(variables_file, 'r') as f:
-            variables_content = f.read()
+        tf_files = {}
+        for filename in os.listdir(tf_directory):
+            if filename.endswith('.tf') or filename.endswith('.tfvars'):
+                file_path = os.path.join(tf_directory, filename)
+                with open(file_path, 'r') as f:
+                    tf_files[filename] = f.read()
         
         # Get the directory name for the Terraform files
         tf_dir_name = os.path.basename(tf_directory)
@@ -623,6 +621,12 @@ def run_atlantis_plan(config_data, tf_directory):
                 'name': 'terraform-repo',
                 'clone_url': 'https://github.com/fake/terraform-repo.git'
             },
+            'pull_request': {
+                'num': 1,  # Dummy value
+                'branch': 'main',
+                'author': config_data['build_owner']
+            },
+            'head_commit': 'abcd1234',  # Dummy commit hash
             'pull_num': 1,  # Dummy value
             'pull_author': config_data['build_owner'],
             'repo_rel_dir': tf_dir_name,
@@ -632,10 +636,7 @@ def run_atlantis_plan(config_data, tf_directory):
             'project_name': config_data['server_name'],
             
             # Terraform content
-            'terraform_files': {
-                'machine.tf': machine_tf_content,
-                'terraform.tfvars': variables_content
-            },
+            'terraform_files': tf_files,
             
             # Operation settings
             'plan_only': True,  # Only run plan, don't apply
