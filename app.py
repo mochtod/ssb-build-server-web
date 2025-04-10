@@ -612,13 +612,32 @@ def run_atlantis_plan(config_data, tf_directory):
         with open(variables_file, 'r') as f:
             variables_content = f.read()
         
-        # Prepare the Atlantis payload for containerized setup without GitHub
+        # Get the directory name for the Terraform files
+        tf_dir_name = os.path.basename(tf_directory)
+        
+        # Prepare the Atlantis payload for the file-based setup
         atlantis_payload = {
+            # Required fields for Atlantis API even in file-based mode
+            'repo': {
+                'owner': 'fake',
+                'name': 'terraform-repo',
+                'clone_url': 'https://github.com/fake/terraform-repo.git'
+            },
+            'pull_num': 1,  # Dummy value
+            'pull_author': config_data['build_owner'],
+            'repo_rel_dir': tf_dir_name,
+            
+            # Project information
             'workspace': config_data['environment'],
+            'project_name': config_data['server_name'],
+            
+            # Terraform content
             'terraform_files': {
                 'machine.tf': machine_tf_content,
                 'terraform.tfvars': variables_content
             },
+            
+            # Operation settings
             'plan_only': True,  # Only run plan, don't apply
             'comment': f"VM Provisioning Plan: {config_data['server_name']}",
             'user': config_data['build_owner'],
@@ -631,16 +650,29 @@ def run_atlantis_plan(config_data, tf_directory):
             'X-Atlantis-Token': ATLANTIS_TOKEN
         }
         
+        logger.info(f"Sending plan request to Atlantis for {config_data['server_name']}")
         response = requests.post(f"{ATLANTIS_URL}/api/plan", json=atlantis_payload, headers=headers)
         
         if response.status_code != 200:
+            error_message = f"Failed to trigger Atlantis plan: {response.text}"
+            logger.error(error_message)
             return {
                 'status': 'error',
-                'message': f"Failed to trigger Atlantis plan: {response.text}"
+                'message': error_message
             }
         
         plan_response = response.json()
         plan_id = plan_response.get('plan_id')
+        
+        if not plan_id:
+            error_message = "No plan ID returned from Atlantis"
+            logger.error(error_message)
+            return {
+                'status': 'error',
+                'message': error_message
+            }
+            
+        logger.info(f"Successfully initiated Atlantis plan with ID: {plan_id}")
         
         # Wait for plan to complete and fetch the results
         plan_url = f"{ATLANTIS_URL}/plan/{plan_id}"
@@ -679,6 +711,7 @@ Atlantis Plan URL: {plan_url}
         }
         
     except Exception as e:
+        logger.exception(f"Error running Terraform plan: {str(e)}")
         return {
             'status': 'error',
             'message': f"Error running Terraform plan: {str(e)}"
@@ -690,17 +723,33 @@ def apply_atlantis_plan(config_data, tf_directory):
         plan_id = config_data.get('plan_id')
         
         if not plan_id:
+            error_message = 'No plan ID found in configuration'
+            logger.error(error_message)
             return {
                 'status': 'error',
-                'message': 'No plan ID found in configuration'
+                'message': error_message
             }
         
-        # Prepare the Atlantis payload for containerized setup
+        # Get the directory name for the Terraform files
+        tf_dir_name = os.path.basename(tf_directory)
+        
+        # Prepare the Atlantis payload for the file-based setup
         atlantis_payload = {
+            # Required fields for Atlantis API even in file-based mode
+            'repo': {
+                'owner': 'fake',
+                'name': 'terraform-repo',
+                'clone_url': 'https://github.com/fake/terraform-repo.git'
+            },
+            'pull_num': 1,  # Dummy value
+            'pull_author': config_data['build_owner'],
+            'repo_rel_dir': tf_dir_name,
             'plan_id': plan_id,
             'comment': f"Applying approved VM config: {config_data['server_name']}",
             'user': config_data['build_owner'],
-            'workspace': config_data['environment']
+            'workspace': config_data['environment'],
+            'project_name': config_data['server_name'],
+            'verbose': True
         }
         
         # Call Atlantis API to apply
@@ -709,16 +758,29 @@ def apply_atlantis_plan(config_data, tf_directory):
             'X-Atlantis-Token': ATLANTIS_TOKEN
         }
         
+        logger.info(f"Sending apply request to Atlantis for {config_data['server_name']} with plan ID: {plan_id}")
         response = requests.post(f"{ATLANTIS_URL}/api/apply", json=atlantis_payload, headers=headers)
         
         if response.status_code != 200:
+            error_message = f"Failed to trigger Atlantis apply: {response.text}"
+            logger.error(error_message)
             return {
                 'status': 'error',
-                'message': f"Failed to trigger Atlantis apply: {response.text}"
+                'message': error_message
             }
         
         apply_response = response.json()
         apply_id = apply_response.get('apply_id')
+        
+        if not apply_id:
+            error_message = "No apply ID returned from Atlantis"
+            logger.error(error_message)
+            return {
+                'status': 'error',
+                'message': error_message
+            }
+            
+        logger.info(f"Successfully initiated Atlantis apply with ID: {apply_id}")
         
         # Generate build receipt
         build_url = f"{ATLANTIS_URL}/apply/{apply_id}"
@@ -750,6 +812,7 @@ NEXT STEPS:
         }
         
     except Exception as e:
+        logger.exception(f"Error applying Terraform plan: {str(e)}")
         return {
             'status': 'error',
             'message': f"Error applying Terraform plan: {str(e)}"
