@@ -30,7 +30,7 @@ USER appuser
 #     git config --global user.email "vm-provision@chrobinson.com"
 
 # # Expose the application port
-EXPOSE 5000
+EXPOSE 5150
 
 # Start the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5150", "app:app"]
