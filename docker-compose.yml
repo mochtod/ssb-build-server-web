@@ -37,7 +37,9 @@ services:
       - ATLANTIS_WRITE_GIT_CREDS=false
       - ATLANTIS_REPO_CONFIG=/etc/atlantis/repo-config.yaml
       - ATLANTIS_API_SECRET=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
-    command: ["server", "--disable-repo-locking", "--repo-config=/etc/atlantis/repo-config.yaml", "--atlantis-url=http://atlantis:4141"]
+      - ATLANTIS_GH_USER=fake
+      - ATLANTIS_GH_TOKEN=fake
+    command: ["server", "--disable-repo-locking", "--repo-config=/etc/atlantis/repo-config.yaml", "--atlantis-url=http://atlantis:4141", "--gh-user=fake", "--gh-token=fake", "--repo-allowlist=*"]
     volumes:
       - ./atlantis-config:/etc/atlantis
       - ./terraform:/terraform

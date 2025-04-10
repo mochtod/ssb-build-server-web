@@ -14,6 +14,8 @@ The current focus is on testing and validating the end-to-end workflow with the 
 - Creation of detailed documentation for containerized Atlantis setup
 - Combination of the SSB Build Server Web and VM workspace repositories
 - Configuration of Docker Compose for the combined setup
+- Added GitHub integration for Atlantis in docker-compose.yml and .env
+- Updated Atlantis configuration to use dummy GitHub credentials for testing
 
 ## Current State
 
@@ -110,11 +112,13 @@ The application is in a mostly functional state:
 1. **netbox_token**: Authentication token for NetBox API
 
 ### Atlantis Configuration
-For containerized Atlantis setup without GitHub:
+For containerized Atlantis setup with GitHub integration:
 1. **ATLANTIS_PORT**: Port for Atlantis server (default: 4141)
 2. **ATLANTIS_CONFIG**: Path to Atlantis configuration file
 3. **ATLANTIS_REPO_ALLOWLIST**: List of allowed repositories (can be set to "*" for all)
 4. **ATLANTIS_REPO_CONFIG**: Path to repository configuration file
+5. **GITHUB_USER**: GitHub username for Atlantis integration
+6. **GITHUB_TOKEN**: GitHub personal access token with repo scope for Atlantis integration
 
 ## Risks and Mitigations
 
