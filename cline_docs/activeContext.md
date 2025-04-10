@@ -20,6 +20,12 @@ The current focus is on testing and validating the end-to-end workflow with the 
 - Created multiple test scripts to diagnose and resolve API formatting problems
 - Added simulation capability for plan and apply operations when API fails
 - Created UI testing framework for automated workflow validation
+- Added an admin settings page for environment variable management
+- Implemented secure password hashing system with bcrypt for user authentication
+- Enhanced Atlantis integration with direct VM provisioning fallback
+- Created a unified base template for consistent layout and navigation
+- Added connection testing functionality for external services
+- Implemented an end-to-end test script for workflow validation
 
 ## Current State
 
