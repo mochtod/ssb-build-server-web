@@ -602,16 +602,23 @@ def add_user():
 def run_atlantis_plan(config_data, tf_directory):
     """Run a Terraform plan in Atlantis"""
     try:
-        # Read the Terraform files
+        # Prepare necessary files for the plan
+        # 1. Copy vm-workspace files if they don't exist
+        prepare_terraform_files(tf_directory, config_data)
+        
+        # 2. Read all Terraform files in the directory
         tf_files = {}
         for filename in os.listdir(tf_directory):
-            if filename.endswith('.tf') or filename.endswith('.tfvars'):
+            if filename.endswith('.tf') or filename.endswith('.tfvars') or filename.endswith('.py'):
                 file_path = os.path.join(tf_directory, filename)
                 with open(file_path, 'r') as f:
                     tf_files[filename] = f.read()
         
         # Get the directory name for the Terraform files
         tf_dir_name = os.path.basename(tf_directory)
+        
+        # Generate a unique hostname for this VM
+        vm_hostname = f"{config_data['server_name']}-{config_data['start_number']}"
         
         # Prepare the Atlantis payload for the file-based setup
         atlantis_payload = {
@@ -631,16 +638,16 @@ def run_atlantis_plan(config_data, tf_directory):
             'pull_author': config_data['build_owner'],
             'repo_rel_dir': tf_dir_name,
             
-            # Project information
+            # Project information - use the hostname as the project name
             'workspace': config_data['environment'],
-            'project_name': config_data['server_name'],
+            'project_name': vm_hostname,
             
             # Terraform content
             'terraform_files': tf_files,
             
             # Operation settings
             'plan_only': True,  # Only run plan, don't apply
-            'comment': f"VM Provisioning Plan: {config_data['server_name']}",
+            'comment': f"VM Provisioning Plan: {vm_hostname}",
             'user': config_data['build_owner'],
             'verbose': True
         }
@@ -717,6 +724,52 @@ Atlantis Plan URL: {plan_url}
             'status': 'error',
             'message': f"Error running Terraform plan: {str(e)}"
         }
+
+def prepare_terraform_files(tf_directory, config_data):
+    """Prepare all necessary Terraform files for a plan"""
+    # Copy necessary files from vm-workspace if they don't exist
+    files_to_copy = {
+        'providers.tf': 'vm-workspace/providers.tf',
+        'fetch_next_ip.py': 'vm-workspace/fetch_next_ip.py',
+        'data.tf': 'vm-workspace/data.tf',
+    }
+    
+    for target_name, source_path in files_to_copy.items():
+        target_path = os.path.join(tf_directory, target_name)
+        if not os.path.exists(target_path) and os.path.exists(source_path):
+            shutil.copy2(source_path, target_path)
+            
+            # If it's a Python file, make it executable
+            if target_name.endswith('.py'):
+                os.chmod(target_path, os.stat(target_path).st_mode | 0o111)
+    
+    # Create/Update terraform.tfvars with VSphere and NetBox specific variables
+    tfvars_path = os.path.join(tf_directory, 'terraform.tfvars')
+    existing_vars = {}
+    
+    # Read existing vars if file exists
+    if os.path.exists(tfvars_path):
+        with open(tfvars_path, 'r') as f:
+            for line in f:
+                if '=' in line and not line.strip().startswith('#'):
+                    key, value = line.split('=', 1)
+                    existing_vars[key.strip()] = value.strip()
+    
+    # Add necessary variables that might be missing
+    additional_vars = {
+        'netbox_token': f'"{os.environ.get("NETBOX_TOKEN", "netbox-api-token")}"',
+        'netbox_api_url': f'"{os.environ.get("NETBOX_URL", "https://netbox.example.com/api")}"',
+        'vsphere_server': f'"{os.environ.get("VSPHERE_SERVER", "vsphere-server")}"'
+    }
+    
+    for key, value in additional_vars.items():
+        if key not in existing_vars:
+            existing_vars[key] = value
+    
+    # Write back the combined variables
+    with open(tfvars_path, 'w') as f:
+        for key, value in existing_vars.items():
+            f.write(f"{key} = {value}\n")
 
 def apply_atlantis_plan(config_data, tf_directory):
     """Apply a Terraform plan in Atlantis"""
