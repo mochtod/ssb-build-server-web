@@ -2,7 +2,7 @@ services:
   web:
     build: .
     ports:
-      - "5150:5000"  # Ensure proper port mapping for create VM app
+      - "5150:5150"  # Map port 5150 for the Flask app
     volumes:
       - .:/app
       - ./configs:/app/configs
