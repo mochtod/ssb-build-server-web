@@ -2,6 +2,45 @@
 
 {% block title %}Admin Settings{% endblock %}
 
+{% block head %}
+{{ super() }}
+<style>
+.connection-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+}
+.service-status {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 4px;
+}
+.service-status.connected {
+    background-color: rgba(25, 135, 84, 0.1);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+}
+.service-status.disconnected {
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+.service-status.unknown {
+    background-color: rgba(108, 117, 125, 0.1);
+    border: 1px solid rgba(108, 117, 125, 0.2);
+}
+.connection-details {
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+.connection-message {
+    font-size: 0.9rem;
+    margin-top: 5px;
+    font-style: italic;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <h1>Application Settings</h1>
@@ -177,93 +216,75 @@
     </div>
     
     <div class="card">
-        <div class="card-header">
-            <h2>Connection Tests</h2>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2>Connection Status</h2>
+            <div>
+                <button id="refreshConnectionStatus" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Now
+                </button>
+                <span id="connectionStatusLastChecked" class="ms-2 text-muted small"></span>
+            </div>
         </div>
         <div class="card-body">
+            <div class="alert alert-info mb-3" id="connectionStatusInfo">
+                Checking connection status...
+            </div>
+            
             <div class="row">
+                <!-- VSphere Connection Status -->
                 <div class="col-md-4 mb-3">
                     <div class="card h-100">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">vSphere Connection</h5>
-                            <div class="connection-status mb-3">
-                                {% with messages = get_flashed_messages(with_categories=true) %}
-                                    {% for category, message in messages %}
-                                        {% if 'vSphere' in message %}
-                                            {% if category == 'success' %}
-                                                <div class="connection-indicator bg-success mb-2" title="Connected"></div>
-                                                <small class="text-success">Connected</small>
-                                            {% else %}
-                                                <div class="connection-indicator bg-danger mb-2" title="Not Connected"></div>
-                                                <small class="text-danger">Not Connected</small>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endwith %}
-                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'in', ['vSphere'])|list %}
-                                    <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
-                                    <small class="text-muted">Not Tested</small>
-                                {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title">vSphere</h5>
+                                <div id="vsphereStatusIndicator" class="connection-indicator bg-secondary" title="Checking..."></div>
                             </div>
-                            <form method="POST" action="{{ url_for('admin_test_connection', service='vsphere') }}">
+                            <div id="vsphereStatus" class="service-status unknown">
+                                <div id="vsphereStatusText">Checking connection...</div>
+                                <div id="vsphereStatusMessage" class="connection-message"></div>
+                                <div id="vsphereStatusDetails" class="connection-details"></div>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_test_connection', service='vsphere') }}" class="mt-3">
                                 <button type="submit" class="btn btn-primary w-100">Test Connection</button>
                             </form>
                         </div>
                     </div>
                 </div>
+                
+                <!-- Atlantis Connection Status -->
                 <div class="col-md-4 mb-3">
                     <div class="card h-100">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">Atlantis Connection</h5>
-                            <div class="connection-status mb-3">
-                                {% with messages = get_flashed_messages(with_categories=true) %}
-                                    {% for category, message in messages %}
-                                        {% if 'Atlantis' in message %}
-                                            {% if category == 'success' %}
-                                                <div class="connection-indicator bg-success mb-2" title="Connected"></div>
-                                                <small class="text-success">Connected</small>
-                                            {% else %}
-                                                <div class="connection-indicator bg-danger mb-2" title="Not Connected"></div>
-                                                <small class="text-danger">Not Connected</small>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endwith %}
-                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'in', ['Atlantis'])|list %}
-                                    <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
-                                    <small class="text-muted">Not Tested</small>
-                                {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title">Atlantis</h5>
+                                <div id="atlantisStatusIndicator" class="connection-indicator bg-secondary" title="Checking..."></div>
                             </div>
-                            <form method="POST" action="{{ url_for('admin_test_connection', service='atlantis') }}">
+                            <div id="atlantisStatus" class="service-status unknown">
+                                <div id="atlantisStatusText">Checking connection...</div>
+                                <div id="atlantisStatusMessage" class="connection-message"></div>
+                                <div id="atlantisStatusDetails" class="connection-details"></div>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_test_connection', service='atlantis') }}" class="mt-3">
                                 <button type="submit" class="btn btn-primary w-100">Test Connection</button>
                             </form>
                         </div>
                     </div>
                 </div>
+                
+                <!-- NetBox Connection Status -->
                 <div class="col-md-4 mb-3">
                     <div class="card h-100">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">NetBox Connection</h5>
-                            <div class="connection-status mb-3">
-                                {% with messages = get_flashed_messages(with_categories=true) %}
-                                    {% for category, message in messages %}
-                                        {% if 'NetBox' in message %}
-                                            {% if category == 'success' %}
-                                                <div class="connection-indicator bg-success mb-2" title="Connected"></div>
-                                                <small class="text-success">Connected</small>
-                                            {% else %}
-                                                <div class="connection-indicator bg-danger mb-2" title="Not Connected"></div>
-                                                <small class="text-danger">Not Connected</small>
-                                            {% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endwith %}
-                                {% if not get_flashed_messages(with_categories=true)|selectattr(1, 'in', ['NetBox'])|list %}
-                                    <div class="connection-indicator bg-secondary mb-2" title="Not Tested"></div>
-                                    <small class="text-muted">Not Tested</small>
-                                {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title">NetBox</h5>
+                                <div id="netboxStatusIndicator" class="connection-indicator bg-secondary" title="Checking..."></div>
                             </div>
-                            <form method="POST" action="{{ url_for('admin_test_connection', service='netbox') }}">
+                            <div id="netboxStatus" class="service-status unknown">
+                                <div id="netboxStatusText">Checking connection...</div>
+                                <div id="netboxStatusMessage" class="connection-message"></div>
+                                <div id="netboxStatusDetails" class="connection-details"></div>
+                            </div>
+                            <form method="POST" action="{{ url_for('admin_test_connection', service='netbox') }}" class="mt-3">
                                 <button type="submit" class="btn btn-primary w-100">Test Connection</button>
                             </form>
                         </div>
@@ -273,4 +294,124 @@
         </div>
     </div>
 </div>
+
+<script>
+/**
+ * Updates the UI for a service's connection status
+ */
+function updateServiceStatus(service, status) {
+    const indicator = document.getElementById(`${service}StatusIndicator`);
+    const statusDiv = document.getElementById(`${service}Status`);
+    const statusText = document.getElementById(`${service}StatusText`);
+    const statusMessage = document.getElementById(`${service}StatusMessage`);
+    const statusDetails = document.getElementById(`${service}StatusDetails`);
+    
+    // Reset classes
+    statusDiv.classList.remove('connected', 'disconnected', 'unknown');
+    
+    if (status.success) {
+        // Connected
+        indicator.className = 'connection-indicator bg-success';
+        indicator.title = 'Connected';
+        statusDiv.classList.add('connected');
+        statusText.textContent = 'Connected';
+        statusMessage.textContent = status.message || '';
+        
+        // Display details if available
+        if (status.details && Object.keys(status.details).length > 0) {
+            let detailsHtml = '';
+            
+            if (service === 'vsphere' && status.details.version) {
+                detailsHtml += `Version: ${status.details.version}<br>`;
+                if (status.details.datacenters) {
+                    detailsHtml += `Datacenters: ${status.details.datacenters.length}`;
+                }
+            } else if (service === 'atlantis' && status.details.url) {
+                detailsHtml += `URL: ${status.details.url}`;
+            } else if (service === 'netbox' && status.details.version) {
+                detailsHtml += `Version: ${status.details.version}`;
+            }
+            
+            statusDetails.innerHTML = detailsHtml;
+        } else {
+            statusDetails.innerHTML = '';
+        }
+    } else {
+        // Disconnected
+        indicator.className = 'connection-indicator bg-danger';
+        indicator.title = 'Not Connected';
+        statusDiv.classList.add('disconnected');
+        statusText.textContent = 'Not Connected';
+        statusMessage.textContent = status.message || 'Could not connect to service';
+        statusDetails.innerHTML = '';
+    }
+}
+
+/**
+ * Fetches and updates the connection status for all services
+ */
+function checkConnectionStatus() {
+    // Show loading state
+    document.getElementById('connectionStatusInfo').textContent = 'Checking connection status...';
+    document.getElementById('connectionStatusInfo').classList.remove('d-none', 'alert-success', 'alert-danger');
+    document.getElementById('connectionStatusInfo').classList.add('alert-info');
+    
+    fetch('/api/connection_status')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update last checked time
+            const timestamp = new Date(data.timestamp);
+            document.getElementById('connectionStatusLastChecked').textContent = 
+                `Last checked: ${timestamp.toLocaleTimeString()}`;
+            
+            // Update service statuses
+            updateServiceStatus('vsphere', data.connections.vsphere);
+            updateServiceStatus('atlantis', data.connections.atlantis);
+            updateServiceStatus('netbox', data.connections.netbox);
+            
+            // Update overall status
+            const allConnected = 
+                data.connections.vsphere.success && 
+                data.connections.atlantis.success;
+                
+            // NetBox is optional, so don't require it for overall success
+            if (allConnected) {
+                document.getElementById('connectionStatusInfo').textContent = 
+                    'All required services are connected and operational.';
+                document.getElementById('connectionStatusInfo').classList.remove('alert-info', 'alert-danger');
+                document.getElementById('connectionStatusInfo').classList.add('alert-success');
+            } else {
+                document.getElementById('connectionStatusInfo').textContent = 
+                    'One or more required services are not connected. Check the status below.';
+                document.getElementById('connectionStatusInfo').classList.remove('alert-info', 'alert-success');
+                document.getElementById('connectionStatusInfo').classList.add('alert-danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking connection status:', error);
+            document.getElementById('connectionStatusInfo').textContent = 
+                `Error checking connection status: ${error.message}`;
+            document.getElementById('connectionStatusInfo').classList.remove('alert-info', 'alert-success');
+            document.getElementById('connectionStatusInfo').classList.add('alert-danger');
+        });
+}
+
+// Check immediately on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkConnectionStatus();
+    
+    // Set up periodic checking every 60 seconds
+    setInterval(checkConnectionStatus, 60000);
+    
+    // Set up manual refresh button
+    document.getElementById('refreshConnectionStatus').addEventListener('click', function() {
+        checkConnectionStatus();
+    });
+});
+</script>
 {% endblock %}

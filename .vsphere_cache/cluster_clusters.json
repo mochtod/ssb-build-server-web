@@ -1,0 +1,187 @@
+{
+  "clusters": [
+    {
+      "name": "dc2-prod-cl20-rancher",
+      "id": "domain-c11613603",
+      "type": "Cluster",
+      "datacenter": "ebdc-prodk8s",
+      "host_count": 9
+    },
+    {
+      "name": "dc2-prod-cl41-kub",
+      "id": "domain-c9338904",
+      "type": "Cluster",
+      "datacenter": "ebdc-prodk8s",
+      "host_count": 3
+    },
+    {
+      "name": "decom",
+      "id": "domain-c11832783",
+      "type": "Cluster",
+      "datacenter": "ebdc-npk8s",
+      "host_count": 3
+    },
+    {
+      "name": "dc2-np-cl40-kub",
+      "id": "domain-c8016316",
+      "type": "Cluster",
+      "datacenter": "ebdc-npk8s",
+      "host_count": 5
+    },
+    {
+      "name": "dc2-np-cl20-rancher",
+      "id": "domain-c11593742",
+      "type": "Cluster",
+      "datacenter": "ebdc-npk8s",
+      "host_count": 9
+    },
+    {
+      "name": "dc2-prod8-edi",
+      "id": "domain-c10686923",
+      "type": "Cluster",
+      "datacenter": "ebdc-edi",
+      "host_count": 4
+    },
+    {
+      "name": "dc2-prod20-kubespray",
+      "id": "domain-c11666645",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 11
+    },
+    {
+      "name": "DC2-PROD20-KUB",
+      "id": "domain-c7150353",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 2
+    },
+    {
+      "name": "dc2-cl50-mgmt",
+      "id": "domain-c11682478",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 2
+    },
+    {
+      "name": "dc2-prod-cl70-windows",
+      "id": "domain-c8088291",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 14
+    },
+    {
+      "name": "DC2-PROD12-VOIP",
+      "id": "domain-c3778922",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 5
+    },
+    {
+      "name": "DC2-PROD11-KUB",
+      "id": "domain-c3310246",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 18
+    },
+    {
+      "name": "prod-cl60-lin",
+      "id": "domain-c9946801",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 8
+    },
+    {
+      "name": "DC2-PROD50-Mgmt",
+      "id": "domain-c7334464",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 1
+    },
+    {
+      "name": "dc2-prod-cl60-linux",
+      "id": "domain-c8654436",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 10
+    },
+    {
+      "name": "prod-cl71-win",
+      "id": "domain-c11569224",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 7
+    },
+    {
+      "name": "dc2-prod-cl71-windows-don't-build-here",
+      "id": "domain-c9461462",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 29
+    },
+    {
+      "name": "dc2-prod-cl31-dmz",
+      "id": "domain-c8107730",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 2
+    },
+    {
+      "name": "prod-cl70-win",
+      "id": "domain-c9946803",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 7
+    },
+    {
+      "name": "build",
+      "id": "domain-c11815092",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 11
+    },
+    {
+      "name": "prod-cl61-lin",
+      "id": "domain-c11569222",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 8
+    },
+    {
+      "name": "np-cl20-kubespray",
+      "id": "domain-c10347033",
+      "type": "Cluster",
+      "datacenter": "EBDC NONPROD",
+      "host_count": 10
+    },
+    {
+      "name": "DC2-NP11-KUB",
+      "id": "domain-c3310244",
+      "type": "Cluster",
+      "datacenter": "EBDC NONPROD",
+      "host_count": 3
+    },
+    {
+      "name": "np-cl60-lin",
+      "id": "domain-c9891266",
+      "type": "Cluster",
+      "datacenter": "EBDC NONPROD",
+      "host_count": 10
+    },
+    {
+      "name": "DC2-EBDC-FWHosts",
+      "id": "domain-c6194930",
+      "type": "Cluster",
+      "datacenter": "EBDC NONPROD",
+      "host_count": 2
+    },
+    {
+      "name": "np-cl70-win",
+      "id": "domain-c9814669",
+      "type": "Cluster",
+      "datacenter": "EBDC NONPROD",
+      "host_count": 15
+    }
+  ],
+  "timestamp": "2025-04-11T20:04:41.584223"
+}

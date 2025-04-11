@@ -383,6 +383,60 @@ def get_vsphere_resources(use_cache=True, force_refresh=False, target_datacenter
         }
     )
 
+def get_minimal_vsphere_resources(use_cache=True, target_datacenters=None):
+    """
+    Get only the top 10 resources from each category for initial display.
+    
+    Args:
+        use_cache: Whether to use cached data if available
+        target_datacenters: List of datacenter names to target (limits scope)
+        
+    Returns:
+        dict: Dictionary with limited resource pools, datastores, networks, and templates
+    """
+    loader = get_loader()
+    
+    # Very small limits for fast initial loading
+    minimal_limits = {
+        'resource_pools': 10,
+        'datastores': 10,
+        'networks': 10,
+        'templates': 10
+    }
+    
+    # Try to get resources from cache first
+    if use_cache:
+        # Check if cache exists for all resource types
+        resource_types = ['resource_pools', 'datastores', 'networks', 'templates']
+        cached_resources = {}
+        all_cached = True
+        
+        for resource_type in resource_types:
+            if loader._is_cache_valid(resource_type):
+                # Load from cache but only take the top N
+                full_resources = loader._load_cache(resource_type)
+                if full_resources:
+                    cached_resources[resource_type] = full_resources[:minimal_limits[resource_type]]
+                else:
+                    all_cached = False
+                    break
+            else:
+                all_cached = False
+                break
+        
+        if all_cached:
+            logger.info("Using cached vSphere resources (minimal set)")
+            return cached_resources
+    
+    # If cache not available, get minimal resources directly
+    logger.info("Fetching minimal set of vSphere resources")
+    return loader.get_vsphere_resources(
+        use_cache=use_cache,
+        force_refresh=False,
+        target_datacenters=target_datacenters,
+        resource_limits=minimal_limits
+    )
+
 def get_default_resources():
     """Get default resources when vSphere connection fails."""
     # Default resource IDs

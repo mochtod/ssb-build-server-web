@@ -20,6 +20,10 @@ import logging
 from vsphere_utils import test_vsphere_connection
 import vsphere_optimized_loader
 from vsphere_resource_functions import generate_variables_file, generate_terraform_config
+from vsphere_resource_validator import verify_vsphere_resources, validate_default_pool, with_resource_validation
+from atlantis_api import run_atlantis_plan, run_atlantis_apply, check_atlantis_health, AtlantisApiError
+from terraform_validator import validate_terraform_files, validate_template_compatibility
+from container_discovery import get_atlantis_url, check_container_health
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
@@ -335,26 +339,33 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    # Get VSphere resources from the resource manager
-    # This will return either cached resources or defaults
-    vs_resources = resource_manager.get_resources()
+    # Initially load only minimal set of resources (top 10) for faster page load
+    from vsphere_optimized_loader import get_minimal_vsphere_resources
+    
+    # Get target datacenters from environment variable, if set
+    target_dcs = os.environ.get('VSPHERE_DATACENTERS', '').split(',')
+    target_dcs = [dc.strip() for dc in target_dcs if dc.strip()]
+    
+    # Get minimal VSphere resources from the optimized loader
+    vs_resources = get_minimal_vsphere_resources(
+        use_cache=True, 
+        target_datacenters=target_dcs if target_dcs else None
+    )
     
     # Get loading status
     resource_status = resource_manager.get_status()
     
-    # No need to get default IDs from environment variables anymore
-    # Resources will be set per-VM based on user selection
-    
-    logger.info(f"Using resources: {len(vs_resources['resource_pools'])} resource pools, "
+    # Log what we're using initially
+    logger.info(f"Using minimal resources for initial load: {len(vs_resources['resource_pools'])} resource pools, "
                f"{len(vs_resources['datastores'])} datastores, "
                f"{len(vs_resources['networks'])} networks, "
                f"{len(vs_resources['templates'])} templates")
     
-    # If resources aren't currently loading and we have no last update, start a fetch
+    # Start background fetch of full resources if needed
     if (not resource_status['loading'] and not resource_status['last_update']):
         resource_manager.start_background_fetch()
         resource_status = resource_manager.get_status()
-        logger.info("Started background fetch of vSphere resources")
+        logger.info("Started background fetch of complete vSphere resources")
     
     return render_template('index.html', 
                           server_prefixes=SERVER_PREFIXES,
@@ -366,7 +377,8 @@ def index():
                           networks=vs_resources['networks'],
                           templates=vs_resources['templates'],
                           resource_status=resource_status,
-                          resources_loading=resource_status['loading'])
+                          resources_loading=resource_status['loading'],
+                          minimal_resources=True)  # Flag to indicate minimal resources
 
 @app.route('/submit', methods=['POST'])
 @login_required
@@ -381,15 +393,55 @@ def submit():
         disk_size = int(request.form.get('disk_size', DEFAULT_CONFIG['disk_size']))
         
         # Get vSphere resource selections
+        cluster = request.form.get('cluster', '')
         resource_pool = request.form.get('resource_pool', '')
         datastore = request.form.get('datastore', '')
         network = request.form.get('network', '')
         template = request.form.get('template', '')
         
         # Validate that all required vSphere resources are selected
-        if not resource_pool or not datastore or not network or not template:
-            flash('All vSphere resources (resource pool, datastore, network, and template) must be selected', 'error')
+        if not cluster or not resource_pool or not datastore or not network or not template:
+            flash('All vSphere resources (cluster, resource pool, datastore, network, and template) must be selected', 'error')
             return redirect(url_for('index'))
+        
+        # Get resources from cluster-based selection (better approach)
+        try:
+            import vsphere_cluster_resources
+            resources = vsphere_cluster_resources.get_resources_for_cluster(cluster, use_cache=True)
+        except Exception as e:
+            logger.error(f"Error getting cluster resources: {str(e)}")
+            # Fall back to resource manager if cluster-based retrieval fails
+            resources = resource_manager.get_resources()
+        
+        # Validate vSphere resources exist
+        temp_config = {
+            'vsphere_resources': {
+                'cluster_id': cluster,
+                'resource_pool_id': resource_pool,
+                'datastore_id': datastore,
+                'network_id': network,
+                'template_uuid': template
+            }
+        }
+        
+        valid, errors = verify_vsphere_resources(vs_resources, temp_config)
+        if not valid:
+            error_msg = "; ".join(f"{k}: {v}" for k, v in errors.items())
+            flash(f'Invalid vSphere resources: {error_msg}', 'error')
+            return redirect(url_for('index'))
+        
+        # Validate resource pool is the default pool
+        is_default, pool_msg = validate_default_pool(vs_resources, resource_pool)
+        if not is_default:
+            logger.warning(pool_msg)
+            flash(f'Warning: {pool_msg}', 'warning')
+            # Continue despite warning about resource pool
+        
+        # Validate template compatibility with requested specs (if applicable)
+        compat_valid, compat_msg = validate_template_compatibility(template, num_cpus, memory, disk_size, vs_resources)
+        if not compat_valid:
+            flash(f'Template compatibility issue: {compat_msg}', 'warning')
+            # Continue despite warning about template compatibility
         
         # Determine environment based on server prefix
         environment = "production" if server_prefix in ENVIRONMENTS["prod"] else "development"
@@ -594,15 +646,27 @@ def plan_config(request_id, timestamp):
         # Get path to Terraform files
         tf_directory = os.path.join(TERRAFORM_DIR, f"{request_id}_{timestamp}")
         
+        # Validate Terraform files before sending to Atlantis
+        is_valid = validate_terraform_files(tf_directory)
+        if not is_valid:
+            flash('Terraform files validation failed. Please check the configuration.', 'error')
+            return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))
+        
+        # Check if Atlantis is healthy
+        if not check_atlantis_health():
+            flash('Atlantis service is not healthy. Please try again later or contact an administrator.', 'error')
+            return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))
+        
         # Update plan status
         config_data['plan_status'] = 'planning'
         with open(config_file, 'w') as f:
             json.dump(config_data, f, indent=2)
         
-        # Call Atlantis API to run plan
-        plan_result = run_atlantis_plan(config_data, tf_directory)
-        
-        if plan_result and plan_result.get('status') == 'success':
+        try:
+            # Call Atlantis API to run plan with improved error handling
+            from atlantis_api import run_atlantis_plan as improved_plan
+            plan_result = improved_plan(config_data, tf_directory)
+            
             # Update config with plan info
             config_data['plan_status'] = 'completed'
             config_data['atlantis_url'] = plan_result.get('atlantis_url', '')
@@ -614,19 +678,23 @@ def plan_config(request_id, timestamp):
             
             flash('Terraform plan completed successfully!', 'success')
             return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
-        else:
+            
+        except AtlantisApiError as e:
+            # Handle Atlantis API errors gracefully
+            logger.error(f"Atlantis API error: {str(e)}")
+            
             # Update config with failure
             config_data['plan_status'] = 'failed'
-            error_message = plan_result.get('message', 'Unknown error occurred') if plan_result else 'Plan process failed'
-            config_data['plan_error'] = error_message
+            config_data['plan_error'] = str(e)
             
             with open(config_file, 'w') as f:
                 json.dump(config_data, f, indent=2)
             
-            flash(f'Plan failed: {error_message}', 'error')
+            flash(f'Plan failed: {str(e)}', 'error')
             return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))
         
     except Exception as e:
+        logger.exception(f"Error running Terraform plan: {str(e)}")
         flash(f'Error running Terraform plan: {str(e)}', 'error')
         return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))
 
@@ -728,18 +796,24 @@ def build_config(request_id, timestamp):
             flash('Cannot build: Configuration has not been approved by an administrator', 'error')
             return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
         
+        # Get path to Terraform files
+        tf_directory = os.path.join(TERRAFORM_DIR, f"{request_id}_{timestamp}")
+        
+        # Check if Atlantis is healthy
+        if not check_atlantis_health():
+            flash('Atlantis service is not healthy. Please try again later or contact an administrator.', 'error')
+            return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
+        
         # Update build status
         config_data['build_status'] = 'building'
         with open(config_file, 'w') as f:
             json.dump(config_data, f, indent=2)
         
-        # Get path to Terraform files
-        tf_directory = os.path.join(TERRAFORM_DIR, f"{request_id}_{timestamp}")
-        
-        # Call Atlantis API to apply plan
-        build_result = run_atlantis_apply(config_data, tf_directory)
-        
-        if build_result and build_result.get('status') == 'success':
+        try:
+            # Call Atlantis API to apply plan with improved error handling
+            from atlantis_api import run_atlantis_apply as improved_apply
+            build_result = improved_apply(config_data, tf_directory)
+            
             # Update config with build info
             config_data['build_status'] = 'completed'
             config_data['build_log'] = build_result.get('build_log', '')
@@ -750,19 +824,23 @@ def build_config(request_id, timestamp):
             
             flash('VM build completed successfully!', 'success')
             return redirect(url_for('build_receipt', request_id=request_id, timestamp=timestamp))
-        else:
+        
+        except AtlantisApiError as e:
+            # Handle Atlantis API errors gracefully
+            logger.error(f"Atlantis API error during apply: {str(e)}")
+            
             # Update config with failure
             config_data['build_status'] = 'failed'
-            error_message = build_result.get('message', 'Unknown error occurred') if build_result else 'Build process failed'
-            config_data['build_error'] = error_message
+            config_data['build_error'] = str(e)
             
             with open(config_file, 'w') as f:
                 json.dump(config_data, f, indent=2)
             
-            flash(f'Build failed: {error_message}', 'error')
+            flash(f'Build failed: {str(e)}', 'error')
             return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
             
     except Exception as e:
+        logger.exception(f"Error building configuration: {str(e)}")
         flash(f'Error building configuration: {str(e)}', 'error')
         return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
 
@@ -854,64 +932,75 @@ def admin_save_settings():
 def admin_test_connection(service):
     """Test connection to a service"""
     try:
+        # Determine if SSL verification should be disabled
+        # Default to environment variable if set, otherwise auto-detect based on URL
+        verify_ssl_str = request.form.get('verify_ssl', os.environ.get('VERIFY_SSL', ''))
+        if verify_ssl_str.lower() in ('false', 'no', '0'):
+            verify_ssl = False
+        elif verify_ssl_str.lower() in ('true', 'yes', '1'):
+            verify_ssl = True
+        else:
+            verify_ssl = None  # Let each service decide the default
+        
         if service == 'vsphere':
-            # Test vSphere connection
-            conn_result = test_vsphere_connection()
+            # Get vSphere credentials from environment
+            vsphere_server = os.environ.get('VSPHERE_SERVER', '')
+            vsphere_user = os.environ.get('VSPHERE_USER', '')
+            vsphere_password = os.environ.get('VSPHERE_PASSWORD', '')
+            
+            # Test vSphere connection with proper parameters
+            conn_result = test_vsphere_connection(
+                server=vsphere_server,
+                username=vsphere_user,
+                password=vsphere_password
+            )
+            
             if conn_result.get('success'):
                 flash('vSphere connection successful', 'success')
+                # Show additional details for successful connections
+                if 'details' in conn_result and conn_result['details']:
+                    version = conn_result['details'].get('version', 'unknown')
+                    flash(f'vSphere version: {version}', 'info')
             else:
                 flash(f'vSphere connection failed: {conn_result.get("message")}', 'error')
         
         elif service == 'atlantis':
-            # Test Atlantis connection
-            try:
-                atlantis_url = os.environ.get('ATLANTIS_URL', '')
-                atlantis_token = os.environ.get('ATLANTIS_TOKEN', '')
+            # Test Atlantis connection using our enhanced function
+            from atlantis_api import test_atlantis_connection
+            
+            # Add SSL verification parameter
+            conn_result = test_atlantis_connection(verify_ssl=verify_ssl)
+            
+            if conn_result.get('success'):
+                flash('Atlantis connection successful', 'success')
+                # Show URL if available
+                if 'details' in conn_result and conn_result['details'].get('url'):
+                    flash(f'Connected to: {conn_result["details"]["url"]}', 'info')
+            else:
+                flash(f'Atlantis connection failed: {conn_result.get("message")}', 'error')
                 
-                if not atlantis_url:
-                    flash('Atlantis URL is not configured', 'error')
-                    return redirect(url_for('admin_settings'))
-                
-                # Make a simple health check request
-                headers = {}
-                if atlantis_token:
-                    headers['X-Atlantis-Token'] = atlantis_token
-                
-                response = requests.get(f"{atlantis_url}/healthz", headers=headers, timeout=10)
-                
-                if response.status_code == 200:
-                    flash('Atlantis connection successful', 'success')
-                else:
-                    flash(f'Atlantis connection failed: HTTP {response.status_code}', 'error')
-            except Exception as e:
-                flash(f'Atlantis connection failed: {str(e)}', 'error')
+                # Special handling for SSL errors - suggest turning off SSL verification
+                if 'details' in conn_result and conn_result['details'].get('error_type') == 'ssl_error':
+                    flash('This appears to be an SSL certificate issue. Try setting ATLANTIS_VERIFY_SSL=false in your environment.', 'warning')
         
         elif service == 'netbox':
-            # Test NetBox connection
-            try:
-                netbox_url = os.environ.get('NETBOX_URL', '')
-                netbox_token = os.environ.get('NETBOX_TOKEN', '')
+            # Test NetBox connection using our new function
+            from netbox_api import test_netbox_connection
+            
+            # Add SSL verification parameter if NetBox API supports it
+            conn_result = test_netbox_connection(verify_ssl=verify_ssl)
+            
+            if conn_result.get('success'):
+                flash('NetBox connection successful', 'success')
+                # Show version information if available
+                if 'details' in conn_result and conn_result['details'].get('version'):
+                    flash(f'NetBox version: {conn_result["details"]["version"]}', 'info')
+            else:
+                flash(f'NetBox connection failed: {conn_result.get("message")}', 'error')
                 
-                if not netbox_url:
-                    flash('NetBox URL is not configured', 'error')
-                    return redirect(url_for('admin_settings'))
-                
-                # Make a simple request to the API
-                headers = {
-                    'Accept': 'application/json'
-                }
-                
-                if netbox_token:
-                    headers['Authorization'] = f'Token {netbox_token}'
-                
-                response = requests.get(f"{netbox_url}/status/", headers=headers, timeout=10)
-                
-                if response.status_code == 200:
-                    flash('NetBox connection successful', 'success')
-                else:
-                    flash(f'NetBox connection failed: HTTP {response.status_code}', 'error')
-            except Exception as e:
-                flash(f'NetBox connection failed: {str(e)}', 'error')
+                # Special handling for SSL errors - suggest turning off SSL verification
+                if 'details' in conn_result and conn_result['details'].get('error_type') == 'ssl_error':
+                    flash('This appears to be an SSL certificate issue. Try setting NETBOX_VERIFY_SSL=false in your environment.', 'warning')
         
         else:
             flash(f'Unknown service: {service}', 'error')
@@ -919,6 +1008,7 @@ def admin_test_connection(service):
         return redirect(url_for('admin_settings'))
     
     except Exception as e:
+        logger.exception(f"Error testing connection: {str(e)}")
         flash(f'Error testing connection: {str(e)}', 'error')
         return redirect(url_for('admin_settings'))
 
@@ -1061,6 +1151,176 @@ def run_atlantis_apply(config_data, tf_directory):
             'status': 'error',
             'message': str(e)
         }
+
+@app.route('/healthz')
+def healthz():
+    """Health check endpoint for container healthcheck"""
+    try:
+        # Check if we can load users to confirm app is working
+        users = load_users()
+        
+        # Check if Atlantis is healthy
+        atlantis_healthy = check_atlantis_health()
+        
+        # Return health status
+        response = {
+            'status': 'ok',
+            'timestamp': datetime.datetime.now().isoformat(),
+            'services': {
+                'atlantis': 'healthy' if atlantis_healthy else 'unhealthy'
+            }
+        }
+        
+        # If Atlantis is unhealthy, still return 200 but with unhealthy status
+        # This allows the app to start even if Atlantis is down
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/vsphere/clusters')
+@login_required
+def vsphere_clusters():
+    """Return all available vSphere clusters"""
+    try:
+        # Import the cluster resources module
+        import vsphere_cluster_resources
+        
+        # Get target datacenters from environment variable, if set
+        target_dcs = os.environ.get('VSPHERE_DATACENTERS', '').split(',')
+        target_dcs = [dc.strip() for dc in target_dcs if dc.strip()]
+        
+        # Get all clusters
+        clusters = vsphere_cluster_resources.get_clusters(
+            use_cache=True,
+            target_datacenters=target_dcs if target_dcs else None
+        )
+        
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'clusters': clusters
+        })
+    except Exception as e:
+        logger.exception(f"Error retrieving vSphere clusters: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere/clusters/<cluster_id>/resources')
+@login_required
+def vsphere_cluster_resources(cluster_id):
+    """Return all resources for a specific vSphere cluster"""
+    try:
+        # Import the cluster resources module
+        import vsphere_cluster_resources
+        
+        # Get resources for the specified cluster
+        resources = vsphere_cluster_resources.get_resources_for_cluster(
+            cluster_id=cluster_id,
+            use_cache=True
+        )
+        
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'cluster_id': cluster_id,
+            'cluster_name': resources.get('cluster_name', 'Unknown Cluster'),
+            'resource_pools': resources.get('resource_pools', []),
+            'datastores': resources.get('datastores', []),
+            'networks': resources.get('networks', []),
+            'templates': resources.get('templates', [])
+        })
+    except Exception as e:
+        logger.exception(f"Error retrieving resources for cluster {cluster_id}: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
+
+@app.route('/api/all_vsphere_resources')
+@login_required
+def all_vsphere_resources():
+    """Return all available VSphere resources (for lazy loading after page load)"""
+    try:
+        # Get resources from the resource manager
+        vs_resources = resource_manager.get_resources()
+        
+        # Check if we need to start a background refresh
+        resource_status = resource_manager.get_status()
+        if (not resource_status['loading'] and not resource_status['last_update']):
+            resource_manager.start_background_fetch()
+        
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'resource_pools': vs_resources['resource_pools'],
+            'datastores': vs_resources['datastores'],
+            'networks': vs_resources['networks'],
+            'templates': vs_resources['templates'],
+            'status': resource_manager.get_status()
+        })
+    except Exception as e:
+        logger.exception(f"Error retrieving vSphere resources: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
+
+@app.route('/api/connection_status')
+@role_required(ROLE_ADMIN)
+def connection_status():
+    """Return the current status of all connections for the admin dashboard"""
+    try:
+        # Get vSphere credentials from environment
+        vsphere_server = os.environ.get('VSPHERE_SERVER', '')
+        vsphere_user = os.environ.get('VSPHERE_USER', '')
+        vsphere_password = os.environ.get('VSPHERE_PASSWORD', '')
+        
+        # Test connections
+        vsphere_result = test_vsphere_connection(
+            server=vsphere_server,
+            username=vsphere_user,
+            password=vsphere_password
+        )
+        
+        # Import connection test functions
+        from atlantis_api import test_atlantis_connection
+        from netbox_api import test_netbox_connection
+        
+        atlantis_result = test_atlantis_connection()
+        netbox_result = test_netbox_connection()
+        
+        # Create response with detailed information
+        status = {
+            'timestamp': datetime.datetime.now().isoformat(),
+            'connections': {
+                'vsphere': {
+                    'success': vsphere_result.get('success', False),
+                    'message': vsphere_result.get('message', ''),
+                    'details': vsphere_result.get('details', {})
+                },
+                'atlantis': {
+                    'success': atlantis_result.get('success', False),
+                    'message': atlantis_result.get('message', ''),
+                    'details': atlantis_result.get('details', {})
+                },
+                'netbox': {
+                    'success': netbox_result.get('success', False),
+                    'message': netbox_result.get('message', ''),
+                    'details': netbox_result.get('details', {})
+                }
+            }
+        }
+        
+        return jsonify(status)
+    except Exception as e:
+        logger.exception(f"Error checking connection status: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
 
 @app.route('/build_receipt/<request_id>_<timestamp>')
 @login_required

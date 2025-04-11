@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   web:
     build: .
@@ -9,25 +11,44 @@ services:
       - ./terraform:/app/terraform
       - ./users.json:/app/users.json
       - ./vm-workspace:/app/vm-workspace
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5150/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     environment:
+      # Flask application config
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change_this_to_a_random_secure_key}
       - CONFIG_DIR=/app/configs
       - TERRAFORM_DIR=/app/terraform
       - USERS_FILE=/app/users.json
       - DEBUG=True
+      
+      # Container discovery config
+      - CONTAINER_NETWORK=app-network
+      
       # Atlantis integration
+      - ATLANTIS_HOST=atlantis 
+      - ATLANTIS_PORT=4141
       - ATLANTIS_URL=http://atlantis:4141
       - ATLANTIS_TOKEN=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
       - TIMEOUT=120
+      
       # VSphere connection
       - VSPHERE_USER=${VSPHERE_USER:-vsphere-username}
       - VSPHERE_PASSWORD=${VSPHERE_PASSWORD:-vsphere-password}
       - VSPHERE_SERVER=${VSPHERE_SERVER:-vsphere-server}
+      - VSPHERE_DATACENTERS=${VSPHERE_DATACENTERS:-}
+      
       # NetBox integration
+      - NETBOX_HOST=netbox
+      - NETBOX_PORT=8000
       - NETBOX_TOKEN=${NETBOX_TOKEN:-netbox-api-token}
       - NETBOX_URL=${NETBOX_URL:-https://netbox.example.com/api}
     depends_on:
-      - atlantis
+      atlantis:
+        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
@@ -36,6 +57,12 @@ services:
     image: ghcr.io/runatlantis/atlantis:latest
     ports:
       - "4141:4141"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4141/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     environment:
       - ATLANTIS_PORT=4141
       - ATLANTIS_ATLANTIS_URL=http://atlantis:4141
@@ -84,6 +111,62 @@ services:
       - app-network
     restart: unless-stopped
 
+  # Uncomment this section when you're ready to add NetBox support
+  # netbox:
+  #   image: netboxcommunity/netbox:latest
+  #   ports:
+  #     - "8000:8000"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/api/status/"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
+  #   environment:
+  #     - SUPERUSER_EMAIL=admin@example.com
+  #     - SUPERUSER_PASSWORD=admin
+  #     - ALLOWED_HOSTS=*
+  #     - DB_NAME=netbox
+  #     - DB_USER=netbox
+  #     - DB_PASSWORD=netbox
+  #     - DB_HOST=postgres
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+
+  # postgres:
+  #   image: postgres:13
+  #   environment:
+  #     - POSTGRES_USER=netbox
+  #     - POSTGRES_PASSWORD=netbox
+  #     - POSTGRES_DB=netbox
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "netbox"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+
+  # redis:
+  #   image: redis:6
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+
 networks:
   app-network:
     driver: bridge
@@ -92,3 +175,4 @@ volumes:
   configs:
   terraform:
   atlantis-data:
+  # pgdata:
