@@ -10,6 +10,8 @@ import shutil
 import tempfile
 import re
 import bcrypt
+import threading
+import time
 from werkzeug.utils import secure_filename
 from functools import wraps
 from git import Repo
@@ -20,6 +22,68 @@ import vsphere_resources
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
+
+class VSphereResourceManager:
+    """Manages asynchronous fetching of vSphere resources."""
+    
+    def __init__(self):
+        self.resources = vsphere_resources.get_default_resources()
+        self.status = {
+            'loading': False,
+            'last_update': None,
+            'error': None
+        }
+        self.lock = threading.RLock()
+    
+    def start_background_fetch(self):
+        """Start a background thread to fetch vSphere resources."""
+        with self.lock:
+            if self.status['loading']:
+                logger.info("Resource fetching already in progress")
+                return False
+            
+            self.status['loading'] = True
+            self.status['error'] = None
+        
+        thread = threading.Thread(target=self._fetch_resources)
+        thread.daemon = True
+        thread.start()
+        logger.info("Started background thread for vSphere resource fetching")
+        return True
+    
+    def _fetch_resources(self):
+        """Worker function to fetch vSphere resources."""
+        try:
+            logger.info("Background thread fetching vSphere resources")
+            resources = vsphere_resources.get_vsphere_resources(use_cache=True, force_refresh=True)
+            
+            with self.lock:
+                self.resources = resources
+                self.status['loading'] = False
+                self.status['last_update'] = time.time()
+                logger.info("Successfully updated vSphere resources in background")
+        except Exception as e:
+            logger.exception(f"Error fetching vSphere resources in background: {str(e)}")
+            with self.lock:
+                self.status['loading'] = False
+                self.status['error'] = str(e)
+    
+    def get_resources(self):
+        """Get the current resources (either cached or defaults)."""
+        with self.lock:
+            return self.resources
+    
+    def get_status(self):
+        """Get the current loading status."""
+        with self.lock:
+            status = self.status.copy()
+            if status['last_update']:
+                status['last_update_str'] = datetime.datetime.fromtimestamp(
+                    status['last_update']).strftime('%Y-%m-%d %H:%M:%S')
+            return status
+
+# Initialize vSphere resource manager
+resource_manager = VSphereResourceManager()
 
 # Configuration paths
 CONFIG_DIR = os.environ.get('CONFIG_DIR', 'configs')
@@ -262,37 +326,31 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    # Get VSphere resources
-    try:
-        # Fetch vSphere resources with a 10-second timeout
-        vs_resources = vsphere_resources.get_vsphere_resources(use_cache=True)
-        
-        # Get default IDs from environment variables
-        default_resource_pool_id = os.environ.get('RESOURCE_POOL_ID', 'resgroup-9814670')
-        default_dev_resource_pool_id = os.environ.get('DEV_RESOURCE_POOL_ID', 'resgroup-3310245')
-        default_datastore_id = os.environ.get('DATASTORE_ID', 'datastore-4395110')
-        default_network_id_prod = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393')
-        default_network_id_dev = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
-        default_template_id = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
-        
-        logger.info(f"Loaded {len(vs_resources['resource_pools'])} resource pools, "
-                   f"{len(vs_resources['datastores'])} datastores, "
-                   f"{len(vs_resources['networks'])} networks, "
-                   f"{len(vs_resources['templates'])} templates")
-        
-    except Exception as e:
-        logger.exception(f"Error loading vSphere resources: {str(e)}")
-        # Create default resources if API call fails
-        vs_resources = vsphere_resources.get_default_resources()
-        logger.warning("Using default vSphere resources due to error")
-        
-        # Setup default IDs
-        default_resource_pool_id = os.environ.get('RESOURCE_POOL_ID', 'resgroup-9814670')
-        default_dev_resource_pool_id = os.environ.get('DEV_RESOURCE_POOL_ID', 'resgroup-3310245')
-        default_datastore_id = os.environ.get('DATASTORE_ID', 'datastore-4395110')
-        default_network_id_prod = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393')
-        default_network_id_dev = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
-        default_template_id = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
+    # Get VSphere resources from the resource manager
+    # This will return either cached resources or defaults
+    vs_resources = resource_manager.get_resources()
+    
+    # Get loading status
+    resource_status = resource_manager.get_status()
+    
+    # Get default IDs from environment variables
+    default_resource_pool_id = os.environ.get('RESOURCE_POOL_ID', 'resgroup-9814670')
+    default_dev_resource_pool_id = os.environ.get('DEV_RESOURCE_POOL_ID', 'resgroup-3310245')
+    default_datastore_id = os.environ.get('DATASTORE_ID', 'datastore-4395110')
+    default_network_id_prod = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393')
+    default_network_id_dev = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
+    default_template_id = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
+    
+    logger.info(f"Using resources: {len(vs_resources['resource_pools'])} resource pools, "
+               f"{len(vs_resources['datastores'])} datastores, "
+               f"{len(vs_resources['networks'])} networks, "
+               f"{len(vs_resources['templates'])} templates")
+    
+    # If resources aren't currently loading and we have no last update, start a fetch
+    if (not resource_status['loading'] and not resource_status['last_update']):
+        resource_manager.start_background_fetch()
+        resource_status = resource_manager.get_status()
+        logger.info("Started background fetch of vSphere resources")
     
     return render_template('index.html', 
                           server_prefixes=SERVER_PREFIXES,
@@ -306,7 +364,9 @@ def index():
                           default_resource_pool_id=default_resource_pool_id,
                           default_datastore_id=default_datastore_id,
                           default_network_id=default_network_id_prod,
-                          default_template_id=default_template_id)
+                          default_template_id=default_template_id,
+                          resource_status=resource_status,
+                          resources_loading=resource_status['loading'])
 
 @app.route('/submit', methods=['POST'])
 @login_required
@@ -1493,6 +1553,41 @@ def get_theme():
     """Get theme preference from cookie"""
     theme = request.cookies.get('theme', 'light')
     return jsonify({"theme": theme})
+
+@app.route('/api/resource_status')
+@login_required
+def resource_status():
+    """API endpoint to check vSphere resource loading status."""
+    status = resource_manager.get_status()
+    
+    # If resources aren't currently loading but we have no data, start a fetch
+    if not status['loading'] and not status['last_update']:
+        resource_manager.start_background_fetch()
+        status = resource_manager.get_status()
+    
+    return jsonify({
+        'loading': status['loading'],
+        'last_update': status['last_update'],
+        'last_update_str': status.get('last_update_str', 'Never'),
+        'error': status['error'],
+        'resource_counts': {
+            'resource_pools': len(resource_manager.get_resources()['resource_pools']),
+            'datastores': len(resource_manager.get_resources()['datastores']),
+            'networks': len(resource_manager.get_resources()['networks']),
+            'templates': len(resource_manager.get_resources()['templates'])
+        }
+    })
+
+@app.route('/api/resources')
+@login_required
+def get_resources():
+    """API endpoint to get the current vSphere resources."""
+    resources = resource_manager.get_resources()
+    return jsonify(resources)
+
+# Initialize background tasks at startup instead of before_first_request (removed in Flask 2.3+)
+logger.info("Starting background vSphere resource fetching")
+resource_manager.start_background_fetch()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5150)
