@@ -6,3 +6,10 @@ GitPython==3.1.37
 requests==2.31.0
 bcrypt==4.0.1
 pyVmomi==8.0.0.1
+urllib3==2.0.4
+ipaddress==1.0.23
+backoff==2.2.1
+colorama==0.4.6
+jsonschema==4.19.0
+prometheus-client==0.17.1
+typing-extensions==4.7.1

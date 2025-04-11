@@ -1,45 +1,77 @@
 """
 Helper module for retrieving vSphere resources for VM provisioning.
+
+This module provides functions for retrieving VMware vSphere resources for VM provisioning.
+It uses an enhanced caching mechanism to reduce API calls and handle connection issues.
 """
 import os
 import ssl
 import logging
 import json
+import socket
 from datetime import datetime
 from pyVim import connect
 from pyVmomi import vim
 from urllib.error import URLError
 
+# Import configuration modules
+try:
+    from config import config
+    from vsphere_cache import vsphere_cache, cached_resource_fetcher
+except ImportError:
+    # Fall back to the old way if modules aren't available
+    logger.warning("Config or cache modules not available, using environment variables and basic caching")
+    config = None
+    vsphere_cache = None
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Cache for vSphere resources to avoid repeated API calls
-RESOURCE_CACHE = {
-    'timestamp': None,
-    'resource_pools': [],
-    'datastores': [],
-    'networks': [],
-    'templates': [],
-    'cache_duration': 3600  # Cache validity in seconds (1 hour)
-}
+# Get default resource IDs from config or environment variables
+def get_default_value(key, default_value):
+    """Get a configuration value from config module or environment variables."""
+    if config:
+        return config.get(key, default_value)
+    else:
+        return os.environ.get(key, default_value)
 
-# Default resource IDs from environment variables
-DEFAULT_RESOURCE_POOL_ID = os.environ.get('RESOURCE_POOL_ID', 'resgroup-9814670')
-DEFAULT_DEV_RESOURCE_POOL_ID = os.environ.get('DEV_RESOURCE_POOL_ID', 'resgroup-3310245')
-DEFAULT_DATASTORE_ID = os.environ.get('DATASTORE_ID', 'datastore-4395110')
-DEFAULT_NETWORK_ID_PROD = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393')
-DEFAULT_NETWORK_ID_DEV = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
-DEFAULT_TEMPLATE_UUID = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
+# Default resource IDs
+DEFAULT_RESOURCE_POOL_ID = get_default_value('RESOURCE_POOL_ID', 'resgroup-9814670')
+DEFAULT_DEV_RESOURCE_POOL_ID = get_default_value('DEV_RESOURCE_POOL_ID', 'resgroup-3310245')
+DEFAULT_DATASTORE_ID = get_default_value('DATASTORE_ID', 'datastore-4395110')
+DEFAULT_NETWORK_ID_PROD = get_default_value('NETWORK_ID_PROD', 'dvportgroup-4545393')
+DEFAULT_NETWORK_ID_DEV = get_default_value('NETWORK_ID_DEV', 'dvportgroup-4545393')
+DEFAULT_TEMPLATE_UUID = get_default_value('TEMPLATE_UUID', 'vm-11682491')
 
-def connect_to_vsphere(timeout=20):
-    """Connect to vSphere server using environment variables"""
-    server = os.environ.get('VSPHERE_SERVER')
-    username = os.environ.get('VSPHERE_USER')
-    password = os.environ.get('VSPHERE_PASSWORD')
+# Default connection parameters
+DEFAULT_TIMEOUT = int(get_default_value('VSPHERE_TIMEOUT', '30'))
+
+def connect_to_vsphere(server=None, username=None, password=None, timeout=None):
+    """
+    Connect to vSphere server
+    
+    Args:
+        server: vSphere server address (default: from config)
+        username: vSphere username (default: from config)
+        password: vSphere password (default: from config)
+        timeout: Connection timeout in seconds (default: from config)
+        
+    Returns:
+        ServiceInstance object or None if connection failed
+    """
+    # Get connection parameters from config if not provided
+    if not server:
+        server = get_default_value('VSPHERE_SERVER', None)
+    if not username:
+        username = get_default_value('VSPHERE_USER', None)
+    if not password:
+        password = get_default_value('VSPHERE_PASSWORD', None)
+    if not timeout:
+        timeout = DEFAULT_TIMEOUT
     
     if not (server and username and password):
-        logger.warning("Missing vSphere connection details in environment variables")
+        logger.warning("Missing vSphere connection details in configuration")
         return None
     
     try:
@@ -49,8 +81,7 @@ def connect_to_vsphere(timeout=20):
         
         logger.info(f"Connecting to vSphere server: {server}")
         
-        # Attempt connection with timeout
-        import socket
+        # Set socket timeout
         socket.setdefaulttimeout(timeout)
         
         # Attempt connection
@@ -69,7 +100,7 @@ def connect_to_vsphere(timeout=20):
         return service_instance
         
     except Exception as e:
-        logger.error(f"Error connecting to vSphere server: {str(e)}")
+        logger.error(f"Error connecting to vSphere server {server}: {str(e)}")
         return None
 
 def get_all_obj(content, vimtype, folder=None, recurse=True):
@@ -126,18 +157,24 @@ def get_resource_info(obj_type, obj, preferred_ids=None):
     
     return info
 
-def cache_is_valid():
-    """Check if the current cache is valid"""
-    if not RESOURCE_CACHE['timestamp']:
-        return False
-    
-    cache_age = (datetime.now() - RESOURCE_CACHE['timestamp']).total_seconds()
-    return cache_age < RESOURCE_CACHE['cache_duration']
 
-def get_vsphere_resources(use_cache=True, max_items=200):
+# Adding caching decorator if available
+if vsphere_cache:
+    get_all_resource_pools = cached_resource_fetcher('resource_pools')(get_all_obj)
+    get_all_datastores = cached_resource_fetcher('datastores')(get_all_obj)
+    get_all_networks = cached_resource_fetcher('networks')(get_all_obj)
+    get_all_templates = cached_resource_fetcher('templates')(get_all_obj)
+else:
+    # For backwards compatibility
+    get_all_resource_pools = get_all_obj
+    get_all_datastores = get_all_obj
+    get_all_networks = get_all_obj
+    get_all_templates = get_all_obj
+
+def get_vsphere_resources(use_cache=True, max_items=200, force_refresh=False):
     """
     Get all vSphere resources needed for VM provisioning
-    
+        force_refresh: Whether to force refresh the cache
     Args:
         use_cache: Whether to use cached data if available
         max_items: Maximum number of items to retrieve for each resource type
@@ -145,36 +182,24 @@ def get_vsphere_resources(use_cache=True, max_items=200):
     Returns:
         dict: Dictionary with resource pools, datastores, networks, and templates
     """
-    # First check if we have a cached JSON file
-    cache_file = 'vsphere_resources.json'
-    if use_cache:
-        # Try to load from file cache first
-        try:
-            if os.path.exists(cache_file) and os.path.getsize(cache_file) > 0:
-                file_modified_time = datetime.fromtimestamp(os.path.getmtime(cache_file))
-                cache_age_seconds = (datetime.now() - file_modified_time).total_seconds()
-                
-                if cache_age_seconds < RESOURCE_CACHE['cache_duration']:
-                    logger.info(f"Using cached vSphere resources from file (last updated: {file_modified_time})")
-                    with open(cache_file, 'r') as f:
-                        return json.load(f)
-        except Exception as e:
-            logger.warning(f"Error reading cache file: {str(e)}")
-    
-        # If file cache failed, try memory cache
-        if cache_is_valid():
-            logger.info(f"Using cached vSphere resources from memory (last updated: {RESOURCE_CACHE['timestamp']})")
-            return {
-                'resource_pools': RESOURCE_CACHE['resource_pools'],
-                'datastores': RESOURCE_CACHE['datastores'],
-                'networks': RESOURCE_CACHE['networks'],
-                'templates': RESOURCE_CACHE['templates']
-            }
+    # Use the enhanced cache mechanism if available
+    if vsphere_cache and use_cache and not force_refresh:
+        cached_resources = {
+            'resource_pools': vsphere_cache.get_cached_resources('resource_pools'),
+            'datastores': vsphere_cache.get_cached_resources('datastores'),
+            'networks': vsphere_cache.get_cached_resources('networks'),
+            'templates': vsphere_cache.get_cached_resources('templates')
+        }
+        
+        # If all resources are available in cache, return them
+        if all(cached_resources.values()):
+            logger.info("Using cached vSphere resources")
+            return cached_resources
     
     logger.info("Fetching vSphere resources")
     
     # Try to connect with a shorter timeout first
-    service_instance = connect_to_vsphere(timeout=10)
+    service_instance = connect_to_vsphere(timeout=DEFAULT_TIMEOUT)
     if not service_instance:
         logger.warning("Using default values for vSphere resources")
         return get_default_resources()
@@ -262,20 +287,12 @@ def get_vsphere_resources(use_cache=True, max_items=200):
             except Exception as e:
                 logger.warning(f"Error getting templates: {str(e)}")
         
-        # Update memory cache
-        RESOURCE_CACHE['timestamp'] = datetime.now()
-        RESOURCE_CACHE['resource_pools'] = resources['resource_pools']
-        RESOURCE_CACHE['datastores'] = resources['datastores']
-        RESOURCE_CACHE['networks'] = resources['networks']
-        RESOURCE_CACHE['templates'] = resources['templates']
-        
-        # Save to file cache
-        try:
-            with open(cache_file, 'w') as f:
-                json.dump(resources, f, indent=2)
-            logger.info(f"Saved vSphere resources to cache file: {cache_file}")
-        except Exception as e:
-            logger.warning(f"Error saving cache file: {str(e)}")
+        # Update the cache if available
+        if vsphere_cache and use_cache:
+            vsphere_cache.update_cache('resource_pools', resources['resource_pools'])
+            vsphere_cache.update_cache('datastores', resources['datastores'])
+            vsphere_cache.update_cache('networks', resources['networks'])
+            vsphere_cache.update_cache('templates', resources['templates'])
         
         # Disconnect from vSphere
         connect.Disconnect(service_instance)
