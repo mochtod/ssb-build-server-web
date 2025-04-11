@@ -2,14 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Git, curl, and other dependencies
+# Install Git and curl only
 RUN apt-get update && \
-    apt-get install -y git curl gnupg software-properties-common && \
-    # Add HashiCorp GPG key and repository
-    curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
-    apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" && \
-    apt-get update && \
-    apt-get install -y terraform && \
+    apt-get install -y git curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
