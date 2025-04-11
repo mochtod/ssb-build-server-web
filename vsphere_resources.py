@@ -32,7 +32,7 @@ DEFAULT_NETWORK_ID_PROD = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393
 DEFAULT_NETWORK_ID_DEV = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
 DEFAULT_TEMPLATE_UUID = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
 
-def connect_to_vsphere():
+def connect_to_vsphere(timeout=20):
     """Connect to vSphere server using environment variables"""
     server = os.environ.get('VSPHERE_SERVER')
     username = os.environ.get('VSPHERE_USER')
@@ -48,6 +48,10 @@ def connect_to_vsphere():
         context.verify_mode = ssl.CERT_NONE  # Disable certificate verification
         
         logger.info(f"Connecting to vSphere server: {server}")
+        
+        # Attempt connection with timeout
+        import socket
+        socket.setdefaulttimeout(timeout)
         
         # Attempt connection
         service_instance = connect.SmartConnect(
@@ -130,80 +134,148 @@ def cache_is_valid():
     cache_age = (datetime.now() - RESOURCE_CACHE['timestamp']).total_seconds()
     return cache_age < RESOURCE_CACHE['cache_duration']
 
-def get_vsphere_resources(use_cache=True):
+def get_vsphere_resources(use_cache=True, max_items=200):
     """
     Get all vSphere resources needed for VM provisioning
     
     Args:
         use_cache: Whether to use cached data if available
+        max_items: Maximum number of items to retrieve for each resource type
         
     Returns:
         dict: Dictionary with resource pools, datastores, networks, and templates
     """
-    # Return cached data if valid and requested
-    if use_cache and cache_is_valid():
-        logger.info(f"Using cached vSphere resources (last updated: {RESOURCE_CACHE['timestamp']})")
-        return {
-            'resource_pools': RESOURCE_CACHE['resource_pools'],
-            'datastores': RESOURCE_CACHE['datastores'],
-            'networks': RESOURCE_CACHE['networks'],
-            'templates': RESOURCE_CACHE['templates']
-        }
+    # First check if we have a cached JSON file
+    cache_file = 'vsphere_resources.json'
+    if use_cache:
+        # Try to load from file cache first
+        try:
+            if os.path.exists(cache_file) and os.path.getsize(cache_file) > 0:
+                file_modified_time = datetime.fromtimestamp(os.path.getmtime(cache_file))
+                cache_age_seconds = (datetime.now() - file_modified_time).total_seconds()
+                
+                if cache_age_seconds < RESOURCE_CACHE['cache_duration']:
+                    logger.info(f"Using cached vSphere resources from file (last updated: {file_modified_time})")
+                    with open(cache_file, 'r') as f:
+                        return json.load(f)
+        except Exception as e:
+            logger.warning(f"Error reading cache file: {str(e)}")
+    
+        # If file cache failed, try memory cache
+        if cache_is_valid():
+            logger.info(f"Using cached vSphere resources from memory (last updated: {RESOURCE_CACHE['timestamp']})")
+            return {
+                'resource_pools': RESOURCE_CACHE['resource_pools'],
+                'datastores': RESOURCE_CACHE['datastores'],
+                'networks': RESOURCE_CACHE['networks'],
+                'templates': RESOURCE_CACHE['templates']
+            }
     
     logger.info("Fetching vSphere resources")
     
-    service_instance = connect_to_vsphere()
+    # Try to connect with a shorter timeout first
+    service_instance = connect_to_vsphere(timeout=10)
     if not service_instance:
         logger.warning("Using default values for vSphere resources")
         return get_default_resources()
     
-    content = service_instance.RetrieveContent()
-    
-    # Dictionary to store all resources
-    resources = {
-        'resource_pools': [],
-        'datastores': [],
-        'networks': [],
-        'templates': []
-    }
-    
     try:
+        content = service_instance.RetrieveContent()
+        
+        # Dictionary to store all resources
+        resources = {
+            'resource_pools': [],
+            'datastores': [],
+            'networks': [],
+            'templates': []
+        }
+        
         # Get all datacenters to search in
         datacenters = get_all_obj(content, [vim.Datacenter])
+        logger.info(f"Found {len(datacenters)} datacenters")
         
         for dc in datacenters:
-            # Get resource pools
-            resource_pools = get_all_obj(content, [vim.ResourcePool], dc.hostFolder)
-            for rp in resource_pools:
-                info = get_resource_info('ResourcePool', rp, [DEFAULT_RESOURCE_POOL_ID, DEFAULT_DEV_RESOURCE_POOL_ID])
-                resources['resource_pools'].append(info)
+            logger.info(f"Processing datacenter: {dc.name}")
             
-            # Get datastores
-            datastores = get_all_obj(content, [vim.Datastore], dc.datastoreFolder)
-            for ds in datastores:
-                info = get_resource_info('Datastore', ds, [DEFAULT_DATASTORE_ID])
-                resources['datastores'].append(info)
+            # Process resource pools
+            try:
+                logger.info(f"Fetching resource pools in {dc.name}")
+                resource_pools = get_all_obj(content, [vim.ResourcePool], dc.hostFolder)
+                logger.info(f"Found {len(resource_pools)} resource pools")
+                
+                # Limit the number of resource pools to process
+                resource_pools = resource_pools[:max_items]
+                
+                for rp in resource_pools:
+                    info = get_resource_info('ResourcePool', rp, [DEFAULT_RESOURCE_POOL_ID, DEFAULT_DEV_RESOURCE_POOL_ID])
+                    resources['resource_pools'].append(info)
+            except Exception as e:
+                logger.warning(f"Error getting resource pools: {str(e)}")
             
-            # Get networks
-            networks = get_all_obj(content, [vim.Network], dc.networkFolder)
-            for net in networks:
-                info = get_resource_info('Network', net, [DEFAULT_NETWORK_ID_PROD, DEFAULT_NETWORK_ID_DEV])
-                resources['networks'].append(info)
+            # Process datastores
+            try:
+                logger.info(f"Fetching datastores in {dc.name}")
+                datastores = get_all_obj(content, [vim.Datastore], dc.datastoreFolder)
+                logger.info(f"Found {len(datastores)} datastores")
+                
+                # Limit the number of datastores to process
+                datastores = datastores[:max_items]
+                
+                for ds in datastores:
+                    info = get_resource_info('Datastore', ds, [DEFAULT_DATASTORE_ID])
+                    resources['datastores'].append(info)
+            except Exception as e:
+                logger.warning(f"Error getting datastores: {str(e)}")
             
-            # Get VM templates
-            vms = get_all_obj(content, [vim.VirtualMachine], dc.vmFolder)
-            templates = [vm for vm in vms if vm.config and vm.config.template]
-            for template in templates:
-                info = get_resource_info('VirtualMachine', template, [DEFAULT_TEMPLATE_UUID])
-                if info.get('is_template', False):
-                    resources['templates'].append(info)
+            # Process networks
+            try:
+                logger.info(f"Fetching networks in {dc.name}")
+                networks = get_all_obj(content, [vim.Network], dc.networkFolder)
+                logger.info(f"Found {len(networks)} networks")
+                
+                # Limit the number of networks to process
+                networks = networks[:max_items]
+                
+                for net in networks:
+                    info = get_resource_info('Network', net, [DEFAULT_NETWORK_ID_PROD, DEFAULT_NETWORK_ID_DEV])
+                    resources['networks'].append(info)
+            except Exception as e:
+                logger.warning(f"Error getting networks: {str(e)}")
+            
+            # Process VM templates
+            try:
+                logger.info(f"Fetching VMs in {dc.name}")
+                vms = get_all_obj(content, [vim.VirtualMachine], dc.vmFolder)
+                logger.info(f"Found {len(vms)} VMs")
+                
+                # Filter for templates
+                templates = [vm for vm in vms if vm.config and vm.config.template]
+                logger.info(f"Found {len(templates)} templates")
+                
+                # Limit the number of templates to process
+                templates = templates[:max_items]
+                
+                for template in templates:
+                    info = get_resource_info('VirtualMachine', template, [DEFAULT_TEMPLATE_UUID])
+                    if info.get('is_template', False):
+                        resources['templates'].append(info)
+            except Exception as e:
+                logger.warning(f"Error getting templates: {str(e)}")
         
-        # Update cache
+        # Update memory cache
         RESOURCE_CACHE['timestamp'] = datetime.now()
         RESOURCE_CACHE['resource_pools'] = resources['resource_pools']
         RESOURCE_CACHE['datastores'] = resources['datastores']
         RESOURCE_CACHE['networks'] = resources['networks']
         RESOURCE_CACHE['templates'] = resources['templates']
+        
+        # Save to file cache
+        try:
+            with open(cache_file, 'w') as f:
+                json.dump(resources, f, indent=2)
+            logger.info(f"Saved vSphere resources to cache file: {cache_file}")
+        except Exception as e:
+            logger.warning(f"Error saving cache file: {str(e)}")
         
         # Disconnect from vSphere
         connect.Disconnect(service_instance)

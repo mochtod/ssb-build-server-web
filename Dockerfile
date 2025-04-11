@@ -4,7 +4,12 @@ WORKDIR /app
 
 # Install Git, curl, and other dependencies
 RUN apt-get update && \
-    apt-get install -y git curl && \
+    apt-get install -y git curl gnupg software-properties-common && \
+    # Add HashiCorp GPG key and repository
+    curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - && \
+    apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" && \
+    apt-get update && \
+    apt-get install -y terraform && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -32,5 +37,5 @@ USER appuser
 # # Expose the application port
 EXPOSE 5150
 
-# Start the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5150", "app:app"]
+# Start the application with longer worker timeout
+CMD ["gunicorn", "--bind", "0.0.0.0:5150", "--timeout", "120", "app:app"]
