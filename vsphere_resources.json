@@ -1,0 +1,1151 @@
+{
+  "ResourcePools": [
+    {
+      "name": "Resources",
+      "id": "resgroup-9814670",
+      "type": "ResourcePool",
+      "parent": "np-cl70-win",
+      "cpu": {
+        "limit": 2948200,
+        "reservation": 2948200,
+        "shares": 4000
+      },
+      "memory": {
+        "limit": 23066823,
+        "reservation": 23066823,
+        "shares": 163840
+      }
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-6194931",
+      "type": "ResourcePool",
+      "parent": "DC2-EBDC-FWHosts",
+      "cpu": {
+        "limit": 74719,
+        "reservation": 74719,
+        "shares": 4000
+      },
+      "memory": {
+        "limit": 249663,
+        "reservation": 249663,
+        "shares": 163840
+      }
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-9891267",
+      "type": "ResourcePool",
+      "parent": "np-cl60-lin",
+      "cpu": {
+        "limit": 1965400,
+        "reservation": 1965400,
+        "shares": 4000
+      },
+      "memory": {
+        "limit": 15379181,
+        "reservation": 15379181,
+        "shares": 163840
+      }
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-3310245",
+      "type": "ResourcePool",
+      "parent": "DC2-NP11-KUB",
+      "cpu": {
+        "limit": 224157,
+        "reservation": 224157,
+        "shares": 4000
+      },
+      "memory": {
+        "limit": 1523113,
+        "reservation": 1523113,
+        "shares": 163840
+      }
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-10347034",
+      "type": "ResourcePool",
+      "parent": "np-cl20-kubespray",
+      "cpu": {
+        "limit": 1966820,
+        "reservation": 1966820,
+        "shares": 4000
+      },
+      "memory": {
+        "limit": 15381438,
+        "reservation": 15381438,
+        "shares": 163840
+      }
+    }
+  ],
+  "Datastores": [
+    {
+      "name": "esx2np3cl20n101_local",
+      "id": "datastore-10347068",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n112_local",
+      "id": "datastore-10182919",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl61n100_local",
+      "id": "datastore-11569251",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n104_local",
+      "id": "datastore-10355907",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n106_local",
+      "id": "datastore-10405159",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n106_local",
+      "id": "datastore-9909272",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl71n100_local",
+      "id": "datastore-11569237",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_iso",
+      "id": "datastore-3757124",
+      "type": "VMFS",
+      "capacity": 2198754820096,
+      "free_space": 2147591651328,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n109_local",
+      "id": "datastore-10544487",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np1sa11_data",
+      "id": "datastore-6229716",
+      "type": "VMFS",
+      "capacity": 1798785990656,
+      "free_space": 1786081443840,
+      "accessible": false
+    },
+    {
+      "name": "esx2np3cl60n107_local",
+      "id": "datastore-9909284",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n108_local",
+      "id": "datastore-9909279",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n110_local",
+      "id": "datastore-10101015",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n103_local",
+      "id": "datastore-10355909",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np1sa10_data",
+      "id": "datastore-6229717",
+      "type": "VMFS",
+      "capacity": 1798785990656,
+      "free_space": 1795531210752,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n100_local",
+      "id": "datastore-10347077",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n103_local",
+      "id": "datastore-10602156",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n109_local",
+      "id": "datastore-9909288",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n108_local",
+      "id": "datastore-10437190",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n104_local",
+      "id": "datastore-9909270",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n105_local",
+      "id": "datastore-10355908",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n107_local",
+      "id": "datastore-10405160",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n113_local",
+      "id": "datastore-10182920",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n102_local",
+      "id": "datastore-9909310",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n111_local",
+      "id": "datastore-10101016",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl20n102_local",
+      "id": "datastore-10347067",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341009498112,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n105_local",
+      "id": "datastore-9909281",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl60n101_local",
+      "id": "datastore-9909282",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl11n22_local",
+      "id": "datastore-6346782",
+      "type": "VMFS",
+      "capacity": 341449900032,
+      "free_space": 339935756288,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n101_local",
+      "id": "datastore-9849329",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n100_local",
+      "id": "datastore-9841809",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np1sa11_local",
+      "id": "datastore-6224685",
+      "type": "VMFS",
+      "capacity": 341449900032,
+      "free_space": 339935756288,
+      "accessible": false
+    },
+    {
+      "name": "esx2np1sa10_local",
+      "id": "datastore-6229729",
+      "type": "VMFS",
+      "capacity": 341449900032,
+      "free_space": 330164076544,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n107_local",
+      "id": "datastore-9853843",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341003206656,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n102_local",
+      "id": "datastore-9849333",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n103_local",
+      "id": "datastore-9849335",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl11n23_local",
+      "id": "datastore-6346780",
+      "type": "VMFS",
+      "capacity": 341449900032,
+      "free_space": 339935756288,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n108_local",
+      "id": "datastore-9853845",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341003206656,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl11n21_local",
+      "id": "datastore-6346781",
+      "type": "VMFS",
+      "capacity": 341449900032,
+      "free_space": 339935756288,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n106_local",
+      "id": "datastore-9849352",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n105_local",
+      "id": "datastore-9858404",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n104_local",
+      "id": "datastore-9849337",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "esx2np3cl70n109_local",
+      "id": "datastore-9849354",
+      "type": "VMFS",
+      "capacity": 342523641856,
+      "free_space": 341004255232,
+      "accessible": true
+    },
+    {
+      "name": "dc2-np7-scratch",
+      "id": "datastore-1847487",
+      "type": "VMFS",
+      "capacity": 214479929344,
+      "free_space": 159579635712,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_405",
+      "id": "datastore-1474107",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3215637610496,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_402",
+      "id": "datastore-1466831",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3511492280320,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_406",
+      "id": "datastore-1474108",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3444179992576,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_407",
+      "id": "datastore-1649375",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3451524218880,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_408",
+      "id": "datastore-1649376",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3381500313600,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_401",
+      "id": "datastore-1463201",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3134649794560,
+      "accessible": true
+    },
+    {
+      "name": "np-cl1-esx-409",
+      "id": "datastore-5050410",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 2952013021184,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_403",
+      "id": "datastore-1466832",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 2957681623040,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_400",
+      "id": "datastore-1463200",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 2203662155776,
+      "accessible": true
+    },
+    {
+      "name": "np_cl1_esx_404",
+      "id": "datastore-1470441",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3181877657600,
+      "accessible": true
+    },
+    {
+      "name": "np-cl1-esx-410",
+      "id": "datastore-5050411",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 4231573536768,
+      "accessible": true
+    },
+    {
+      "name": "np-cl1-esx-411",
+      "id": "datastore-5072587",
+      "type": "VMFS",
+      "capacity": 6596801331200,
+      "free_space": 3729566728192,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-005",
+      "id": "datastore-9891254",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3320811880448,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-008",
+      "id": "datastore-9918499",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3541267644416,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-010",
+      "id": "datastore-10017566",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4507044937728,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-009",
+      "id": "datastore-10017565",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3838916427776,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-004",
+      "id": "datastore-9891253",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3536584704000,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-001",
+      "id": "datastore-9891250",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3684745347072,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-002",
+      "id": "datastore-9891251",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3429834424320,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-006",
+      "id": "datastore-9891255",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3815783792640,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-000",
+      "id": "datastore-10013013",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4069657673728,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-003",
+      "id": "datastore-9891252",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3220251344896,
+      "accessible": true
+    },
+    {
+      "name": "np_cl70_pstore1_vol-007",
+      "id": "datastore-9918498",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4042399940608,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_401",
+      "id": "datastore-4898881",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4951312957440,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_400",
+      "id": "datastore-3314812",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 8728446238720,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_501",
+      "id": "datastore-9918507",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4097566572544,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_302",
+      "id": "datastore-4395110",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 8792524718080,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_301",
+      "id": "datastore-3314811",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3081774301184,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_503",
+      "id": "datastore-9918509",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4407673487360,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_504",
+      "id": "datastore-9918510",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4543846809600,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_300",
+      "id": "datastore-3314810",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 5936256122880,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_402",
+      "id": "datastore-6346762",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3786168860672,
+      "accessible": true
+    },
+    {
+      "name": "np_cl11_esxkub_502",
+      "id": "datastore-9918508",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4705782595584,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_403",
+      "id": "datastore-2795325",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 2317288996864,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_409",
+      "id": "datastore-10036503",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4728410865664,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_408",
+      "id": "datastore-4693197",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4054941958144,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_401",
+      "id": "datastore-1871248",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 2718716395520,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_402",
+      "id": "datastore-1871249",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4372206452736,
+      "accessible": true
+    },
+    {
+      "name": "np-cl7-esx-412",
+      "id": "datastore-10041149",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3906717351936,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_410",
+      "id": "datastore-10036502",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 2550020440064,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_400",
+      "id": "datastore-1871246",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 4686161641472,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_405",
+      "id": "datastore-2851953",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3152443080704,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_404",
+      "id": "datastore-2808614",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3535031762944,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_407",
+      "id": "datastore-4495727",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 2498123268096,
+      "accessible": true
+    },
+    {
+      "name": "np_cl7_esx_406",
+      "id": "datastore-4376249",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 2771000492032,
+      "accessible": true
+    },
+    {
+      "name": "np-cl7-esx-411",
+      "id": "datastore-10041148",
+      "type": "VMFS",
+      "capacity": 8795824586752,
+      "free_space": 3050806706176,
+      "accessible": true
+    }
+  ],
+  "Networks": [
+    {
+      "name": "Avi Internal",
+      "id": "network-5373216",
+      "type": "Network",
+      "network_type": "standard"
+    },
+    {
+      "name": "VM Network",
+      "id": "network-256907",
+      "type": "Network",
+      "network_type": "standard"
+    },
+    {
+      "name": "mgmt-vlan-56",
+      "id": "network-6373172",
+      "type": "Network",
+      "network_type": "standard"
+    },
+    {
+      "name": "np-lin-975-vault-sbx",
+      "id": "dvportgroup-11504146",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 975,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-win-200-other",
+      "id": "dvportgroup-8702146",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 200,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "np-lin-vds-989-linux",
+      "id": "dvportgroup-9526645",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 989,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-lin-vds-96-intapp",
+      "id": "dvportgroup-9526644",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 96,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "nonprod-vds-vlan200",
+      "id": "dvportgroup-4545393",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 200,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "np-win-88-esxtwebnp",
+      "id": "dvportgroup-8702149",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 88,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "np-win-404-semitrust",
+      "id": "dvportgroup-8702145",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 404,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "esxi-mgmt-192-tagged",
+      "id": "dvportgroup-6352146",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 192,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "sql-vds-vlan64",
+      "id": "dvportgroup-4545395",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 64,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "np-win-216-training2",
+      "id": "dvportgroup-8702141",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 216,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "np-lin-vds-64-sql",
+      "id": "dvportgroup-9526652",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 94,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-lin-vds-971-linux-external-lb",
+      "id": "dvportgroup-9526656",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 971,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-lin-vds-mgmt-untagged",
+      "id": "dvportgroup-9526649",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 0,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-lin-vds-949-satellite",
+      "id": "dvportgroup-9526655",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 949,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-lin-vds-192-esx-mgmt",
+      "id": "dvportgroup-9526650",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 192,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "vMotion-vds-vlan242",
+      "id": "dvportgroup-4545399",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 242,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "Linux-vds-vlan989",
+      "id": "dvportgroup-4602430",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 989,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "Linux-External_LB-vds-vlan971",
+      "id": "dvportgroup-4602424",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 971,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "np-win-96-intappnp",
+      "id": "dvportgroup-8702147",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 96,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "np-lin-vds-970-linux-internal-lb",
+      "id": "dvportgroup-9526646",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 970,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "semi-trust-vds-vlan404",
+      "id": "dvportgroup-4545394",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 404,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "dc2-np-dvs-distributeddata982",
+      "id": "dvportgroup-4731474",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 982,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "HDFS-vds-vlan990",
+      "id": "dvportgroup-4602427",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 990,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "np-lin-953-esxi-mgmt",
+      "id": "dvportgroup-9841803",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 953,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-lin-vds-200-other",
+      "id": "dvportgroup-9526647",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 200,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "dc2-np-dvs-vmotion242",
+      "id": "dvportgroup-4731489",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 242,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "dc2-dvs-kub-infinity-979",
+      "id": "dvportgroup-5732244",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 979,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "np-win-80-termserv",
+      "id": "dvportgroup-8702143",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 80,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "dc2-np-dvs-nonprod200",
+      "id": "dvportgroup-4731483",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 200,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "vm network",
+      "id": "dvportgroup-8702140",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 0,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "np-lin-vds-242-vmotion",
+      "id": "dvportgroup-9526648",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 242,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-lin-vds-88-extweb",
+      "id": "dvportgroup-9526653",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 88,
+      "dvs_name": "dc2-nonprod-ds-lin-gold"
+    },
+    {
+      "name": "np-k8-948-poc2",
+      "id": "dvportgroup-10628691",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 948,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "dc2-np-dvs-linux-ext-lb971",
+      "id": "dvportgroup-4731481",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 971,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "np-win-464-hr",
+      "id": "dvportgroup-8702148",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 464,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "dc2-np-dvs-linux-int-lb970",
+      "id": "dvportgroup-4731482",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 970,
+      "dvs_name": "np-dvs-01"
+    },
+    {
+      "name": "avi-vds-vlan945",
+      "id": "dvportgroup-4731469",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 945,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "np-win-777-adtest",
+      "id": "dvportgroup-10178215",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 777,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "satellite-np-vds-949",
+      "id": "dvportgroup-6557488",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 949,
+      "dvs_name": "NP-DVS"
+    },
+    {
+      "name": "np-win-970-lb",
+      "id": "dvportgroup-10192070",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": 970,
+      "dvs_name": "dc2-nonprod-ds-win-gold"
+    },
+    {
+      "name": "dc2-nonprod-ds-w-DVUplinks-8702138",
+      "id": "dvportgroup-8702139",
+      "type": "Network",
+      "network_type": "dvPortgroup",
+      "vlan_id": [
+        

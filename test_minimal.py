@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 # Atlantis API configuration
 ATLANTIS_URL = "http://localhost:4141"
-ATLANTIS_TOKEN = "lkajsdf;lkasd;kljasdf"  # Default token from app.py
+ATLANTIS_TOKEN = "lkajsdflkasdkljasdf"  # Token from .env file
 
 def test_with_minimal_payload():
     """Test Atlantis API with the minimal payload"""

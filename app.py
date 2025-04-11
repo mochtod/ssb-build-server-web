@@ -16,6 +16,7 @@ from git import Repo
 from git.exc import GitCommandError
 import logging
 from vsphere_utils import test_vsphere_connection
+import vsphere_resources
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
@@ -261,11 +262,51 @@ def logout():
 @app.route('/')
 @login_required
 def index():
+    # Get VSphere resources
+    try:
+        # Fetch vSphere resources with a 10-second timeout
+        vs_resources = vsphere_resources.get_vsphere_resources(use_cache=True)
+        
+        # Get default IDs from environment variables
+        default_resource_pool_id = os.environ.get('RESOURCE_POOL_ID', 'resgroup-9814670')
+        default_dev_resource_pool_id = os.environ.get('DEV_RESOURCE_POOL_ID', 'resgroup-3310245')
+        default_datastore_id = os.environ.get('DATASTORE_ID', 'datastore-4395110')
+        default_network_id_prod = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393')
+        default_network_id_dev = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
+        default_template_id = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
+        
+        logger.info(f"Loaded {len(vs_resources['resource_pools'])} resource pools, "
+                   f"{len(vs_resources['datastores'])} datastores, "
+                   f"{len(vs_resources['networks'])} networks, "
+                   f"{len(vs_resources['templates'])} templates")
+        
+    except Exception as e:
+        logger.exception(f"Error loading vSphere resources: {str(e)}")
+        # Create default resources if API call fails
+        vs_resources = vsphere_resources.get_default_resources()
+        logger.warning("Using default vSphere resources due to error")
+        
+        # Setup default IDs
+        default_resource_pool_id = os.environ.get('RESOURCE_POOL_ID', 'resgroup-9814670')
+        default_dev_resource_pool_id = os.environ.get('DEV_RESOURCE_POOL_ID', 'resgroup-3310245')
+        default_datastore_id = os.environ.get('DATASTORE_ID', 'datastore-4395110')
+        default_network_id_prod = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393')
+        default_network_id_dev = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
+        default_template_id = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
+    
     return render_template('index.html', 
                           server_prefixes=SERVER_PREFIXES,
                           environments=ENVIRONMENTS,
                           user_role=session.get('role', ''),
-                          user_name=session.get('name', ''))
+                          user_name=session.get('name', ''),
+                          resource_pools=vs_resources['resource_pools'],
+                          datastores=vs_resources['datastores'],
+                          networks=vs_resources['networks'],
+                          templates=vs_resources['templates'],
+                          default_resource_pool_id=default_resource_pool_id,
+                          default_datastore_id=default_datastore_id,
+                          default_network_id=default_network_id_prod,
+                          default_template_id=default_template_id)
 
 @app.route('/submit', methods=['POST'])
 @login_required
@@ -278,6 +319,12 @@ def submit():
         num_cpus = int(request.form.get('num_cpus', DEFAULT_CONFIG['num_cpus']))
         memory = int(request.form.get('memory', DEFAULT_CONFIG['memory']))
         disk_size = int(request.form.get('disk_size', DEFAULT_CONFIG['disk_size']))
+        
+        # Get vSphere resource selections
+        resource_pool = request.form.get('resource_pool', os.environ.get('RESOURCE_POOL_ID', 'resgroup-9814670'))
+        datastore = request.form.get('datastore', os.environ.get('DATASTORE_ID', 'datastore-4395110'))
+        network = request.form.get('network', os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393'))
+        template = request.form.get('template', os.environ.get('TEMPLATE_UUID', 'vm-11682491'))
         
         # Determine environment based on server prefix
         environment = "production" if server_prefix in ENVIRONMENTS["prod"] else "development"
@@ -1128,35 +1175,40 @@ def apply_atlantis_plan(config_data, tf_directory):
         
         # If we need to simulate an apply due to API issues
         if simulated:
-            # Generate a simulated apply ID
+            logger.info("Using direct Terraform execution for VM provisioning")
+            
+            try:
+                # Import the direct Terraform execution module
+                import apply_terraform
+                
+                # Call the direct Terraform apply function
+                direct_result = apply_terraform.direct_terraform_apply(config_data, tf_directory)
+                
+                if direct_result.get('status') == 'success':
+                    logger.info("Direct Terraform execution completed successfully")
+                    return direct_result
+                else:
+                    logger.error("Direct Terraform execution failed")
+                    logger.error(direct_result.get('message', 'Unknown error'))
+                    # Fall back to simulation receipt if direct execution fails
+                    pass
+            except Exception as terraform_error:
+                logger.exception(f"Error during direct Terraform execution: {str(terraform_error)}")
+                # Continue with normal simulation if direct execution fails
+            
+            # Generate a simulated apply ID if direct execution fails or raises an exception
             apply_id = f"sim-{uuid.uuid4().hex[:8]}"
             logger.info(f"Using simulated apply ID: {apply_id}")
-            
-            # When in simulation mode, attempt direct VM provisioning if environment vars are set
-            vsphere_server = os.environ.get('VSPHERE_SERVER')
-            vsphere_user = os.environ.get('VSPHERE_USER')
-            vsphere_password = os.environ.get('VSPHERE_PASSWORD')
-            resource_pool_id = os.environ.get('RESOURCE_POOL_ID' if config_data['environment'] == 'production' else 'DEV_RESOURCE_POOL_ID')
-            datastore_id = os.environ.get('DATASTORE_ID')
-            template_uuid = os.environ.get('TEMPLATE_UUID')
-            network_id = os.environ.get('NETWORK_ID_PROD' if config_data['environment'] == 'production' else 'NETWORK_ID_DEV')
-            
-            # Check if all required vSphere connection details are available
-            if all([vsphere_server, vsphere_user, vsphere_password, resource_pool_id, datastore_id, template_uuid, network_id]):
-                logger.info(f"All vSphere connection details are available for direct VM provisioning")
-                logger.info(f"Would provision VM using the following parameters:")
-                logger.info(f"Server: {vsphere_server}")
-                logger.info(f"Resource Pool: {resource_pool_id}")
-                logger.info(f"Datastore: {datastore_id}")
-                logger.info(f"Template: {template_uuid}")
-                logger.info(f"Network: {network_id}")
-                # In a real implementation, this is where you would connect to vSphere directly
-            else:
-                logger.warning(f"Missing vSphere connection details for direct VM provisioning")
-                logger.warning(f"VM provisioning will be simulated instead")
+        
+        # Convert container name URLs to localhost URLs for browser access
+        browser_url = ATLANTIS_URL
+        if "atlantis:" in browser_url:
+            port = browser_url.split(":")[2]
+            browser_url = f"http://localhost:{port}"
         
         # Generate a apply URL regardless of whether it's real or simulated
-        build_url = f"{ATLANTIS_URL}/apply/{apply_id}"
+        build_url = f"{browser_url}/apply/{apply_id}"
+        plan_url = f"{browser_url}/plan/{plan_id}"
         
         # Generate build receipt
         text_receipt = f"""
@@ -1200,17 +1252,11 @@ def generate_variables_file(variables_file, config):
     server_name = config['server_name']
     environment = config['environment']
     
-    # Determine environment-specific values based on environment variables
-    if environment == "production":
-        resource_pool_id = os.environ.get('RESOURCE_POOL_ID', 'resource-pool-id-placeholder')
-        network_id = os.environ.get('NETWORK_ID_PROD', 'network-id-placeholder')
-    else:
-        resource_pool_id = os.environ.get('DEV_RESOURCE_POOL_ID', 'resource-pool-id-placeholder')
-        network_id = os.environ.get('NETWORK_ID_DEV', 'network-id-placeholder')
-    
-    # Get common vSphere resources from environment variables
-    datastore_id = os.environ.get('DATASTORE_ID', 'datastore-id-placeholder')
-    template_uuid = os.environ.get('TEMPLATE_UUID', 'template-uuid-placeholder')
+    # Get vSphere resource IDs from request form or fall back to environment variables
+    resource_pool_id = request.form.get('resource_pool', os.environ.get('RESOURCE_POOL_ID', 'resource-pool-id-placeholder'))
+    datastore_id = request.form.get('datastore', os.environ.get('DATASTORE_ID', 'datastore-id-placeholder'))
+    network_id = request.form.get('network', os.environ.get('NETWORK_ID_PROD', 'network-id-placeholder'))
+    template_uuid = request.form.get('template', os.environ.get('TEMPLATE_UUID', 'template-uuid-placeholder'))
     
     # Generate variables content
     variables_content = f"""

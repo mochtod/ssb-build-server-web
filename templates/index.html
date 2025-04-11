@@ -68,6 +68,62 @@
                     </div>
 
                     <div class="form-section">
+                        <h3>vSphere Resources</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="resource_pool">Resource Pool:</label>
+                                <select id="resource_pool" name="resource_pool">
+                                    {% if resource_pools %}
+                                        {% for rp in resource_pools %}
+                                            <option value="{{ rp.id }}" {% if rp.is_preferred %}selected{% endif %}>{{ rp.name }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="{{ default_resource_pool_id }}">Default Resource Pool</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="datastore">Datastore:</label>
+                                <select id="datastore" name="datastore">
+                                    {% if datastores %}
+                                        {% for ds in datastores %}
+                                            <option value="{{ ds.id }}" {% if ds.is_preferred %}selected{% endif %}>{{ ds.name }} ({{ ds.free_gb }} GB free)</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="{{ default_datastore_id }}">Default Datastore</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="network">Network:</label>
+                                <select id="network" name="network">
+                                    {% if networks %}
+                                        {% for net in networks %}
+                                            <option value="{{ net.id }}" {% if net.is_preferred %}selected{% endif %}>{{ net.name }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="{{ default_network_id }}">Default Network</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="template">VM Template:</label>
+                                <select id="template" name="template">
+                                    {% if templates %}
+                                        {% for tpl in templates %}
+                                            <option value="{{ tpl.id }}" {% if tpl.is_preferred %}selected{% endif %}>{{ tpl.name }} ({{ tpl.guest_id }})</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="{{ default_template_id }}">Default Template</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
                         <h3>Storage Configuration</h3>
                         <div class="form-row">
                             <div class="form-group">

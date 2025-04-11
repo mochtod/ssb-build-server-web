@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Atlantis API configuration
 ATLANTIS_URL = "http://localhost:4141"
-ATLANTIS_TOKEN = os.environ.get("ATLANTIS_TOKEN", "lkajsdf;lkasd;kljasdf")
+ATLANTIS_TOKEN = os.environ.get("ATLANTIS_TOKEN", "lkajsdflkasdkljasdf")
 
 def direct_test():
     """Test the Atlantis API using an exact copy of the working payload structure"""
