@@ -14,6 +14,35 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def generate_atlantis_payload(repo, workspace, dir, commit_hash, comment, user, files):
+    """Generate a properly formatted Atlantis API payload for plan operation"""
+    payload_dict = {
+        'repo': {
+            'owner': 'fake',
+            'name': repo,
+            'clone_url': f'https://github.com/fake/{repo}.git'
+        },
+        'pull_request': {
+            'num': 1,
+            'branch': 'main',
+            'author': user
+        },
+        'head_commit': commit_hash,
+        'pull_num': 1,
+        'pull_author': user,
+        'repo_rel_dir': os.path.basename(dir),
+        'workspace': workspace,
+        'project_name': repo,
+        'comment': comment,
+        'user': user,
+        'verbose': True,
+        'cmd': 'plan',  # Command is 'plan' for planning operation
+        'dir': '.',     # Critical: include the 'dir' field
+        'terraform_files': files
+    }
+    
+    return payload_dict
+
 def generate_atlantis_apply_payload_fixed(config_data, tf_directory, tf_files, plan_id):
     """Generate a properly formatted Atlantis API payload for apply operation"""
     # Get the directory name for the Terraform files

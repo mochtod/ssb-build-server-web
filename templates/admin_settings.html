@@ -87,11 +87,16 @@
                                     <input type="password" class="form-control" id="VSPHERE_PASSWORD" name="VSPHERE_PASSWORD" value="{{ env_vars.get('VSPHERE_PASSWORD', '') }}">
                                     <div class="form-text">vSphere password</div>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="VSPHERE_SERVER" class="form-label">vSphere Server</label>
-                                    <input type="text" class="form-control" id="VSPHERE_SERVER" name="VSPHERE_SERVER" value="{{ env_vars.get('VSPHERE_SERVER', '') }}">
-                                    <div class="form-text">vSphere server address</div>
-                                </div>
+                            <div class="mb-3">
+                                <label for="VSPHERE_SERVER" class="form-label">vSphere Server</label>
+                                <input type="text" class="form-control" id="VSPHERE_SERVER" name="VSPHERE_SERVER" value="{{ env_vars.get('VSPHERE_SERVER', '') }}">
+                                <div class="form-text">vSphere server address</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="VSPHERE_DATACENTERS" class="form-label">Target Datacenters (comma-separated)</label>
+                                <input type="text" class="form-control" id="VSPHERE_DATACENTERS" name="VSPHERE_DATACENTERS" value="{{ env_vars.get('VSPHERE_DATACENTERS', '') }}">
+                                <div class="form-text">Limit vSphere resource fetching to specific datacenters for better performance</div>
+                            </div>
                             </div>
                         </div>
                     </div>

@@ -64,8 +64,8 @@
                                         {% if config.plan_status == 'completed' %}
                                         <a href="{{ url_for('show_plan', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Plan</a>
                                         {% endif %}
-                                        {% if config.build_status == 'submitted' %}
-                                        <a href="{{ url_for('show_build_receipt', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Receipt</a>
+                                        {% if config.build_status == 'submitted' or config.build_status == 'completed' %}
+                                        <a href="{{ url_for('build_receipt', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Receipt</a>
                                         {% endif %}
                                     </td>
                                 </tr>

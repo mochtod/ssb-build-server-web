@@ -1,3265 +1,610 @@
-{
-  "timestamp": 1744378265.545133,
-  "items": [
-    {
-      "name": "esx2pr3cl20n117_local",
-      "id": "datastore-11815517",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n116_local",
-      "id": "datastore-11815516",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n100_local",
-      "id": "datastore-11775229",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n115_local",
-      "id": "datastore-11682462",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n113_local",
-      "id": "datastore-11682390",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n114_local",
-      "id": "datastore-11682463",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n112_local",
-      "id": "datastore-11682391",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n111_local",
-      "id": "datastore-11682389",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n110_local",
-      "id": "datastore-11682392",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl41n04-local",
-      "id": "datastore-9343439",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462973566976,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl40n03_local",
-      "id": "datastore-9746080",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl41_pstore2_vol-003",
-      "id": "datastore-9343460",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6089981558784,
-      "free_gb": 5671.74,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl41_pstore2_vol-002",
-      "id": "datastore-9343459",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5473513242624,
-      "free_gb": 5097.61,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl41_pstore2_vol-001",
-      "id": "datastore-9343458",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3316996112384,
-      "free_gb": 3089.19,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl41_pstore2_vol-004",
-      "id": "datastore-9343461",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6193976180736,
-      "free_gb": 5768.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n118_local",
-      "id": "datastore-11698841",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n117_local",
-      "id": "datastore-11698843",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n116_local",
-      "id": "datastore-11698839",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n114_local",
-      "id": "datastore-11682458",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n113_local",
-      "id": "datastore-11682481",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n112_local",
-      "id": "datastore-11593763",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl40n02_local",
-      "id": "datastore-8246631",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 464167895040,
-      "free_gb": 432.29,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n115_local",
-      "id": "datastore-11682459",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n111_local",
-      "id": "datastore-11593765",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl40n01_local",
-      "id": "datastore-8016390",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462971469824,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl40n05_local",
-      "id": "datastore-8871086",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339933659136,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl40n10_local",
-      "id": "datastore-10628703",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl40n04_local",
-      "id": "datastore-8871087",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl40n00_local",
-      "id": "datastore-8726484",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n110_local",
-      "id": "datastore-11593764",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "np_cl40_ntap3_vol00",
-      "id": "datastore-8226383",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4918482042880,
-      "free_gb": 4580.69,
-      "accessible": true
-    },
-    {
-      "name": "np_cl40_ntap3_vol02",
-      "id": "datastore-8226385",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4516275552256,
-      "free_gb": 4206.11,
-      "accessible": true
-    },
-    {
-      "name": "np_cl40_ntap3_vol01",
-      "id": "datastore-8226384",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4807273218048,
-      "free_gb": 4477.12,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl8_esx_scratch",
-      "id": "datastore-10687075",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 160792838144,
-      "free_space": 134853165056,
-      "free_gb": 125.59,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl8_esx_500",
-      "id": "datastore-10687076",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 3298266447872,
-      "free_space": 1989675057152,
-      "free_gb": 1853.03,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl8_esx_501",
-      "id": "datastore-10687077",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 3298266447872,
-      "free_space": 2301943087104,
-      "free_gb": 2143.85,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n118_local",
-      "id": "datastore-11826807",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n109_local",
-      "id": "datastore-11815498",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n106_local",
-      "id": "datastore-11815099",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n119_local",
-      "id": "datastore-11815107",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n108_local",
-      "id": "datastore-11759292",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n106_local",
-      "id": "datastore-11759240",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n105_local",
-      "id": "datastore-11759275",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n103_local",
-      "id": "datastore-11759241",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n102_local",
-      "id": "datastore-11759271",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "VeeamBackup_chr2pr1bu16.chrobinson.com",
-      "id": "datastore-11751302",
-      "type": "NFS",
-      "is_preferred": false,
-      "capacity": 109951095668736,
-      "free_space": 65016930041856,
-      "free_gb": 60551.73,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl50n111_local",
-      "id": "datastore-11700812",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n11_local",
-      "id": "datastore-9508427",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n41_local",
-      "id": "datastore-9598086",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n10_local",
-      "id": "datastore-9379961",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n08_local",
-      "id": "datastore-9379962",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n100_local",
-      "id": "datastore-11569260",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n11_local",
-      "id": "datastore-8251885",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n109_local",
-      "id": "datastore-10210080",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n39_local",
-      "id": "datastore-9598084",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n106_local",
-      "id": "datastore-10031923",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n12_local",
-      "id": "datastore-8251886",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n107_local",
-      "id": "datastore-11759239",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n02_local",
-      "id": "datastore-8649668",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n101_local",
-      "id": "datastore-11569265",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n105_local",
-      "id": "datastore-11815100",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n40_local",
-      "id": "datastore-9598085",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n23_local",
-      "id": "datastore-9544899",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl61n102_local",
-      "id": "datastore-11569276",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n103_local",
-      "id": "datastore-9951303",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n13_local",
-      "id": "datastore-11469679",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n37_local",
-      "id": "datastore-9572666",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n101_local",
-      "id": "datastore-11759280",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n20_local",
-      "id": "datastore-9535880",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n110_local",
-      "id": "datastore-10210082",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n05_local",
-      "id": "datastore-8649667",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n102_local",
-      "id": "datastore-9951305",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl50n110_local",
-      "id": "datastore-11682381",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n31_local",
-      "id": "datastore-9558651",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n07_local",
-      "id": "datastore-8649672",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n104_local",
-      "id": "datastore-9951306",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n35_local",
-      "id": "datastore-9572665",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n32_local",
-      "id": "datastore-9563179",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n104_local",
-      "id": "datastore-9946816",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n29_local",
-      "id": "datastore-9558649",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n102_local",
-      "id": "datastore-11569267",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n03_local",
-      "id": "datastore-8649670",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n100_local",
-      "id": "datastore-9946834",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl61n100_local",
-      "id": "datastore-11569254",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n06_local",
-      "id": "datastore-8649673",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n108_local",
-      "id": "datastore-10210081",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl31_ntap8_vol00",
-      "id": "datastore-8301099",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 4397778075648,
-      "free_space": 4105141485568,
-      "free_gb": 3823.21,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n26_local",
-      "id": "datastore-9554023",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n04_local",
-      "id": "datastore-8649671",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n30_local",
-      "id": "datastore-9558652",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n105_local",
-      "id": "datastore-11251279",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n22_local",
-      "id": "datastore-9544898",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl31_ntap8_vol02",
-      "id": "datastore-8301101",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 4397778075648,
-      "free_space": 3376901259264,
-      "free_gb": 3144.98,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n16_local",
-      "id": "datastore-9526594",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl61n101_local",
-      "id": "datastore-11569275",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n36_local",
-      "id": "datastore-9572668",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n103_local",
-      "id": "datastore-9946814",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n100_local",
-      "id": "datastore-9969145",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl61n103_local",
-      "id": "datastore-11569261",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl61n104_local",
-      "id": "datastore-11569266",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n107_local",
-      "id": "datastore-10210083",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n106_local",
-      "id": "datastore-11815111",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n12_local",
-      "id": "datastore-9508428",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr1sa20_data",
-      "id": "datastore-10637607",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 12592844111872,
-      "free_space": 5758369398784,
-      "free_gb": 5362.9,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n14_local",
-      "id": "datastore-11469678",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n09_local",
-      "id": "datastore-8251884",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n28_local",
-      "id": "datastore-9558650",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n103_local",
-      "id": "datastore-11569244",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n09_local",
-      "id": "datastore-9379963",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr1sa20_local",
-      "id": "datastore-10637602",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n104_local",
-      "id": "datastore-11759242",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n15_local",
-      "id": "datastore-9522091",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n38_local",
-      "id": "datastore-9572667",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl31_ntap8_vol01",
-      "id": "datastore-8301100",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 4397778075648,
-      "free_space": 4063527698432,
-      "free_gb": 3784.46,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n101_local",
-      "id": "datastore-11266193",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n105_local",
-      "id": "datastore-10031922",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n10_local",
-      "id": "datastore-8251887",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n101_local",
-      "id": "datastore-9951304",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl60n11_local",
-      "id": "datastore-9379964",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl71n104_local",
-      "id": "datastore-11569245",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n16_local",
-      "id": "datastore-4846924",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462971469824,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n19_local",
-      "id": "datastore-5092477",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 390842023936,
-      "free_space": 389326831616,
-      "free_gb": 362.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n22_local",
-      "id": "datastore-5554656",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462971469824,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n18_local",
-      "id": "datastore-5092470",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 390842023936,
-      "free_space": 389326831616,
-      "free_gb": 362.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n01_local",
-      "id": "datastore-8088296",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl12n5_local",
-      "id": "datastore-4018996",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 790005547008,
-      "free_space": 784493182976,
-      "free_gb": 730.62,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl12n3_local",
-      "id": "datastore-3778946",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 790005547008,
-      "free_space": 784493182976,
-      "free_gb": 730.62,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl14n01-local",
-      "id": "datastore-4505090",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462973566976,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n06_local",
-      "id": "datastore-7408392",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n01_local",
-      "id": "datastore-7161828",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl50n01_local",
-      "id": "datastore-7334428",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339930513408,
-      "free_gb": 316.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n17_local",
-      "id": "datastore-4846886",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462971469824,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n26_local",
-      "id": "datastore-6189900",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 110863843328,
-      "free_space": 100612964352,
-      "free_gb": 93.7,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n29_local",
-      "id": "datastore-6905897",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n05_local",
-      "id": "datastore-8152815",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n04_local",
-      "id": "datastore-7161817",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n08_local",
-      "id": "datastore-8173022",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n07_local",
-      "id": "datastore-8173023",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n27_local",
-      "id": "datastore-6794267",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl50n01_local_raid6",
-      "id": "datastore-7334429",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 10793789685760,
-      "free_space": 10791764885504,
-      "free_gb": 10050.61,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n02_local",
-      "id": "datastore-7161813",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n03_local",
-      "id": "datastore-8112591",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl12n2_local",
-      "id": "datastore-3778945",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 790005547008,
-      "free_space": 784493182976,
-      "free_gb": 730.62,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n03_local",
-      "id": "datastore-7161824",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n25_local",
-      "id": "datastore-6189896",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 110863843328,
-      "free_space": 100612964352,
-      "free_gb": 93.7,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n05_local",
-      "id": "datastore-7253279",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n28_local",
-      "id": "datastore-6794268",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl14n03-local",
-      "id": "datastore-4505103",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462973566976,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl12n1_local",
-      "id": "datastore-3778947",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 790005547008,
-      "free_space": 784493182976,
-      "free_gb": 730.62,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n08_local",
-      "id": "datastore-7720833",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl31n04_local",
-      "id": "datastore-8107739",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n08_LOCAL",
-      "id": "datastore-4466755",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 465436672000,
-      "free_gb": 433.47,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl31n03_local",
-      "id": "datastore-8107738",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n24_local",
-      "id": "datastore-5568992",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462971469824,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n04_local",
-      "id": "datastore-8152817",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl20n07_local",
-      "id": "datastore-7720834",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 102273908736,
-      "free_space": 100763959296,
-      "free_gb": 93.84,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl12n4_local",
-      "id": "datastore-4018997",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 790005547008,
-      "free_space": 784493182976,
-      "free_gb": 730.62,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl50n02_local",
-      "id": "datastore-8177982",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 261456134144,
-      "free_space": 259937796096,
-      "free_gb": 242.09,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl11n23_local",
-      "id": "datastore-5568988",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 470835789824,
-      "free_space": 462971469824,
-      "free_gb": 431.18,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n06_local",
-      "id": "datastore-8152816",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2pr3cl70n02_local",
-      "id": "datastore-8088317",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol04",
-      "id": "datastore-8211094",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5536444579840,
-      "free_gb": 5156.22,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol00",
-      "id": "datastore-8177997",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5216173817856,
-      "free_gb": 4857.94,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol05",
-      "id": "datastore-8267575",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5218538356736,
-      "free_gb": 4860.14,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol15",
-      "id": "datastore-11538337",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4765217980416,
-      "free_gb": 4437.96,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol02",
-      "id": "datastore-8178000",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5264633757696,
-      "free_gb": 4903.07,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol06",
-      "id": "datastore-9361521",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4827690041344,
-      "free_gb": 4496.14,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol14",
-      "id": "datastore-11538336",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5544107573248,
-      "free_gb": 5163.35,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol03",
-      "id": "datastore-8177999",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4996573691904,
-      "free_gb": 4653.42,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol11",
-      "id": "datastore-11429549",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5400453709824,
-      "free_gb": 5029.56,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol08",
-      "id": "datastore-9531347",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5316697653248,
-      "free_gb": 4951.56,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol13",
-      "id": "datastore-11489260",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5318902808576,
-      "free_gb": 4953.61,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol12",
-      "id": "datastore-11474664",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5368363089920,
-      "free_gb": 4999.68,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol01",
-      "id": "datastore-8177998",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5554614304768,
-      "free_gb": 5173.14,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl70_ntap8_vol07",
-      "id": "datastore-9531346",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5343325192192,
-      "free_gb": 4976.36,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-017",
-      "id": "datastore-9624018",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6508697878528,
-      "free_gb": 6061.7,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-015",
-      "id": "datastore-9531344",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4318305452032,
-      "free_gb": 4021.74,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-007",
-      "id": "datastore-9466085",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5063424606208,
-      "free_gb": 4715.68,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-005",
-      "id": "datastore-9466086",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6781409427456,
-      "free_gb": 6315.68,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-004",
-      "id": "datastore-9466089",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5122600992768,
-      "free_gb": 4770.79,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-001",
-      "id": "datastore-9466079",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5001081520128,
-      "free_gb": 4657.62,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-012",
-      "id": "datastore-9466083",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 1869480984576,
-      "free_gb": 1741.09,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-009",
-      "id": "datastore-9466088",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5947843936256,
-      "free_gb": 5539.36,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-002",
-      "id": "datastore-9466080",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5305851183104,
-      "free_gb": 4941.46,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-016",
-      "id": "datastore-9531345",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5701261852672,
-      "free_gb": 5309.71,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-013",
-      "id": "datastore-9531342",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5615772499968,
-      "free_gb": 5230.1,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-014",
-      "id": "datastore-9531343",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5408575979520,
-      "free_gb": 5037.13,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-011",
-      "id": "datastore-9466081",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5551871229952,
-      "free_gb": 5170.58,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-010",
-      "id": "datastore-9466087",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4448002768896,
-      "free_gb": 4142.53,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-003",
-      "id": "datastore-9466084",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4171226939392,
-      "free_gb": 3884.76,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-008",
-      "id": "datastore-9466082",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4295545061376,
-      "free_gb": 4000.54,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-018",
-      "id": "datastore-9624019",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6382565720064,
-      "free_gb": 5944.23,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_pstore2_vol-006",
-      "id": "datastore-9466090",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6005186363392,
-      "free_gb": 5592.77,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-009",
-      "id": "datastore-9343471",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5074696798208,
-      "free_gb": 4726.18,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-015",
-      "id": "datastore-11454564",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6446590722048,
-      "free_gb": 6003.86,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-002",
-      "id": "datastore-9343464",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5002172039168,
-      "free_gb": 4658.64,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-006",
-      "id": "datastore-9343468",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5574001426432,
-      "free_gb": 5191.19,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-005",
-      "id": "datastore-9343467",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5004517703680,
-      "free_gb": 4660.82,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-010",
-      "id": "datastore-9343472",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4315667234816,
-      "free_gb": 4019.28,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-018",
-      "id": "datastore-11538338",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6629211766784,
-      "free_gb": 6173.93,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-017",
-      "id": "datastore-11489259",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6810708738048,
-      "free_gb": 6342.97,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-012",
-      "id": "datastore-9531349",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5374218338304,
-      "free_gb": 5005.13,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-007",
-      "id": "datastore-9343469",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5045766586368,
-      "free_gb": 4699.24,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-001",
-      "id": "datastore-9343463",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4386766979072,
-      "free_gb": 4085.5,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-008",
-      "id": "datastore-9343470",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4235980701696,
-      "free_gb": 3945.06,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-016",
-      "id": "datastore-11459544",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6897681825792,
-      "free_gb": 6423.97,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-013",
-      "id": "datastore-9531350",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4892765716480,
-      "free_gb": 4556.74,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-003",
-      "id": "datastore-9343465",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4412002009088,
-      "free_gb": 4109.0,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-011",
-      "id": "datastore-9531348",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4515092758528,
-      "free_gb": 4205.01,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl60_pstore3_vol-004",
-      "id": "datastore-9343466",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4322033139712,
-      "free_gb": 4025.21,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl71_ntap7_vol00",
-      "id": "datastore-8247393",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 8768968458240,
-      "free_gb": 8166.74,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-104",
-      "id": "datastore-11543308",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3210450305024,
-      "free_gb": 2989.96,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-100",
-      "id": "datastore-11543302",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 2763916312576,
-      "free_gb": 2574.1,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-106",
-      "id": "datastore-11543307",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3285297659904,
-      "free_gb": 3059.67,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-105",
-      "id": "datastore-11543306",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3186147459072,
-      "free_gb": 2967.33,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-103",
-      "id": "datastore-11543305",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3096630525952,
-      "free_gb": 2883.96,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-101",
-      "id": "datastore-11543303",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3323918811136,
-      "free_gb": 3095.64,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-102",
-      "id": "datastore-11543304",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3100693757952,
-      "free_gb": 2887.75,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl11_pstore2_vol-107",
-      "id": "datastore-11574173",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3185650434048,
-      "free_gb": 2966.87,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol05",
-      "id": "datastore-8112605",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5228185255936,
-      "free_gb": 4869.13,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol03",
-      "id": "datastore-8112603",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5843359629312,
-      "free_gb": 5442.05,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol07",
-      "id": "datastore-8112607",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6360759533568,
-      "free_gb": 5923.92,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol10",
-      "id": "datastore-8158364",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3408750706688,
-      "free_gb": 3174.65,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol02",
-      "id": "datastore-8112602",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4882318753792,
-      "free_gb": 4547.01,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol08",
-      "id": "datastore-8112608",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6019639934976,
-      "free_gb": 5606.23,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol12",
-      "id": "datastore-9540435",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5749398831104,
-      "free_gb": 5354.54,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol09",
-      "id": "datastore-8112609",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6198100230144,
-      "free_gb": 5772.43,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol01",
-      "id": "datastore-8112601",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3908454842368,
-      "free_gb": 3640.03,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol00",
-      "id": "datastore-8112600",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3165469540352,
-      "free_gb": 2948.07,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol11",
-      "id": "datastore-8158365",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5300098695168,
-      "free_gb": 4936.1,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol06",
-      "id": "datastore-8112606",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5640512602112,
-      "free_gb": 5253.14,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl5_ntap7_vol04",
-      "id": "datastore-8112604",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4865970405376,
-      "free_gb": 4531.79,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl50_pstore1_vol02",
-      "id": "datastore-11091953",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 8592311713792,
-      "free_gb": 8002.21,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl50_pstore1_vol01",
-      "id": "datastore-11091952",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 6770139332608,
-      "free_gb": 6305.18,
-      "accessible": true
-    },
-    {
-      "name": "pr_cl50_pstore1_vol00",
-      "id": "datastore-8216117",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5017182404608,
-      "free_gb": 4672.62,
-      "accessible": true
-    },
-    {
-      "name": "pr-cl20-ntap8-vol02",
-      "id": "datastore-11738327",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4920116772864,
-      "free_gb": 4582.22,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n101_local",
-      "id": "datastore-10347068",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n112_local",
-      "id": "datastore-10182919",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl61n100_local",
-      "id": "datastore-11569251",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n104_local",
-      "id": "datastore-10355907",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n106_local",
-      "id": "datastore-10405159",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n106_local",
-      "id": "datastore-9909272",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl71n100_local",
-      "id": "datastore-11569237",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_iso",
-      "id": "datastore-3757124",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 2198754820096,
-      "free_space": 2147591651328,
-      "free_gb": 2000.1,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n109_local",
-      "id": "datastore-10544487",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np1sa11_data",
-      "id": "datastore-6229716",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 1798785990656,
-      "free_space": 1786081443840,
-      "free_gb": 1663.42,
-      "accessible": false
-    },
-    {
-      "name": "esx2np3cl60n107_local",
-      "id": "datastore-9909284",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n108_local",
-      "id": "datastore-9909279",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n110_local",
-      "id": "datastore-10101015",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n103_local",
-      "id": "datastore-10355909",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np1sa10_data",
-      "id": "datastore-6229717",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 1798785990656,
-      "free_space": 1795530162176,
-      "free_gb": 1672.22,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n100_local",
-      "id": "datastore-10347077",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n103_local",
-      "id": "datastore-10602156",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n109_local",
-      "id": "datastore-9909288",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n108_local",
-      "id": "datastore-10437190",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n104_local",
-      "id": "datastore-9909270",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n105_local",
-      "id": "datastore-10355908",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n107_local",
-      "id": "datastore-10405160",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n113_local",
-      "id": "datastore-10182920",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n102_local",
-      "id": "datastore-9909310",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n111_local",
-      "id": "datastore-10101016",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl20n102_local",
-      "id": "datastore-10347067",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341009498112,
-      "free_gb": 317.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n105_local",
-      "id": "datastore-9909281",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl60n101_local",
-      "id": "datastore-9909282",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl11n22_local",
-      "id": "datastore-6346782",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n101_local",
-      "id": "datastore-9849329",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n100_local",
-      "id": "datastore-9841809",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np1sa11_local",
-      "id": "datastore-6224685",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": false
-    },
-    {
-      "name": "esx2np1sa10_local",
-      "id": "datastore-6229729",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 330164076544,
-      "free_gb": 307.49,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n107_local",
-      "id": "datastore-9853843",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341003206656,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n102_local",
-      "id": "datastore-9849333",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n103_local",
-      "id": "datastore-9849335",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl11n23_local",
-      "id": "datastore-6346780",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n108_local",
-      "id": "datastore-9853845",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341003206656,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl11n21_local",
-      "id": "datastore-6346781",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 341449900032,
-      "free_space": 339935756288,
-      "free_gb": 316.59,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n106_local",
-      "id": "datastore-9849352",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n105_local",
-      "id": "datastore-9858404",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n104_local",
-      "id": "datastore-9849337",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "esx2np3cl70n109_local",
-      "id": "datastore-9849354",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 342523641856,
-      "free_space": 341004255232,
-      "free_gb": 317.58,
-      "accessible": true
-    },
-    {
-      "name": "dc2-np7-scratch",
-      "id": "datastore-1847487",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 214479929344,
-      "free_space": 159579635712,
-      "free_gb": 148.62,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_405",
-      "id": "datastore-1474107",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3215440478208,
-      "free_gb": 2994.61,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_402",
-      "id": "datastore-1466831",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3511570923520,
-      "free_gb": 3270.41,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_406",
-      "id": "datastore-1474108",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3443997540352,
-      "free_gb": 3207.47,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_407",
-      "id": "datastore-1649375",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3455631491072,
-      "free_gb": 3218.31,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_408",
-      "id": "datastore-1649376",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3381712125952,
-      "free_gb": 3149.46,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_401",
-      "id": "datastore-1463201",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3129638649856,
-      "free_gb": 2914.7,
-      "accessible": true
-    },
-    {
-      "name": "np-cl1-esx-409",
-      "id": "datastore-5050410",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 2953881583616,
-      "free_gb": 2751.02,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_403",
-      "id": "datastore-1466832",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 2965130706944,
-      "free_gb": 2761.49,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_400",
-      "id": "datastore-1463200",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 2206208098304,
-      "free_gb": 2054.69,
-      "accessible": true
-    },
-    {
-      "name": "np_cl1_esx_404",
-      "id": "datastore-1470441",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3181814743040,
-      "free_gb": 2963.3,
-      "accessible": true
-    },
-    {
-      "name": "np-cl1-esx-410",
-      "id": "datastore-5050411",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 4231970947072,
-      "free_gb": 3941.33,
-      "accessible": true
-    },
-    {
-      "name": "np-cl1-esx-411",
-      "id": "datastore-5072587",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 6596801331200,
-      "free_space": 3731670171648,
-      "free_gb": 3475.39,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-005",
-      "id": "datastore-9891254",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3325377380352,
-      "free_gb": 3097.0,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-008",
-      "id": "datastore-9918499",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3543273570304,
-      "free_gb": 3299.93,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-010",
-      "id": "datastore-10017566",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4512022528000,
-      "free_gb": 4202.15,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-009",
-      "id": "datastore-10017565",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3848964931584,
-      "free_gb": 3584.63,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-004",
-      "id": "datastore-9891253",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3540240039936,
-      "free_gb": 3297.11,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-001",
-      "id": "datastore-9891250",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3685702696960,
-      "free_gb": 3432.58,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-002",
-      "id": "datastore-9891251",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3434722885632,
-      "free_gb": 3198.83,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-006",
-      "id": "datastore-9891255",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3819745312768,
-      "free_gb": 3557.42,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-000",
-      "id": "datastore-10013013",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4074130898944,
-      "free_gb": 3794.33,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-003",
-      "id": "datastore-9891252",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3216684089344,
-      "free_gb": 2995.77,
-      "accessible": true
-    },
-    {
-      "name": "np_cl70_pstore1_vol-007",
-      "id": "datastore-9918498",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4041603022848,
-      "free_gb": 3764.04,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_401",
-      "id": "datastore-4898881",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4951312957440,
-      "free_gb": 4611.27,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_400",
-      "id": "datastore-3314812",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 8728446238720,
-      "free_gb": 8129.0,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_501",
-      "id": "datastore-9918507",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4097566572544,
-      "free_gb": 3816.16,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_302",
-      "id": "datastore-4395110",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 8792524718080,
-      "free_gb": 8188.68,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_301",
-      "id": "datastore-3314811",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3081774301184,
-      "free_gb": 2870.13,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_503",
-      "id": "datastore-9918509",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4407673487360,
-      "free_gb": 4104.97,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_504",
-      "id": "datastore-9918510",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4543846809600,
-      "free_gb": 4231.79,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_300",
-      "id": "datastore-3314810",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 5936256122880,
-      "free_gb": 5528.57,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_402",
-      "id": "datastore-6346762",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3786168860672,
-      "free_gb": 3526.14,
-      "accessible": true
-    },
-    {
-      "name": "np_cl11_esxkub_502",
-      "id": "datastore-9918508",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4705782595584,
-      "free_gb": 4382.6,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_403",
-      "id": "datastore-2795325",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 2317255442432,
-      "free_gb": 2158.11,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_409",
-      "id": "datastore-10036503",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4728214781952,
-      "free_gb": 4403.49,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_408",
-      "id": "datastore-4693197",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4054933569536,
-      "free_gb": 3776.45,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_401",
-      "id": "datastore-1871248",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 2718544429056,
-      "free_gb": 2531.84,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_402",
-      "id": "datastore-1871249",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4372327038976,
-      "free_gb": 4072.05,
-      "accessible": true
-    },
-    {
-      "name": "np-cl7-esx-412",
-      "id": "datastore-10041149",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3906190966784,
-      "free_gb": 3637.92,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_410",
-      "id": "datastore-10036502",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 2550013100032,
-      "free_gb": 2374.88,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_400",
-      "id": "datastore-1871246",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 4686144864256,
-      "free_gb": 4364.31,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_405",
-      "id": "datastore-2851953",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3152429449216,
-      "free_gb": 2935.93,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_404",
-      "id": "datastore-2808614",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3534995062784,
-      "free_gb": 3292.22,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_407",
-      "id": "datastore-4495727",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 2497933475840,
-      "free_gb": 2326.38,
-      "accessible": true
-    },
-    {
-      "name": "np_cl7_esx_406",
-      "id": "datastore-4376249",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 2770956451840,
-      "free_gb": 2580.65,
-      "accessible": true
-    },
-    {
-      "name": "np-cl7-esx-411",
-      "id": "datastore-10041148",
-      "type": "VMFS",
-      "is_preferred": false,
-      "capacity": 8795824586752,
-      "free_space": 3050750083072,
-      "free_gb": 2841.23,
-      "accessible": true
-    }
-  ]
-}
+[
+  {
+    "name": "esx2pr3cl20n117_local",
+    "id": "datastore-11815517",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n116_local",
+    "id": "datastore-11815516",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n100_local",
+    "id": "datastore-11775229",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n115_local",
+    "id": "datastore-11682462",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n113_local",
+    "id": "datastore-11682390",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n114_local",
+    "id": "datastore-11682463",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n112_local",
+    "id": "datastore-11682391",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n111_local",
+    "id": "datastore-11682389",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n110_local",
+    "id": "datastore-11682392",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl41n04-local",
+    "id": "datastore-9343439",
+    "type": "Datastore",
+    "capacity": 470835789824,
+    "free_space": 462973566976,
+    "free_gb": 431.18
+  },
+  {
+    "name": "esx2pr3cl40n03_local",
+    "id": "datastore-9746080",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "pr_cl41_pstore2_vol-003",
+    "id": "datastore-9343460",
+    "type": "Datastore",
+    "capacity": 8795824586752,
+    "free_space": 6087943127040,
+    "free_gb": 5669.84
+  },
+  {
+    "name": "pr_cl41_pstore2_vol-002",
+    "id": "datastore-9343459",
+    "type": "Datastore",
+    "capacity": 8795824586752,
+    "free_space": 5467487076352,
+    "free_gb": 5091.99
+  },
+  {
+    "name": "pr_cl41_pstore2_vol-001",
+    "id": "datastore-9343458",
+    "type": "Datastore",
+    "capacity": 8795824586752,
+    "free_space": 3313079681024,
+    "free_gb": 3085.55
+  },
+  {
+    "name": "pr_cl41_pstore2_vol-004",
+    "id": "datastore-9343461",
+    "type": "Datastore",
+    "capacity": 8795824586752,
+    "free_space": 6191206891520,
+    "free_gb": 5766.01
+  },
+  {
+    "name": "esx2np3cl20n118_local",
+    "id": "datastore-11698841",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n117_local",
+    "id": "datastore-11698843",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n116_local",
+    "id": "datastore-11698839",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n114_local",
+    "id": "datastore-11682458",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n113_local",
+    "id": "datastore-11682481",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n112_local",
+    "id": "datastore-11593763",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl40n02_local",
+    "id": "datastore-8246631",
+    "type": "Datastore",
+    "capacity": 470835789824,
+    "free_space": 464167895040,
+    "free_gb": 432.29
+  },
+  {
+    "name": "esx2np3cl20n115_local",
+    "id": "datastore-11682459",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n111_local",
+    "id": "datastore-11593765",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl40n01_local",
+    "id": "datastore-8016390",
+    "type": "Datastore",
+    "capacity": 470835789824,
+    "free_space": 462971469824,
+    "free_gb": 431.18
+  },
+  {
+    "name": "esx2np3cl40n05_local",
+    "id": "datastore-8871086",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339933659136,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2np3cl40n10_local",
+    "id": "datastore-10628703",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2np3cl40n04_local",
+    "id": "datastore-8871087",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2np3cl40n00_local",
+    "id": "datastore-8726484",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2np3cl20n110_local",
+    "id": "datastore-11593764",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "np_cl40_ntap3_vol00",
+    "id": "datastore-8226383",
+    "type": "Datastore",
+    "capacity": 8795824586752,
+    "free_space": 4918442196992,
+    "free_gb": 4580.66
+  },
+  {
+    "name": "np_cl40_ntap3_vol02",
+    "id": "datastore-8226385",
+    "type": "Datastore",
+    "capacity": 8795824586752,
+    "free_space": 4511155355648,
+    "free_gb": 4201.34
+  },
+  {
+    "name": "np_cl40_ntap3_vol01",
+    "id": "datastore-8226384",
+    "type": "Datastore",
+    "capacity": 8795824586752,
+    "free_space": 4803259269120,
+    "free_gb": 4473.38
+  },
+  {
+    "name": "pr_cl8_esx_scratch",
+    "id": "datastore-10687075",
+    "type": "Datastore",
+    "capacity": 160792838144,
+    "free_space": 134845825024,
+    "free_gb": 125.58
+  },
+  {
+    "name": "pr_cl8_esx_500",
+    "id": "datastore-10687076",
+    "type": "Datastore",
+    "capacity": 3298266447872,
+    "free_space": 1989850169344,
+    "free_gb": 1853.19
+  },
+  {
+    "name": "pr_cl8_esx_501",
+    "id": "datastore-10687077",
+    "type": "Datastore",
+    "capacity": 3298266447872,
+    "free_space": 2301958815744,
+    "free_gb": 2143.87
+  },
+  {
+    "name": "esx2pr3cl20n118_local",
+    "id": "datastore-11826807",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n109_local",
+    "id": "datastore-11815498",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl70n106_local",
+    "id": "datastore-11815099",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n119_local",
+    "id": "datastore-11815107",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n108_local",
+    "id": "datastore-11759292",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n106_local",
+    "id": "datastore-11759240",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n105_local",
+    "id": "datastore-11759275",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n103_local",
+    "id": "datastore-11759241",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n102_local",
+    "id": "datastore-11759271",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "VeeamBackup_chr2pr1bu16.chrobinson.com",
+    "id": "datastore-11751302",
+    "type": "Datastore",
+    "capacity": 109951095668736,
+    "free_space": 65535602065408,
+    "free_gb": 61034.79
+  },
+  {
+    "name": "esx2pr3cl50n111_local",
+    "id": "datastore-11700812",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl71n11_local",
+    "id": "datastore-9508427",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2pr3cl71n41_local",
+    "id": "datastore-9598086",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2pr3cl60n10_local",
+    "id": "datastore-9379961",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl60n08_local",
+    "id": "datastore-9379962",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl71n100_local",
+    "id": "datastore-11569260",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl70n11_local",
+    "id": "datastore-8251885",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl60n109_local",
+    "id": "datastore-10210080",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl71n39_local",
+    "id": "datastore-9598084",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2pr3cl60n106_local",
+    "id": "datastore-10031923",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n101_local",
+    "id": "datastore-10347068",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341009498112,
+    "free_gb": 317.59
+  },
+  {
+    "name": "esx2np3cl70n112_local",
+    "id": "datastore-10182919",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl61n100_local",
+    "id": "datastore-11569251",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n104_local",
+    "id": "datastore-10355907",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341009498112,
+    "free_gb": 317.59
+  },
+  {
+    "name": "esx2np3cl20n106_local",
+    "id": "datastore-10405159",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341009498112,
+    "free_gb": 317.59
+  },
+  {
+    "name": "esx2np3cl60n106_local",
+    "id": "datastore-9909272",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl71n100_local",
+    "id": "datastore-11569237",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "np_cl7_esx_iso",
+    "id": "datastore-3757124",
+    "type": "Datastore",
+    "capacity": 2198754820096,
+    "free_space": 2147591651328,
+    "free_gb": 2000.1
+  },
+  {
+    "name": "esx2np3cl20n109_local",
+    "id": "datastore-10544487",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341009498112,
+    "free_gb": 317.59
+  },
+  {
+    "name": "esx2np1sa11_data",
+    "id": "datastore-6229716",
+    "type": "Datastore",
+    "capacity": 1798785990656,
+    "free_space": 1786078298112,
+    "free_gb": 1663.42
+  },
+  {
+    "name": "esx2np3cl60n107_local",
+    "id": "datastore-9909284",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl60n108_local",
+    "id": "datastore-9909279",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl70n110_local",
+    "id": "datastore-10101015",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n103_local",
+    "id": "datastore-10355909",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341009498112,
+    "free_gb": 317.59
+  },
+  {
+    "name": "esx2np1sa10_data",
+    "id": "datastore-6229717",
+    "type": "Datastore",
+    "capacity": 1798785990656,
+    "free_space": 1795530162176,
+    "free_gb": 1672.22
+  },
+  {
+    "name": "esx2np3cl20n100_local",
+    "id": "datastore-10347077",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341009498112,
+    "free_gb": 317.59
+  },
+  {
+    "name": "esx2np3cl60n103_local",
+    "id": "datastore-10602156",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl60n109_local",
+    "id": "datastore-9909288",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2np3cl20n108_local",
+    "id": "datastore-10437190",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341009498112,
+    "free_gb": 317.59
+  },
+  {
+    "name": "esx2np3cl60n104_local",
+    "id": "datastore-9909270",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  }
+]

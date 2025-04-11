@@ -18,7 +18,7 @@ from git import Repo
 from git.exc import GitCommandError
 import logging
 from vsphere_utils import test_vsphere_connection
-import vsphere_resources
+import vsphere_optimized_loader
 from vsphere_resource_functions import generate_variables_file, generate_terraform_config
 
 app = Flask(__name__)
@@ -28,7 +28,7 @@ class VSphereResourceManager:
     """Manages asynchronous fetching of vSphere resources."""
     
     def __init__(self):
-        self.resources = vsphere_resources.get_default_resources()
+        self.resources = vsphere_optimized_loader.get_default_resources()
         self.status = {
             'loading': False,
             'last_update': None,
@@ -56,7 +56,16 @@ class VSphereResourceManager:
         """Worker function to fetch vSphere resources."""
         try:
             logger.info("Background thread fetching vSphere resources")
-            resources = vsphere_resources.get_vsphere_resources(use_cache=True, force_refresh=True)
+            # Get target datacenters from environment variable, if set
+            target_dcs = os.environ.get('VSPHERE_DATACENTERS', '').split(',')
+            target_dcs = [dc.strip() for dc in target_dcs if dc.strip()]
+            
+            # Use optimized loader with targeted datacenter filtering
+            resources = vsphere_optimized_loader.get_vsphere_resources(
+                use_cache=True, 
+                force_refresh=True,
+                target_datacenters=target_dcs if target_dcs else None
+            )
             
             with self.lock:
                 self.resources = resources
@@ -756,3 +765,320 @@ def build_config(request_id, timestamp):
     except Exception as e:
         flash(f'Error building configuration: {str(e)}', 'error')
         return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
+
+# Admin routes
+@app.route('/admin/users')
+@role_required(ROLE_ADMIN)
+def admin_users():
+    """Admin user management page"""
+    users = load_users()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/add_user', methods=['POST'])
+@role_required(ROLE_ADMIN)
+def add_user():
+    """Add a new user"""
+    try:
+        username = request.form.get('username')
+        password = request.form.get('password')
+        name = request.form.get('name')
+        role = request.form.get('role')
+        
+        if not username or not password or not name or not role:
+            flash('All fields are required', 'error')
+            return redirect(url_for('admin_users'))
+        
+        # Load existing users
+        users = load_users()
+        
+        # Check if user already exists
+        if username in users:
+            flash(f'User {username} already exists', 'error')
+            return redirect(url_for('admin_users'))
+        
+        # Add new user with hashed password
+        users[username] = {
+            'password': hash_password(password),
+            'name': name,
+            'role': role
+        }
+        
+        # Save updated users
+        with open(USERS_FILE, 'w') as f:
+            json.dump(users, f, indent=2)
+        
+        flash(f'User {username} added successfully', 'success')
+        return redirect(url_for('admin_users'))
+        
+    except Exception as e:
+        flash(f'Error adding user: {str(e)}', 'error')
+        return redirect(url_for('admin_users'))
+
+@app.route('/admin/settings')
+@role_required(ROLE_ADMIN)
+def admin_settings():
+    """Admin settings page"""
+    env_vars = read_env_file()
+    return render_template('admin_settings.html', env_vars=env_vars)
+
+@app.route('/admin/save_settings', methods=['POST'])
+@role_required(ROLE_ADMIN)
+def admin_save_settings():
+    """Save application settings"""
+    try:
+        # Get form data
+        form_data = {key: value for key, value in request.form.items() if key not in ['csrf_token']}
+        
+        # Read existing environment variables
+        env_vars = read_env_file()
+        
+        # Update with new values (only if not empty)
+        for key, value in form_data.items():
+            if value:  # Only update if value is not empty
+                env_vars[key] = value
+        
+        # Save back to .env file
+        if write_env_file(env_vars):
+            flash('Settings saved successfully', 'success')
+        else:
+            flash('Error saving settings to file', 'error')
+            
+        return redirect(url_for('admin_settings'))
+        
+    except Exception as e:
+        flash(f'Error saving settings: {str(e)}', 'error')
+        return redirect(url_for('admin_settings'))
+
+@app.route('/admin/test_connection/<service>', methods=['POST'])
+@role_required(ROLE_ADMIN)
+def admin_test_connection(service):
+    """Test connection to a service"""
+    try:
+        if service == 'vsphere':
+            # Test vSphere connection
+            conn_result = test_vsphere_connection()
+            if conn_result.get('success'):
+                flash('vSphere connection successful', 'success')
+            else:
+                flash(f'vSphere connection failed: {conn_result.get("message")}', 'error')
+        
+        elif service == 'atlantis':
+            # Test Atlantis connection
+            try:
+                atlantis_url = os.environ.get('ATLANTIS_URL', '')
+                atlantis_token = os.environ.get('ATLANTIS_TOKEN', '')
+                
+                if not atlantis_url:
+                    flash('Atlantis URL is not configured', 'error')
+                    return redirect(url_for('admin_settings'))
+                
+                # Make a simple health check request
+                headers = {}
+                if atlantis_token:
+                    headers['X-Atlantis-Token'] = atlantis_token
+                
+                response = requests.get(f"{atlantis_url}/healthz", headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    flash('Atlantis connection successful', 'success')
+                else:
+                    flash(f'Atlantis connection failed: HTTP {response.status_code}', 'error')
+            except Exception as e:
+                flash(f'Atlantis connection failed: {str(e)}', 'error')
+        
+        elif service == 'netbox':
+            # Test NetBox connection
+            try:
+                netbox_url = os.environ.get('NETBOX_URL', '')
+                netbox_token = os.environ.get('NETBOX_TOKEN', '')
+                
+                if not netbox_url:
+                    flash('NetBox URL is not configured', 'error')
+                    return redirect(url_for('admin_settings'))
+                
+                # Make a simple request to the API
+                headers = {
+                    'Accept': 'application/json'
+                }
+                
+                if netbox_token:
+                    headers['Authorization'] = f'Token {netbox_token}'
+                
+                response = requests.get(f"{netbox_url}/status/", headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    flash('NetBox connection successful', 'success')
+                else:
+                    flash(f'NetBox connection failed: HTTP {response.status_code}', 'error')
+            except Exception as e:
+                flash(f'NetBox connection failed: {str(e)}', 'error')
+        
+        else:
+            flash(f'Unknown service: {service}', 'error')
+        
+        return redirect(url_for('admin_settings'))
+    
+    except Exception as e:
+        flash(f'Error testing connection: {str(e)}', 'error')
+        return redirect(url_for('admin_settings'))
+
+# Atlantis API functions
+def run_atlantis_plan(config_data, tf_directory):
+    """Run Terraform plan via Atlantis API"""
+    try:
+        # Get plan metadata
+        server_name = config_data.get('server_name', 'unknown')
+        request_id = config_data.get('request_id', 'unknown')
+        
+        # Prepare the payload using the helper function from fix_atlantis_apply
+        from fix_atlantis_apply import generate_atlantis_payload
+        
+        # Get all terraform files in the directory
+        tf_files = [f for f in os.listdir(tf_directory) if f.endswith('.tf') or f.endswith('.tfvars')]
+        
+        # Generate the payload for Atlantis API
+        payload = generate_atlantis_payload(
+            repo="build-server-repo",
+            workspace="default",
+            dir=tf_directory,
+            commit_hash=f"request-{request_id}",
+            comment="plan",
+            user=config_data.get('build_username', 'system'),
+            files=tf_files
+        )
+        
+        # Call Atlantis API
+        atlantis_url = os.environ.get('ATLANTIS_URL', '')
+        atlantis_token = os.environ.get('ATLANTIS_TOKEN', '')
+        
+        if not atlantis_url:
+            return {
+                'status': 'error',
+                'message': 'Atlantis URL is not configured'
+            }
+        
+        # Prepare headers
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        if atlantis_token:
+            headers['X-Atlantis-Token'] = atlantis_token
+        
+        # Make the request to Atlantis
+        response = requests.post(
+            f"{atlantis_url}/api/plan",
+            json=payload,
+            headers=headers,
+            timeout=int(os.environ.get('TIMEOUT', 120))
+        )
+        
+        # Check response
+        if response.status_code == 200:
+            response_data = response.json()
+            plan_id = response_data.get('id', '')
+            return {
+                'status': 'success',
+                'plan_id': plan_id,
+                'atlantis_url': f"{atlantis_url}/plan/{plan_id}",
+                'plan_log': response_data.get('log', '')
+            }
+        else:
+            return {
+                'status': 'error',
+                'message': f"Atlantis API returned status code {response.status_code}: {response.text}"
+            }
+    
+    except Exception as e:
+        logger.exception(f"Error running Atlantis plan: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+def run_atlantis_apply(config_data, tf_directory):
+    """Apply Terraform plan via Atlantis API"""
+    try:
+        # Get the plan ID from the config
+        plan_id = config_data.get('plan_id')
+        if not plan_id:
+            return {
+                'status': 'error',
+                'message': 'No plan ID found in configuration'
+            }
+        
+        # Get all terraform files in the directory
+        tf_files = [f for f in os.listdir(tf_directory) if f.endswith('.tf') or f.endswith('.tfvars')]
+        
+        # Prepare the payload for apply
+        from fix_atlantis_apply import generate_atlantis_apply_payload_fixed
+        
+        payload = generate_atlantis_apply_payload_fixed(config_data, tf_directory, tf_files, plan_id)
+        
+        # Call Atlantis API
+        atlantis_url = os.environ.get('ATLANTIS_URL', '')
+        atlantis_token = os.environ.get('ATLANTIS_TOKEN', '')
+        
+        if not atlantis_url:
+            return {
+                'status': 'error',
+                'message': 'Atlantis URL is not configured'
+            }
+        
+        # Prepare headers
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        if atlantis_token:
+            headers['X-Atlantis-Token'] = atlantis_token
+        
+        # Make the request to Atlantis
+        response = requests.post(
+            f"{atlantis_url}/api/apply",
+            json=payload,
+            headers=headers,
+            timeout=int(os.environ.get('TIMEOUT', 300))
+        )
+        
+        # Check response
+        if response.status_code == 200:
+            response_data = response.json()
+            return {
+                'status': 'success',
+                'apply_id': response_data.get('id', ''),
+                'build_log': response_data.get('log', '')
+            }
+        else:
+            return {
+                'status': 'error',
+                'message': f"Atlantis API returned status code {response.status_code}: {response.text}"
+            }
+    
+    except Exception as e:
+        logger.exception(f"Error applying Terraform plan: {str(e)}")
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+
+@app.route('/build_receipt/<request_id>_<timestamp>')
+@login_required
+def build_receipt(request_id, timestamp):
+    """Build receipt page"""
+    try:
+        # Load configuration
+        config_file = os.path.join(CONFIG_DIR, f"{request_id}_{timestamp}.json")
+        with open(config_file, 'r') as f:
+            config_data = json.load(f)
+        
+        return render_template(
+            'build_receipt.html',
+            config=config_data,
+            request_id=request_id,
+            timestamp=timestamp,
+            user_role=session.get('role', '')
+        )
+    except Exception as e:
+        flash(f'Error loading build receipt: {str(e)}', 'error')
+        return redirect(url_for('configs'))
