@@ -38,14 +38,14 @@ services:
       # VSphere connection
       - VSPHERE_USER=${VSPHERE_USER:-vsphere-username}
       - VSPHERE_PASSWORD=${VSPHERE_PASSWORD:-vsphere-password}
-      - VSPHERE_SERVER=${VSPHERE_SERVER:-vsphere-server}
+      - VSPHERE_SERVER=${VSPHERE_SERVER:-vcenter.chrobinson.com}
       - VSPHERE_DATACENTERS=${VSPHERE_DATACENTERS:-EBDC NONPROD,EBDC PROD}
       
       # NetBox integration
       - NETBOX_HOST=netbox
       - NETBOX_PORT=8000
       - NETBOX_TOKEN=${NETBOX_TOKEN:-netbox-api-token}
-      - NETBOX_URL=${NETBOX_URL:-https://netbox.example.com/api}
+      - NETBOX_URL=${NETBOX_URL:-https://netbox.chrobinson.com/api}
     depends_on:
       atlantis:
         condition: service_healthy
@@ -88,11 +88,11 @@ services:
       # VSphere connection for Terraform
       - VSPHERE_USER=${VSPHERE_USER:-vsphere-username}
       - VSPHERE_PASSWORD=${VSPHERE_PASSWORD:-vsphere-password}
-      - VSPHERE_SERVER=${VSPHERE_SERVER:-vsphere-server}
+      - VSPHERE_SERVER=${VSPHERE_SERVER:-vcenter.chrobinson.com}
       - VSPHERE_DATACENTERS=${VSPHERE_DATACENTERS:-EBDC NONPROD,EBDC PROD}
       # NetBox integration
       - NETBOX_TOKEN=${NETBOX_TOKEN:-netbox-api-token}
-      - NETBOX_URL=${NETBOX_URL:-https://netbox.example.com/api}
+      - NETBOX_URL=${NETBOX_URL:-https://netbox.chrobinson.com/api}
     command: [
       "server", 
       "--disable-repo-locking", 
