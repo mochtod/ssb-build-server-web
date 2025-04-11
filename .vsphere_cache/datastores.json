@@ -268,7 +268,7 @@
     "id": "datastore-10687075",
     "type": "Datastore",
     "capacity": 160792838144,
-    "free_space": 134845825024,
+    "free_space": 134841630720,
     "free_gb": 125.58
   },
   {
@@ -276,7 +276,7 @@
     "id": "datastore-10687076",
     "type": "Datastore",
     "capacity": 3298266447872,
-    "free_space": 1989850169344,
+    "free_space": 1989848072192,
     "free_gb": 1853.19
   },
   {
@@ -284,8 +284,8 @@
     "id": "datastore-10687077",
     "type": "Datastore",
     "capacity": 3298266447872,
-    "free_space": 2301958815744,
-    "free_gb": 2143.87
+    "free_space": 2301952524288,
+    "free_gb": 2143.86
   },
   {
     "name": "esx2pr3cl20n118_local",
