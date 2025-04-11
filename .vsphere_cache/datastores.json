@@ -1,5 +1,5 @@
 {
-  "timestamp": 1744352133.8094285,
+  "timestamp": 1744378265.545133,
   "items": [
     {
       "name": "esx2pr3cl20n117_local",
@@ -117,8 +117,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6096676716544,
-      "free_gb": 5677.97,
+      "free_space": 6089981558784,
+      "free_gb": 5671.74,
       "accessible": true
     },
     {
@@ -127,8 +127,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5482310795264,
-      "free_gb": 5105.8,
+      "free_space": 5473513242624,
+      "free_gb": 5097.61,
       "accessible": true
     },
     {
@@ -137,8 +137,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3326133403648,
-      "free_gb": 3097.7,
+      "free_space": 3316996112384,
+      "free_gb": 3089.19,
       "accessible": true
     },
     {
@@ -147,8 +147,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6197464793088,
-      "free_gb": 5771.84,
+      "free_space": 6193976180736,
+      "free_gb": 5768.59,
       "accessible": true
     },
     {
@@ -307,8 +307,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4919399546880,
-      "free_gb": 4581.55,
+      "free_space": 4918482042880,
+      "free_gb": 4580.69,
       "accessible": true
     },
     {
@@ -317,8 +317,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4492412059648,
-      "free_gb": 4183.88,
+      "free_space": 4516275552256,
+      "free_gb": 4206.11,
       "accessible": true
     },
     {
@@ -327,8 +327,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4817078452224,
-      "free_gb": 4486.25,
+      "free_space": 4807273218048,
+      "free_gb": 4477.12,
       "accessible": true
     },
     {
@@ -337,8 +337,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 160792838144,
-      "free_space": 134840582144,
-      "free_gb": 125.58,
+      "free_space": 134853165056,
+      "free_gb": 125.59,
       "accessible": true
     },
     {
@@ -347,8 +347,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 3298266447872,
-      "free_space": 1989702320128,
-      "free_gb": 1853.05,
+      "free_space": 1989675057152,
+      "free_gb": 1853.03,
       "accessible": true
     },
     {
@@ -357,8 +357,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 3298266447872,
-      "free_space": 2302004953088,
-      "free_gb": 2143.91,
+      "free_space": 2301943087104,
+      "free_gb": 2143.85,
       "accessible": true
     },
     {
@@ -457,8 +457,8 @@
       "type": "NFS",
       "is_preferred": false,
       "capacity": 109951095668736,
-      "free_space": 65530343718912,
-      "free_gb": 61029.89,
+      "free_space": 65016930041856,
+      "free_gb": 60551.73,
       "accessible": true
     },
     {
@@ -867,8 +867,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 4397778075648,
-      "free_space": 4105133096960,
-      "free_gb": 3823.2,
+      "free_space": 4105141485568,
+      "free_gb": 3823.21,
       "accessible": true
     },
     {
@@ -927,8 +927,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 4397778075648,
-      "free_space": 3376958930944,
-      "free_gb": 3145.04,
+      "free_space": 3376901259264,
+      "free_gb": 3144.98,
       "accessible": true
     },
     {
@@ -1037,7 +1037,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 12592844111872,
-      "free_space": 5758370447360,
+      "free_space": 5758369398784,
       "free_gb": 5362.9,
       "accessible": true
     },
@@ -1137,8 +1137,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 4397778075648,
-      "free_space": 4063465832448,
-      "free_gb": 3784.4,
+      "free_space": 4063527698432,
+      "free_gb": 3784.46,
       "accessible": true
     },
     {
@@ -1617,8 +1617,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5430262628352,
-      "free_gb": 5057.33,
+      "free_space": 5536444579840,
+      "free_gb": 5156.22,
       "accessible": true
     },
     {
@@ -1627,8 +1627,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5209783795712,
-      "free_gb": 4851.99,
+      "free_space": 5216173817856,
+      "free_gb": 4857.94,
       "accessible": true
     },
     {
@@ -1637,8 +1637,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5220566302720,
-      "free_gb": 4862.03,
+      "free_space": 5218538356736,
+      "free_gb": 4860.14,
       "accessible": true
     },
     {
@@ -1647,8 +1647,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4775551696896,
-      "free_gb": 4447.58,
+      "free_space": 4765217980416,
+      "free_gb": 4437.96,
       "accessible": true
     },
     {
@@ -1657,8 +1657,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5272284168192,
-      "free_gb": 4910.2,
+      "free_space": 5264633757696,
+      "free_gb": 4903.07,
       "accessible": true
     },
     {
@@ -1667,8 +1667,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4816792190976,
-      "free_gb": 4485.99,
+      "free_space": 4827690041344,
+      "free_gb": 4496.14,
       "accessible": true
     },
     {
@@ -1677,8 +1677,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5544317288448,
-      "free_gb": 5163.55,
+      "free_space": 5544107573248,
+      "free_gb": 5163.35,
       "accessible": true
     },
     {
@@ -1687,8 +1687,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4991708299264,
-      "free_gb": 4648.89,
+      "free_space": 4996573691904,
+      "free_gb": 4653.42,
       "accessible": true
     },
     {
@@ -1697,8 +1697,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5400585830400,
-      "free_gb": 5029.69,
+      "free_space": 5400453709824,
+      "free_gb": 5029.56,
       "accessible": true
     },
     {
@@ -1707,8 +1707,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5310622203904,
-      "free_gb": 4945.9,
+      "free_space": 5316697653248,
+      "free_gb": 4951.56,
       "accessible": true
     },
     {
@@ -1717,8 +1717,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5318869254144,
-      "free_gb": 4953.58,
+      "free_space": 5318902808576,
+      "free_gb": 4953.61,
       "accessible": true
     },
     {
@@ -1727,8 +1727,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5367458168832,
-      "free_gb": 4998.83,
+      "free_space": 5368363089920,
+      "free_gb": 4999.68,
       "accessible": true
     },
     {
@@ -1737,8 +1737,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5555549634560,
-      "free_gb": 5174.01,
+      "free_space": 5554614304768,
+      "free_gb": 5173.14,
       "accessible": true
     },
     {
@@ -1747,8 +1747,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5227171282944,
-      "free_gb": 4868.18,
+      "free_space": 5343325192192,
+      "free_gb": 4976.36,
       "accessible": true
     },
     {
@@ -1757,8 +1757,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6505442050048,
-      "free_gb": 6058.67,
+      "free_space": 6508697878528,
+      "free_gb": 6061.7,
       "accessible": true
     },
     {
@@ -1767,8 +1767,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4313370853376,
-      "free_gb": 4017.14,
+      "free_space": 4318305452032,
+      "free_gb": 4021.74,
       "accessible": true
     },
     {
@@ -1777,8 +1777,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5055678775296,
-      "free_gb": 4708.47,
+      "free_space": 5063424606208,
+      "free_gb": 4715.68,
       "accessible": true
     },
     {
@@ -1787,8 +1787,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6782892113920,
-      "free_gb": 6317.06,
+      "free_space": 6781409427456,
+      "free_gb": 6315.68,
       "accessible": true
     },
     {
@@ -1797,8 +1797,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5122828533760,
-      "free_gb": 4771.01,
+      "free_space": 5122600992768,
+      "free_gb": 4770.79,
       "accessible": true
     },
     {
@@ -1807,8 +1807,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4999314669568,
-      "free_gb": 4655.97,
+      "free_space": 5001081520128,
+      "free_gb": 4657.62,
       "accessible": true
     },
     {
@@ -1817,8 +1817,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 1869708525568,
-      "free_gb": 1741.3,
+      "free_space": 1869480984576,
+      "free_gb": 1741.09,
       "accessible": true
     },
     {
@@ -1827,8 +1827,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5943517511680,
-      "free_gb": 5535.33,
+      "free_space": 5947843936256,
+      "free_gb": 5539.36,
       "accessible": true
     },
     {
@@ -1837,8 +1837,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5305581699072,
-      "free_gb": 4941.21,
+      "free_space": 5305851183104,
+      "free_gb": 4941.46,
       "accessible": true
     },
     {
@@ -1847,8 +1847,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5700827742208,
-      "free_gb": 5309.31,
+      "free_space": 5701261852672,
+      "free_gb": 5309.71,
       "accessible": true
     },
     {
@@ -1857,8 +1857,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5606993821696,
-      "free_gb": 5221.92,
+      "free_space": 5615772499968,
+      "free_gb": 5230.1,
       "accessible": true
     },
     {
@@ -1867,8 +1867,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5406541742080,
-      "free_gb": 5035.23,
+      "free_space": 5408575979520,
+      "free_gb": 5037.13,
       "accessible": true
     },
     {
@@ -1877,8 +1877,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5547963187200,
-      "free_gb": 5166.94,
+      "free_space": 5551871229952,
+      "free_gb": 5170.58,
       "accessible": true
     },
     {
@@ -1887,8 +1887,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4449297760256,
-      "free_gb": 4143.73,
+      "free_space": 4448002768896,
+      "free_gb": 4142.53,
       "accessible": true
     },
     {
@@ -1897,8 +1897,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4168293023744,
-      "free_gb": 3882.03,
+      "free_space": 4171226939392,
+      "free_gb": 3884.76,
       "accessible": true
     },
     {
@@ -1907,8 +1907,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4298625777664,
-      "free_gb": 4003.41,
+      "free_space": 4295545061376,
+      "free_gb": 4000.54,
       "accessible": true
     },
     {
@@ -1917,8 +1917,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6382894972928,
-      "free_gb": 5944.53,
+      "free_space": 6382565720064,
+      "free_gb": 5944.23,
       "accessible": true
     },
     {
@@ -1927,8 +1927,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6006238085120,
-      "free_gb": 5593.75,
+      "free_space": 6005186363392,
+      "free_gb": 5592.77,
       "accessible": true
     },
     {
@@ -1947,7 +1947,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6446598062080,
+      "free_space": 6446590722048,
       "free_gb": 6003.86,
       "accessible": true
     },
@@ -1957,7 +1957,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5002174136320,
+      "free_space": 5002172039168,
       "free_gb": 4658.64,
       "accessible": true
     },
@@ -1967,8 +1967,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5574083215360,
-      "free_gb": 5191.27,
+      "free_space": 5574001426432,
+      "free_gb": 5191.19,
       "accessible": true
     },
     {
@@ -1977,8 +1977,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5005511753728,
-      "free_gb": 4661.75,
+      "free_space": 5004517703680,
+      "free_gb": 4660.82,
       "accessible": true
     },
     {
@@ -1997,8 +1997,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6629219106816,
-      "free_gb": 6173.94,
+      "free_space": 6629211766784,
+      "free_gb": 6173.93,
       "accessible": true
     },
     {
@@ -2007,8 +2007,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6810746486784,
-      "free_gb": 6343.0,
+      "free_space": 6810708738048,
+      "free_gb": 6342.97,
       "accessible": true
     },
     {
@@ -2017,8 +2017,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5374225678336,
-      "free_gb": 5005.14,
+      "free_space": 5374218338304,
+      "free_gb": 5005.13,
       "accessible": true
     },
     {
@@ -2027,8 +2027,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5045852569600,
-      "free_gb": 4699.32,
+      "free_space": 5045766586368,
+      "free_gb": 4699.24,
       "accessible": true
     },
     {
@@ -2047,7 +2047,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4235974410240,
+      "free_space": 4235980701696,
       "free_gb": 3945.06,
       "accessible": true
     },
@@ -2057,8 +2057,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6897610522624,
-      "free_gb": 6423.9,
+      "free_space": 6897681825792,
+      "free_gb": 6423.97,
       "accessible": true
     },
     {
@@ -2067,8 +2067,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4893313073152,
-      "free_gb": 4557.25,
+      "free_space": 4892765716480,
+      "free_gb": 4556.74,
       "accessible": true
     },
     {
@@ -2077,8 +2077,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4412014592000,
-      "free_gb": 4109.01,
+      "free_space": 4412002009088,
+      "free_gb": 4109.0,
       "accessible": true
     },
     {
@@ -2097,8 +2097,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4322044674048,
-      "free_gb": 4025.22,
+      "free_space": 4322033139712,
+      "free_gb": 4025.21,
       "accessible": true
     },
     {
@@ -2117,8 +2117,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3210716643328,
-      "free_gb": 2990.21,
+      "free_space": 3210450305024,
+      "free_gb": 2989.96,
       "accessible": true
     },
     {
@@ -2127,8 +2127,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 2764185796608,
-      "free_gb": 2574.35,
+      "free_space": 2763916312576,
+      "free_gb": 2574.1,
       "accessible": true
     },
     {
@@ -2137,8 +2137,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3287635984384,
-      "free_gb": 3061.85,
+      "free_space": 3285297659904,
+      "free_gb": 3059.67,
       "accessible": true
     },
     {
@@ -2147,8 +2147,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3203753050112,
-      "free_gb": 2983.73,
+      "free_space": 3186147459072,
+      "free_gb": 2967.33,
       "accessible": true
     },
     {
@@ -2157,8 +2157,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3096724897792,
-      "free_gb": 2884.05,
+      "free_space": 3096630525952,
+      "free_gb": 2883.96,
       "accessible": true
     },
     {
@@ -2167,8 +2167,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3324535373824,
-      "free_gb": 3096.21,
+      "free_space": 3323918811136,
+      "free_gb": 3095.64,
       "accessible": true
     },
     {
@@ -2177,8 +2177,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3101008330752,
-      "free_gb": 2888.04,
+      "free_space": 3100693757952,
+      "free_gb": 2887.75,
       "accessible": true
     },
     {
@@ -2187,8 +2187,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3186067767296,
-      "free_gb": 2967.26,
+      "free_space": 3185650434048,
+      "free_gb": 2966.87,
       "accessible": true
     },
     {
@@ -2197,7 +2197,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5228188401664,
+      "free_space": 5228185255936,
       "free_gb": 4869.13,
       "accessible": true
     },
@@ -2217,7 +2217,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6360760582144,
+      "free_space": 6360759533568,
       "free_gb": 5923.92,
       "accessible": true
     },
@@ -2227,8 +2227,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3409288626176,
-      "free_gb": 3175.15,
+      "free_space": 3408750706688,
+      "free_gb": 3174.65,
       "accessible": true
     },
     {
@@ -2237,8 +2237,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4882326093824,
-      "free_gb": 4547.02,
+      "free_space": 4882318753792,
+      "free_gb": 4547.01,
       "accessible": true
     },
     {
@@ -2247,7 +2247,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6019640983552,
+      "free_space": 6019639934976,
       "free_gb": 5606.23,
       "accessible": true
     },
@@ -2267,7 +2267,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6198103375872,
+      "free_space": 6198100230144,
       "free_gb": 5772.43,
       "accessible": true
     },
@@ -2277,8 +2277,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3908588011520,
-      "free_gb": 3640.16,
+      "free_space": 3908454842368,
+      "free_gb": 3640.03,
       "accessible": true
     },
     {
@@ -2297,8 +2297,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5300158464000,
-      "free_gb": 4936.16,
+      "free_space": 5300098695168,
+      "free_gb": 4936.1,
       "accessible": true
     },
     {
@@ -2327,8 +2327,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 8793898352640,
-      "free_gb": 8189.96,
+      "free_space": 8592311713792,
+      "free_gb": 8002.21,
       "accessible": true
     },
     {
@@ -2337,8 +2337,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 6770237898752,
-      "free_gb": 6305.28,
+      "free_space": 6770139332608,
+      "free_gb": 6305.18,
       "accessible": true
     },
     {
@@ -2347,8 +2347,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 5067761516544,
-      "free_gb": 4719.72,
+      "free_space": 5017182404608,
+      "free_gb": 4672.62,
       "accessible": true
     },
     {
@@ -2507,7 +2507,7 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 1798785990656,
-      "free_space": 1795531210752,
+      "free_space": 1795530162176,
       "free_gb": 1672.22,
       "accessible": true
     },
@@ -2807,8 +2807,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3215341912064,
-      "free_gb": 2994.52,
+      "free_space": 3215440478208,
+      "free_gb": 2994.61,
       "accessible": true
     },
     {
@@ -2817,8 +2817,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3511502766080,
-      "free_gb": 3270.34,
+      "free_space": 3511570923520,
+      "free_gb": 3270.41,
       "accessible": true
     },
     {
@@ -2827,8 +2827,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3444149583872,
-      "free_gb": 3207.61,
+      "free_space": 3443997540352,
+      "free_gb": 3207.47,
       "accessible": true
     },
     {
@@ -2837,8 +2837,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3455727960064,
-      "free_gb": 3218.4,
+      "free_space": 3455631491072,
+      "free_gb": 3218.31,
       "accessible": true
     },
     {
@@ -2847,8 +2847,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3381650259968,
-      "free_gb": 3149.41,
+      "free_space": 3381712125952,
+      "free_gb": 3149.46,
       "accessible": true
     },
     {
@@ -2857,8 +2857,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3134753603584,
-      "free_gb": 2919.47,
+      "free_space": 3129638649856,
+      "free_gb": 2914.7,
       "accessible": true
     },
     {
@@ -2867,8 +2867,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 2953179037696,
-      "free_gb": 2750.36,
+      "free_space": 2953881583616,
+      "free_gb": 2751.02,
       "accessible": true
     },
     {
@@ -2877,8 +2877,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 2965233467392,
-      "free_gb": 2761.59,
+      "free_space": 2965130706944,
+      "free_gb": 2761.49,
       "accessible": true
     },
     {
@@ -2887,8 +2887,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 2210636234752,
-      "free_gb": 2058.82,
+      "free_space": 2206208098304,
+      "free_gb": 2054.69,
       "accessible": true
     },
     {
@@ -2897,8 +2897,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3182073741312,
-      "free_gb": 2963.54,
+      "free_space": 3181814743040,
+      "free_gb": 2963.3,
       "accessible": true
     },
     {
@@ -2907,8 +2907,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 4231624916992,
-      "free_gb": 3941.01,
+      "free_space": 4231970947072,
+      "free_gb": 3941.33,
       "accessible": true
     },
     {
@@ -2917,8 +2917,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 6596801331200,
-      "free_space": 3729669488640,
-      "free_gb": 3473.53,
+      "free_space": 3731670171648,
+      "free_gb": 3475.39,
       "accessible": true
     },
     {
@@ -2927,8 +2927,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3328344850432,
-      "free_gb": 3099.76,
+      "free_space": 3325377380352,
+      "free_gb": 3097.0,
       "accessible": true
     },
     {
@@ -2937,8 +2937,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3542279520256,
-      "free_gb": 3299.0,
+      "free_space": 3543273570304,
+      "free_gb": 3299.93,
       "accessible": true
     },
     {
@@ -2947,8 +2947,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4511236096000,
-      "free_gb": 4201.42,
+      "free_space": 4512022528000,
+      "free_gb": 4202.15,
       "accessible": true
     },
     {
@@ -2957,8 +2957,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3842160721920,
-      "free_gb": 3578.29,
+      "free_space": 3848964931584,
+      "free_gb": 3584.63,
       "accessible": true
     },
     {
@@ -2967,8 +2967,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3543639523328,
-      "free_gb": 3300.27,
+      "free_space": 3540240039936,
+      "free_gb": 3297.11,
       "accessible": true
     },
     {
@@ -2977,8 +2977,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3685598887936,
-      "free_gb": 3432.48,
+      "free_space": 3685702696960,
+      "free_gb": 3432.58,
       "accessible": true
     },
     {
@@ -2987,8 +2987,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3436334546944,
-      "free_gb": 3200.34,
+      "free_space": 3434722885632,
+      "free_gb": 3198.83,
       "accessible": true
     },
     {
@@ -2997,8 +2997,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3822895235072,
-      "free_gb": 3560.35,
+      "free_space": 3819745312768,
+      "free_gb": 3557.42,
       "accessible": true
     },
     {
@@ -3007,8 +3007,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4075494047744,
-      "free_gb": 3795.6,
+      "free_space": 4074130898944,
+      "free_gb": 3794.33,
       "accessible": true
     },
     {
@@ -3017,8 +3017,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3219256246272,
-      "free_gb": 2998.17,
+      "free_space": 3216684089344,
+      "free_gb": 2995.77,
       "accessible": true
     },
     {
@@ -3027,8 +3027,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4041082929152,
-      "free_gb": 3763.55,
+      "free_space": 4041603022848,
+      "free_gb": 3764.04,
       "accessible": true
     },
     {
@@ -3137,8 +3137,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 2317266976768,
-      "free_gb": 2158.12,
+      "free_space": 2317255442432,
+      "free_gb": 2158.11,
       "accessible": true
     },
     {
@@ -3147,8 +3147,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4728338513920,
-      "free_gb": 4403.61,
+      "free_space": 4728214781952,
+      "free_gb": 4403.49,
       "accessible": true
     },
     {
@@ -3157,8 +3157,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4054940909568,
-      "free_gb": 3776.46,
+      "free_space": 4054933569536,
+      "free_gb": 3776.45,
       "accessible": true
     },
     {
@@ -3167,8 +3167,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 2718670258176,
-      "free_gb": 2531.96,
+      "free_space": 2718544429056,
+      "free_gb": 2531.84,
       "accessible": true
     },
     {
@@ -3177,8 +3177,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4372202258432,
-      "free_gb": 4071.93,
+      "free_space": 4372327038976,
+      "free_gb": 4072.05,
       "accessible": true
     },
     {
@@ -3187,8 +3187,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3906475130880,
-      "free_gb": 3638.19,
+      "free_space": 3906190966784,
+      "free_gb": 3637.92,
       "accessible": true
     },
     {
@@ -3197,8 +3197,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 2550018342912,
-      "free_gb": 2374.89,
+      "free_space": 2550013100032,
+      "free_gb": 2374.88,
       "accessible": true
     },
     {
@@ -3207,8 +3207,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 4686159544320,
-      "free_gb": 4364.33,
+      "free_space": 4686144864256,
+      "free_gb": 4364.31,
       "accessible": true
     },
     {
@@ -3217,8 +3217,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3152440983552,
-      "free_gb": 2935.94,
+      "free_space": 3152429449216,
+      "free_gb": 2935.93,
       "accessible": true
     },
     {
@@ -3227,8 +3227,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3535019180032,
-      "free_gb": 3292.24,
+      "free_space": 3534995062784,
+      "free_gb": 3292.22,
       "accessible": true
     },
     {
@@ -3237,8 +3237,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 2498033090560,
-      "free_gb": 2326.47,
+      "free_space": 2497933475840,
+      "free_gb": 2326.38,
       "accessible": true
     },
     {
@@ -3247,8 +3247,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 2770987909120,
-      "free_gb": 2580.68,
+      "free_space": 2770956451840,
+      "free_gb": 2580.65,
       "accessible": true
     },
     {
@@ -3257,8 +3257,8 @@
       "type": "VMFS",
       "is_preferred": false,
       "capacity": 8795824586752,
-      "free_space": 3050773151744,
-      "free_gb": 2841.25,
+      "free_space": 3050750083072,
+      "free_gb": 2841.23,
       "accessible": true
     }
   ]

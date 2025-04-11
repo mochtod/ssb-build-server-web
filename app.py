@@ -997,23 +997,24 @@ def generate_atlantis_apply_payload(config_data, tf_directory, tf_files, plan_id
         'pull_request': {
             'num': 1,
             'branch': 'main',
-            'author': config_data['build_owner']
+            'author': config_data.get('build_owner', 'Admin User')
         },
         'head_commit': 'abcd1234',
         'pull_num': 1,
-        'pull_author': config_data['build_owner'],
+        'pull_author': config_data.get('build_owner', 'Admin User'),
         'repo_rel_dir': tf_dir_name,
-        'workspace': config_data['environment'],
-        'project_name': config_data['server_name'],
+        'workspace': config_data.get('environment', 'development'),
+        'project_name': config_data.get('server_name', 'default-server'),
         'plan_id': plan_id,
-        'comment': f"Applying approved VM config: {config_data['server_name']}",
-        'user': config_data['build_owner'],
+        'comment': f"Applying approved VM config: {config_data.get('server_name', 'unknown')}",
+        'user': config_data.get('build_owner', 'Admin User'),
         'verbose': True,
-        'cmd': 'apply',
+        'cmd': 'apply',  # Critical: ensure command is explicitly set to 'apply'
+        'dir': '.',      # Critical: add the 'dir' field that's required
         'terraform_files': tf_files
     }
     
-    # Convert to JSON string with proper formatting to ensure all commas are present
+    # Convert to JSON string with proper formatting
     payload_string = json.dumps(payload_dict, ensure_ascii=False)
     
     return payload_string
