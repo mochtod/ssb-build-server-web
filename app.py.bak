@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session, make_response
 import os
 import json
