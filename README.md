@@ -161,6 +161,11 @@ The following environment variables are required for the application to function
 - `NETWORK_ID`: ID of the network
 - `TEMPLATE_UUID`: UUID of the VM template
 
+You can retrieve the minimum required vSphere resource IDs using the optimized script:
+```bash
+python vsphere_minimal_resources.py
+```
+
 ### NetBox Integration
 - `NETBOX_TOKEN`: Authentication token for NetBox API
 - `NETBOX_API_URL`: URL for NetBox API

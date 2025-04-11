@@ -1,0 +1,58 @@
+{
+  "timestamp": 1744352133.8240871,
+  "items": [
+    {
+      "name": "VM Network",
+      "id": "network-8438037",
+      "type": "Network",
+      "is_preferred": false,
+      "network_type": "standard"
+    },
+    {
+      "name": "prod-vault-1-773",
+      "id": "dvportgroup-11682492",
+      "type": "Network",
+      "is_preferred": false,
+      "network_type": "dvPortgroup",
+      "vlan_id": 773
+    },
+    {
+      "name": "170-esxi-mgmt",
+      "id": "dvportgroup-11682496",
+      "type": "Network",
+      "is_preferred": false,
+      "network_type": "dvPortgroup",
+      "vlan_id": 170
+    },
+    {
+      "name": "prod-k8-749-kub2",
+      "id": "dvportgroup-8016376",
+      "type": "Network",
+      "is_preferred": false,
+      "network_type": "dvPortgroup",
+      "vlan_id": 749
+    },
+    {
+      "name": "prod-k8-242-vmotion",
+      "id": "dvportgroup-8016379",
+      "type": "Network",
+      "is_preferred": false,
+      "network_type": "dvPortgroup",
+      "vlan_id": 242
+    },
+    {
+      "name": "prod-k8-780-kub1",
+      "id": "dvportgroup-8016377",
+      "type": "Network",
+      "is_preferred": false,
+      "network_type": "dvPortgroup",
+      "vlan_id": 780
+    },
+    {
+      "name": "prodk8-ds-DVUplinks-8016364",
+      "id": "dvportgroup-8016365",
+      "type": "Network",
+      "is_preferred": false,
+      "network_type": "dvPortgroup",
+      "vlan_id": [
+        

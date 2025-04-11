@@ -1,0 +1,187 @@
+{
+  "timestamp": 1744352133.805206,
+  "items": [
+    {
+      "name": "Resources",
+      "id": "resgroup-9338905",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod-cl41-kub"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-11613604",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod-cl20-rancher"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-11593743",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-np-cl20-rancher"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-8016317",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-np-cl40-kub"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-10686924",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod8-edi"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-11569223",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "prod-cl61-lin"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-11815093",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "build"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-9946804",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "prod-cl70-win"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-8107731",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod-cl31-dmz"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-9461463",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod-cl71-windows-don't-build-here"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-11569225",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "prod-cl71-win"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-8654437",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod-cl60-linux"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-7334465",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "DC2-PROD50-Mgmt"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-9946802",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "prod-cl60-lin"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-3310247",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "DC2-PROD11-KUB"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-3778923",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "DC2-PROD12-VOIP"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-8088292",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod-cl70-windows"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-11682479",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-cl50-mgmt"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-7150354",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "DC2-PROD20-KUB"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-11666646",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "dc2-prod20-kubespray"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-10637600",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "esx2pr1sa20.chrobinson.com"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-9814670",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "np-cl70-win"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-6194931",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "DC2-EBDC-FWHosts"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-9891267",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "np-cl60-lin"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-3310245",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "DC2-NP11-KUB"
+    },
+    {
+      "name": "Resources",
+      "id": "resgroup-10347034",
+      "type": "ResourcePool",
+      "is_preferred": false,
+      "parent": "np-cl20-kubespray"
+    }
+  ]
+}
