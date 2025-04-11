@@ -39,7 +39,7 @@ services:
       - VSPHERE_USER=${VSPHERE_USER:-vsphere-username}
       - VSPHERE_PASSWORD=${VSPHERE_PASSWORD:-vsphere-password}
       - VSPHERE_SERVER=${VSPHERE_SERVER:-vsphere-server}
-      - VSPHERE_DATACENTERS=${VSPHERE_DATACENTERS:-}
+      - VSPHERE_DATACENTERS=${VSPHERE_DATACENTERS:-EBDC NONPROD,EBDC PROD}
       
       # NetBox integration
       - NETBOX_HOST=netbox
@@ -89,6 +89,7 @@ services:
       - VSPHERE_USER=${VSPHERE_USER:-vsphere-username}
       - VSPHERE_PASSWORD=${VSPHERE_PASSWORD:-vsphere-password}
       - VSPHERE_SERVER=${VSPHERE_SERVER:-vsphere-server}
+      - VSPHERE_DATACENTERS=${VSPHERE_DATACENTERS:-EBDC NONPROD,EBDC PROD}
       # NetBox integration
       - NETBOX_TOKEN=${NETBOX_TOKEN:-netbox-api-token}
       - NETBOX_URL=${NETBOX_URL:-https://netbox.example.com/api}

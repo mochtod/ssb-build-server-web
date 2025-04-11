@@ -92,32 +92,32 @@
     "id": "datastore-9343460",
     "type": "Datastore",
     "capacity": 8795824586752,
-    "free_space": 6084269965312,
-    "free_gb": 5666.42
+    "free_space": 6084093804544,
+    "free_gb": 5666.25
   },
   {
     "name": "pr_cl41_pstore2_vol-002",
     "id": "datastore-9343459",
     "type": "Datastore",
     "capacity": 8795824586752,
-    "free_space": 5458533285888,
-    "free_gb": 5083.66
+    "free_space": 5453292503040,
+    "free_gb": 5078.77
   },
   {
     "name": "pr_cl41_pstore2_vol-001",
     "id": "datastore-9343458",
     "type": "Datastore",
     "capacity": 8795824586752,
-    "free_space": 3303015448576,
-    "free_gb": 3076.17
+    "free_space": 3298533834752,
+    "free_gb": 3072.0
   },
   {
     "name": "pr_cl41_pstore2_vol-004",
     "id": "datastore-9343461",
     "type": "Datastore",
     "capacity": 8795824586752,
-    "free_space": 6187692064768,
-    "free_gb": 5762.74
+    "free_space": 6187145756672,
+    "free_gb": 5762.23
   },
   {
     "name": "esx2np3cl20n118_local",
@@ -244,31 +244,31 @@
     "id": "datastore-8226383",
     "type": "Datastore",
     "capacity": 8795824586752,
-    "free_space": 4918007037952,
-    "free_gb": 4580.25
+    "free_space": 4917914763264,
+    "free_gb": 4580.17
   },
   {
     "name": "np_cl40_ntap3_vol02",
     "id": "datastore-8226385",
     "type": "Datastore",
     "capacity": 8795824586752,
-    "free_space": 4500175716352,
-    "free_gb": 4191.12
+    "free_space": 4496201613312,
+    "free_gb": 4187.41
   },
   {
     "name": "np_cl40_ntap3_vol01",
     "id": "datastore-8226384",
     "type": "Datastore",
     "capacity": 8795824586752,
-    "free_space": 4798117052416,
-    "free_gb": 4468.59
+    "free_space": 4795942305792,
+    "free_gb": 4466.57
   },
   {
     "name": "pr_cl8_esx_scratch",
     "id": "datastore-10687075",
     "type": "Datastore",
     "capacity": 160792838144,
-    "free_space": 134827999232,
+    "free_space": 134833242112,
     "free_gb": 125.57
   },
   {
@@ -276,16 +276,16 @@
     "id": "datastore-10687076",
     "type": "Datastore",
     "capacity": 3298266447872,
-    "free_space": 1989757894656,
-    "free_gb": 1853.11
+    "free_space": 1989734825984,
+    "free_gb": 1853.08
   },
   {
     "name": "pr_cl8_esx_501",
     "id": "datastore-10687077",
     "type": "Datastore",
     "capacity": 3298266447872,
-    "free_space": 2301938892800,
-    "free_gb": 2143.85
+    "free_space": 2301934698496,
+    "free_gb": 2143.84
   },
   {
     "name": "esx2pr3cl20n118_local",

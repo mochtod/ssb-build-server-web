@@ -1,0 +1,465 @@
+{
+  "datacenters": [
+    "EBDC NONPROD",
+    "EBDC PROD"
+  ],
+  "clusters": [
+    {
+      "name": "NONPROD-Cluster-1",
+      "id": "cluster-np-1",
+      "type": "Cluster",
+      "datacenter": "EBDC NONPROD",
+      "host_count": 4
+    },
+    {
+      "name": "NONPROD-Cluster-2",
+      "id": "cluster-np-2",
+      "type": "Cluster",
+      "datacenter": "EBDC NONPROD",
+      "host_count": 3
+    },
+    {
+      "name": "PROD-Cluster-1",
+      "id": "cluster-p-1",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 6
+    },
+    {
+      "name": "PROD-Cluster-2",
+      "id": "cluster-p-2",
+      "type": "Cluster",
+      "datacenter": "EBDC PROD",
+      "host_count": 5
+    }
+  ],
+  "clusters_by_datacenter": {
+    "EBDC NONPROD": [
+      {
+        "name": "NONPROD-Cluster-1",
+        "id": "cluster-np-1",
+        "type": "Cluster",
+        "datacenter": "EBDC NONPROD",
+        "host_count": 4
+      },
+      {
+        "name": "NONPROD-Cluster-2",
+        "id": "cluster-np-2",
+        "type": "Cluster",
+        "datacenter": "EBDC NONPROD",
+        "host_count": 3
+      }
+    ],
+    "EBDC PROD": [
+      {
+        "name": "PROD-Cluster-1",
+        "id": "cluster-p-1",
+        "type": "Cluster",
+        "datacenter": "EBDC PROD",
+        "host_count": 6
+      },
+      {
+        "name": "PROD-Cluster-2",
+        "id": "cluster-p-2",
+        "type": "Cluster",
+        "datacenter": "EBDC PROD",
+        "host_count": 5
+      }
+    ]
+  },
+  "resources": {
+    "cluster-np-1": {
+      "cluster_name": "NONPROD-Cluster-1",
+      "cluster_id": "cluster-np-1",
+      "resource_pools": [
+        {
+          "name": "NONPROD-Cluster-1 Resources",
+          "id": "resgroup-cluster-np-1-1",
+          "type": "ResourcePool",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "is_primary": true
+        }
+      ],
+      "datastores": [
+        {
+          "name": "NONPROD-Cluster-1-SAN-DS01",
+          "id": "datastore-cluster-np-1-1",
+          "type": "Datastore",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "shared_across_cluster": true,
+          "capacity": 2147483648000,
+          "free_space": 1288490188800,
+          "free_gb": 1200
+        },
+        {
+          "name": "NONPROD-Cluster-1-SAN-DS02",
+          "id": "datastore-cluster-np-1-2",
+          "type": "Datastore",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "shared_across_cluster": true,
+          "capacity": 3221225472000,
+          "free_space": 1932735283200,
+          "free_gb": 1800
+        },
+        {
+          "name": "NONPROD-Cluster-1-SAN-DS03",
+          "id": "datastore-cluster-np-1-3",
+          "type": "Datastore",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "shared_across_cluster": true,
+          "capacity": 4294967296000,
+          "free_space": 2684354560000,
+          "free_gb": 2500
+        }
+      ],
+      "networks": [
+        {
+          "name": "NONPROD-Cluster-1-VLAN-101",
+          "id": "network-cluster-np-1-1",
+          "type": "Network",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "is_dvs": true
+        },
+        {
+          "name": "NONPROD-Cluster-1-VLAN-102",
+          "id": "network-cluster-np-1-2",
+          "type": "Network",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "is_dvs": true
+        },
+        {
+          "name": "NONPROD-Cluster-1-VLAN-103",
+          "id": "network-cluster-np-1-3",
+          "type": "Network",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "is_dvs": true
+        }
+      ],
+      "templates": [
+        {
+          "name": "RHEL9-Standard-Template",
+          "id": "template-cluster-np-1-1",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "is_template": true,
+          "guest_id": "rhel9_64Guest",
+          "guest_fullname": "Red Hat Enterprise Linux 9 (64-bit)"
+        },
+        {
+          "name": "Windows-2022-Template",
+          "id": "template-cluster-np-1-2",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-np-1",
+          "cluster_name": "NONPROD-Cluster-1",
+          "is_template": true,
+          "guest_id": "windows2022srv_64Guest",
+          "guest_fullname": "Microsoft Windows Server 2022 (64-bit)"
+        }
+      ],
+      "timestamp": "2025-04-11T15:21:09.894736"
+    },
+    "cluster-np-2": {
+      "cluster_name": "NONPROD-Cluster-2",
+      "cluster_id": "cluster-np-2",
+      "resource_pools": [
+        {
+          "name": "NONPROD-Cluster-2 Resources",
+          "id": "resgroup-cluster-np-2-1",
+          "type": "ResourcePool",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "is_primary": true
+        }
+      ],
+      "datastores": [
+        {
+          "name": "NONPROD-Cluster-2-SAN-DS01",
+          "id": "datastore-cluster-np-2-1",
+          "type": "Datastore",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "shared_across_cluster": true,
+          "capacity": 2147483648000,
+          "free_space": 1288490188800,
+          "free_gb": 1200
+        },
+        {
+          "name": "NONPROD-Cluster-2-SAN-DS02",
+          "id": "datastore-cluster-np-2-2",
+          "type": "Datastore",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "shared_across_cluster": true,
+          "capacity": 3221225472000,
+          "free_space": 1932735283200,
+          "free_gb": 1800
+        },
+        {
+          "name": "NONPROD-Cluster-2-SAN-DS03",
+          "id": "datastore-cluster-np-2-3",
+          "type": "Datastore",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "shared_across_cluster": true,
+          "capacity": 4294967296000,
+          "free_space": 2684354560000,
+          "free_gb": 2500
+        }
+      ],
+      "networks": [
+        {
+          "name": "NONPROD-Cluster-2-VLAN-101",
+          "id": "network-cluster-np-2-1",
+          "type": "Network",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "is_dvs": true
+        },
+        {
+          "name": "NONPROD-Cluster-2-VLAN-102",
+          "id": "network-cluster-np-2-2",
+          "type": "Network",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "is_dvs": true
+        },
+        {
+          "name": "NONPROD-Cluster-2-VLAN-103",
+          "id": "network-cluster-np-2-3",
+          "type": "Network",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "is_dvs": true
+        }
+      ],
+      "templates": [
+        {
+          "name": "RHEL9-Standard-Template",
+          "id": "template-cluster-np-2-1",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "is_template": true,
+          "guest_id": "rhel9_64Guest",
+          "guest_fullname": "Red Hat Enterprise Linux 9 (64-bit)"
+        },
+        {
+          "name": "Windows-2022-Template",
+          "id": "template-cluster-np-2-2",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-np-2",
+          "cluster_name": "NONPROD-Cluster-2",
+          "is_template": true,
+          "guest_id": "windows2022srv_64Guest",
+          "guest_fullname": "Microsoft Windows Server 2022 (64-bit)"
+        }
+      ],
+      "timestamp": "2025-04-11T15:21:09.898179"
+    },
+    "cluster-p-1": {
+      "cluster_name": "PROD-Cluster-1",
+      "cluster_id": "cluster-p-1",
+      "resource_pools": [
+        {
+          "name": "PROD-Cluster-1 Resources",
+          "id": "resgroup-cluster-p-1-1",
+          "type": "ResourcePool",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "is_primary": true
+        }
+      ],
+      "datastores": [
+        {
+          "name": "PROD-Cluster-1-SAN-DS01",
+          "id": "datastore-cluster-p-1-1",
+          "type": "Datastore",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "shared_across_cluster": true,
+          "capacity": 2147483648000,
+          "free_space": 1288490188800,
+          "free_gb": 1200
+        },
+        {
+          "name": "PROD-Cluster-1-SAN-DS02",
+          "id": "datastore-cluster-p-1-2",
+          "type": "Datastore",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "shared_across_cluster": true,
+          "capacity": 3221225472000,
+          "free_space": 1932735283200,
+          "free_gb": 1800
+        },
+        {
+          "name": "PROD-Cluster-1-SAN-DS03",
+          "id": "datastore-cluster-p-1-3",
+          "type": "Datastore",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "shared_across_cluster": true,
+          "capacity": 4294967296000,
+          "free_space": 2684354560000,
+          "free_gb": 2500
+        }
+      ],
+      "networks": [
+        {
+          "name": "PROD-Cluster-1-VLAN-101",
+          "id": "network-cluster-p-1-1",
+          "type": "Network",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "is_dvs": true
+        },
+        {
+          "name": "PROD-Cluster-1-VLAN-102",
+          "id": "network-cluster-p-1-2",
+          "type": "Network",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "is_dvs": true
+        },
+        {
+          "name": "PROD-Cluster-1-VLAN-103",
+          "id": "network-cluster-p-1-3",
+          "type": "Network",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "is_dvs": true
+        }
+      ],
+      "templates": [
+        {
+          "name": "RHEL9-Standard-Template",
+          "id": "template-cluster-p-1-1",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "is_template": true,
+          "guest_id": "rhel9_64Guest",
+          "guest_fullname": "Red Hat Enterprise Linux 9 (64-bit)"
+        },
+        {
+          "name": "Windows-2022-Template",
+          "id": "template-cluster-p-1-2",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-p-1",
+          "cluster_name": "PROD-Cluster-1",
+          "is_template": true,
+          "guest_id": "windows2022srv_64Guest",
+          "guest_fullname": "Microsoft Windows Server 2022 (64-bit)"
+        }
+      ],
+      "timestamp": "2025-04-11T15:21:09.900299"
+    },
+    "cluster-p-2": {
+      "cluster_name": "PROD-Cluster-2",
+      "cluster_id": "cluster-p-2",
+      "resource_pools": [
+        {
+          "name": "PROD-Cluster-2 Resources",
+          "id": "resgroup-cluster-p-2-1",
+          "type": "ResourcePool",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "is_primary": true
+        }
+      ],
+      "datastores": [
+        {
+          "name": "PROD-Cluster-2-SAN-DS01",
+          "id": "datastore-cluster-p-2-1",
+          "type": "Datastore",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "shared_across_cluster": true,
+          "capacity": 2147483648000,
+          "free_space": 1288490188800,
+          "free_gb": 1200
+        },
+        {
+          "name": "PROD-Cluster-2-SAN-DS02",
+          "id": "datastore-cluster-p-2-2",
+          "type": "Datastore",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "shared_across_cluster": true,
+          "capacity": 3221225472000,
+          "free_space": 1932735283200,
+          "free_gb": 1800
+        },
+        {
+          "name": "PROD-Cluster-2-SAN-DS03",
+          "id": "datastore-cluster-p-2-3",
+          "type": "Datastore",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "shared_across_cluster": true,
+          "capacity": 4294967296000,
+          "free_space": 2684354560000,
+          "free_gb": 2500
+        }
+      ],
+      "networks": [
+        {
+          "name": "PROD-Cluster-2-VLAN-101",
+          "id": "network-cluster-p-2-1",
+          "type": "Network",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "is_dvs": true
+        },
+        {
+          "name": "PROD-Cluster-2-VLAN-102",
+          "id": "network-cluster-p-2-2",
+          "type": "Network",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "is_dvs": true
+        },
+        {
+          "name": "PROD-Cluster-2-VLAN-103",
+          "id": "network-cluster-p-2-3",
+          "type": "Network",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "is_dvs": true
+        }
+      ],
+      "templates": [
+        {
+          "name": "RHEL9-Standard-Template",
+          "id": "template-cluster-p-2-1",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "is_template": true,
+          "guest_id": "rhel9_64Guest",
+          "guest_fullname": "Red Hat Enterprise Linux 9 (64-bit)"
+        },
+        {
+          "name": "Windows-2022-Template",
+          "id": "template-cluster-p-2-2",
+          "type": "VirtualMachine",
+          "cluster_id": "cluster-p-2",
+          "cluster_name": "PROD-Cluster-2",
+          "is_template": true,
+          "guest_id": "windows2022srv_64Guest",
+          "guest_fullname": "Microsoft Windows Server 2022 (64-bit)"
+        }
+      ],
+      "timestamp": "2025-04-11T15:21:09.902962"
+    }
+  },
+  "timestamp": "2025-04-11T15:21:09.904973"
+}

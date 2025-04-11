@@ -52,11 +52,25 @@ class VSphereClusterResources:
         # Ensure cache directory exists
         os.makedirs(CACHE_DIR, exist_ok=True)
         
+    def is_simulation_mode(self):
+        """Check if we're in simulation mode with dummy credentials."""
+        if (self.server == "vsphere-server" and 
+            self.username == "vsphere-username" and 
+            self.password == "vsphere-password"):
+            return True
+        return False
+            
     def connect(self):
         """Connect to vSphere server."""
         if not (self.server and self.username and self.password):
             logger.error("Missing vSphere connection details")
             return False
+        
+        # Check if we're in simulation mode
+        if self.is_simulation_mode():
+            logger.warning("Running in simulation mode with dummy credentials")
+            self.content = "SIMULATION"  # Set a marker that we can check for simulation mode
+            return True
             
         try:
             # Create SSL context
@@ -126,7 +140,28 @@ class VSphereClusterResources:
         """Get list of datacenters, optionally filtered by name."""
         if not self.content:
             return []
+        
+        # If we're in simulation mode, return sample data
+        if self.content == "SIMULATION":
+            logger.info("Returning simulated datacenter data")
             
+            # Create simulated datacenter objects
+            datacenter_names = ["EBDC NONPROD", "EBDC PROD"] if not filter_names else [
+                dc for dc in ["EBDC NONPROD", "EBDC PROD"] if dc in filter_names
+            ]
+            
+            # Create simple object-like structures for simulation
+            class SimulatedDC:
+                def __init__(self, name):
+                    self.name = name
+                    self.hostFolder = "HOSTFOLDER"
+                    self.datastoreFolder = "DATASTOREFOLDER"
+                    self.networkFolder = "NETWORKFOLDER"
+                    self.vmFolder = "VMFOLDER"
+            
+            return [SimulatedDC(name) for name in datacenter_names]
+            
+        # Normal mode - get real datacenters
         datacenter_list = []
         container = self.content.viewManager.CreateContainerView(
             self.content.rootFolder, [vim.Datacenter], True)
@@ -144,7 +179,63 @@ class VSphereClusterResources:
         """Get all clusters from a datacenter or all datacenters."""
         if not self.content:
             return []
+        
+        # If we're in simulation mode, return sample data
+        if self.content == "SIMULATION":
+            logger.info("Returning simulated cluster data")
             
+            # Define simulated cluster data based on datacenter
+            dc_name = getattr(datacenter, 'name', None)
+            
+            if dc_name == "EBDC NONPROD":
+                clusters = [
+                    {
+                        'name': 'NONPROD-Cluster-1',
+                        'id': 'cluster-np-1',
+                        'type': 'Cluster',
+                        'datacenter': dc_name,
+                        'host_count': 4
+                    },
+                    {
+                        'name': 'NONPROD-Cluster-2',
+                        'id': 'cluster-np-2',
+                        'type': 'Cluster',
+                        'datacenter': dc_name,
+                        'host_count': 3
+                    }
+                ]
+            elif dc_name == "EBDC PROD":
+                clusters = [
+                    {
+                        'name': 'PROD-Cluster-1',
+                        'id': 'cluster-p-1',
+                        'type': 'Cluster',
+                        'datacenter': dc_name,
+                        'host_count': 6
+                    },
+                    {
+                        'name': 'PROD-Cluster-2',
+                        'id': 'cluster-p-2',
+                        'type': 'Cluster',
+                        'datacenter': dc_name,
+                        'host_count': 5
+                    }
+                ]
+            else:
+                # Default clusters if datacenter not specified
+                clusters = [
+                    {
+                        'name': 'DEFAULT-Cluster-1',
+                        'id': 'cluster-d-1',
+                        'type': 'Cluster',
+                        'datacenter': 'UNKNOWN',
+                        'host_count': 4
+                    }
+                ]
+            
+            return clusters
+            
+        # Normal mode - get real clusters
         # Use datacenter folder if provided, otherwise root folder
         folder = datacenter.hostFolder if datacenter else self.content.rootFolder
         
@@ -445,6 +536,138 @@ class VSphereClusterResources:
                 'templates': []
             }
         
+        # If we're in simulation mode, return sample data
+        if self.content == "SIMULATION":
+            logger.info(f"Returning simulated resources for cluster {cluster_id}")
+            
+            # Determine cluster name based on ID
+            cluster_names = {
+                'cluster-np-1': 'NONPROD-Cluster-1',
+                'cluster-np-2': 'NONPROD-Cluster-2',
+                'cluster-p-1': 'PROD-Cluster-1',
+                'cluster-p-2': 'PROD-Cluster-2',
+                'cluster-d-1': 'DEFAULT-Cluster-1'
+            }
+            cluster_name = cluster_names.get(cluster_id, f"Cluster-{cluster_id}")
+            
+            # Create simulated resources
+            resource_pools = [{
+                'name': f"{cluster_name} Resources",
+                'id': f"resgroup-{cluster_id}-1",
+                'type': 'ResourcePool',
+                'cluster_id': cluster_id,
+                'cluster_name': cluster_name,
+                'is_primary': True
+            }]
+            
+            # Simulated datastores with no "_local" datastores
+            datastores = [
+                {
+                    'name': f"{cluster_name}-SAN-DS01",
+                    'id': f"datastore-{cluster_id}-1",
+                    'type': 'Datastore',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'shared_across_cluster': True,
+                    'capacity': 2000 * (1024**3),
+                    'free_space': 1200 * (1024**3),
+                    'free_gb': 1200
+                },
+                {
+                    'name': f"{cluster_name}-SAN-DS02",
+                    'id': f"datastore-{cluster_id}-2",
+                    'type': 'Datastore',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'shared_across_cluster': True,
+                    'capacity': 3000 * (1024**3),
+                    'free_space': 1800 * (1024**3),
+                    'free_gb': 1800
+                },
+                {
+                    'name': f"{cluster_name}-SAN-DS03",
+                    'id': f"datastore-{cluster_id}-3",
+                    'type': 'Datastore',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'shared_across_cluster': True,
+                    'capacity': 4000 * (1024**3),
+                    'free_space': 2500 * (1024**3),
+                    'free_gb': 2500
+                }
+            ]
+            
+            # Simulated networks
+            networks = [
+                {
+                    'name': f"{cluster_name}-VLAN-101",
+                    'id': f"network-{cluster_id}-1",
+                    'type': 'Network',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'is_dvs': True
+                },
+                {
+                    'name': f"{cluster_name}-VLAN-102",
+                    'id': f"network-{cluster_id}-2",
+                    'type': 'Network',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'is_dvs': True
+                },
+                {
+                    'name': f"{cluster_name}-VLAN-103",
+                    'id': f"network-{cluster_id}-3",
+                    'type': 'Network',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'is_dvs': True
+                }
+            ]
+            
+            # Simulated templates
+            templates = [
+                {
+                    'name': "RHEL9-Standard-Template",
+                    'id': f"template-{cluster_id}-1",
+                    'type': 'VirtualMachine',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'is_template': True,
+                    'guest_id': 'rhel9_64Guest',
+                    'guest_fullname': 'Red Hat Enterprise Linux 9 (64-bit)'
+                },
+                {
+                    'name': "Windows-2022-Template",
+                    'id': f"template-{cluster_id}-2",
+                    'type': 'VirtualMachine',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'is_template': True,
+                    'guest_id': 'windows2022srv_64Guest',
+                    'guest_fullname': 'Microsoft Windows Server 2022 (64-bit)'
+                }
+            ]
+            
+            # Create result structure
+            result = {
+                'cluster_name': cluster_name,
+                'cluster_id': cluster_id,
+                'resource_pools': resource_pools,
+                'datastores': datastores,
+                'networks': networks,
+                'templates': templates,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            # Update cache
+            if use_cache:
+                self._save_cache(cache_key, result)
+                logger.info(f"Updated cache for cluster {cluster_id} simulated resources")
+            
+            return result
+        
+        # Normal mode - get real resources
         try:
             # Find the cluster object
             container = self.content.viewManager.CreateContainerView(
@@ -543,6 +766,71 @@ def get_resources_for_cluster(cluster_id, use_cache=True, force_refresh=False):
         use_cache=use_cache,
         force_refresh=force_refresh
     )
+
+def get_ebdc_resources(force_refresh=False):
+    """
+    Get resources specifically from EBDC NONPROD and EBDC PROD datacenters.
+    
+    Args:
+        force_refresh: Whether to force refresh the cache
+        
+    Returns:
+        dict: Dictionary with EBDC datacenters, clusters, and their resources
+    """
+    # Target only EBDC datacenters
+    target_datacenters = ["EBDC NONPROD", "EBDC PROD"]
+    logger.info(f"Retrieving resources specifically for datacenters: {target_datacenters}")
+    
+    # Get clusters for these specific datacenters
+    clusters = get_clusters(use_cache=True, force_refresh=force_refresh, target_datacenters=target_datacenters)
+    
+    if not clusters:
+        logger.warning(f"No clusters found for datacenters: {target_datacenters}")
+        return {
+            'datacenters': target_datacenters,
+            'clusters': [],
+            'resources': {}
+        }
+    
+    # Group clusters by datacenter
+    clusters_by_dc = {}
+    for cluster in clusters:
+        dc_name = cluster.get('datacenter')
+        if dc_name not in clusters_by_dc:
+            clusters_by_dc[dc_name] = []
+        clusters_by_dc[dc_name].append(cluster)
+    
+    # Get resources for each cluster
+    resources_by_cluster = {}
+    for cluster in clusters:
+        cluster_id = cluster['id']
+        cluster_name = cluster['name']
+        logger.info(f"Retrieving resources for cluster: {cluster_name}")
+        
+        # Get resources for this cluster
+        resources = get_resources_for_cluster(cluster_id, use_cache=True, force_refresh=force_refresh)
+        
+        # Filter out local datastores (containing "_local" in name)
+        if 'datastores' in resources:
+            original_count = len(resources['datastores'])
+            resources['datastores'] = [
+                ds for ds in resources['datastores'] 
+                if "_local" not in ds['name']
+            ]
+            filtered_count = len(resources['datastores'])
+            logger.info(f"Filtered datastores for {cluster_name}: {original_count} → {filtered_count} (removed {original_count - filtered_count} local datastores)")
+        
+        resources_by_cluster[cluster_id] = resources
+    
+    result = {
+        'datacenters': target_datacenters,
+        'clusters': clusters,
+        'clusters_by_datacenter': clusters_by_dc,
+        'resources': resources_by_cluster,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    return result
 
 if __name__ == "__main__":
     # Setup logging for command-line testing

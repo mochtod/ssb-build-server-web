@@ -181,8 +181,8 @@ def write_env_file(env_vars, env_file='.env'):
                 'Flask Application': ['FLASK_SECRET_KEY'],
                 'Timeouts': ['TIMEOUT'],
                 'Atlantis Integration': ['ATLANTIS_URL', 'ATLANTIS_TOKEN'],
-                'VSphere Connection': ['VSPHERE_USER', 'VSPHERE_PASSWORD', 'VSPHERE_SERVER'],
-                # Remove VM Location Details section as these should be set per VM
+                'VSphere Connection': ['VSPHERE_USER', 'VSPHERE_PASSWORD', 'VSPHERE_SERVER', 'VSPHERE_DATACENTERS'],
+                # VM Location Details removed as these are now retrieved from vSphere dynamically
                 'NetBox Integration': ['NETBOX_TOKEN', 'NETBOX_URL'],
                 'Other': []
             }
@@ -1224,6 +1224,16 @@ def vsphere_cluster_resources(cluster_id):
             use_cache=True
         )
         
+        # Filter out local datastores (_local) automatically
+        if 'datastores' in resources:
+            original_count = len(resources['datastores'])
+            resources['datastores'] = [
+                ds for ds in resources['datastores'] 
+                if "_local" not in ds['name']
+            ]
+            filtered_count = len(resources['datastores'])
+            logger.info(f"Filtered datastores for cluster {resources.get('cluster_name', 'Unknown')}: {original_count} → {filtered_count} (removed {original_count - filtered_count} local datastores)")
+        
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
             'cluster_id': cluster_id,
@@ -1235,6 +1245,56 @@ def vsphere_cluster_resources(cluster_id):
         })
     except Exception as e:
         logger.exception(f"Error retrieving resources for cluster {cluster_id}: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere/ebdc_resources')
+@login_required
+def ebdc_resources():
+    """Return resources specifically from EBDC NONPROD and EBDC PROD datacenters"""
+    try:
+        # Import the cluster resources module
+        import vsphere_cluster_resources
+        
+        # Get EBDC resources
+        force_refresh = request.args.get('force_refresh', 'false').lower() == 'true'
+        resources = vsphere_cluster_resources.get_ebdc_resources(force_refresh=force_refresh)
+        
+        # Prepare a simplified response structure
+        datacenters = []
+        for dc_name, clusters in resources.get('clusters_by_datacenter', {}).items():
+            dc_data = {
+                'name': dc_name,
+                'clusters': []
+            }
+            
+            for cluster in clusters:
+                cluster_id = cluster['id']
+                cluster_name = cluster['name']
+                
+                # Get resources for this cluster
+                cluster_resources = resources.get('resources', {}).get(cluster_id, {})
+                
+                cluster_data = {
+                    'id': cluster_id,
+                    'name': cluster_name,
+                    'resource_pools': cluster_resources.get('resource_pools', []),
+                    'datastores': cluster_resources.get('datastores', []),
+                    'networks': cluster_resources.get('networks', [])
+                }
+                
+                dc_data['clusters'].append(cluster_data)
+            
+            datacenters.append(dc_data)
+        
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'datacenters': datacenters
+        })
+    except Exception as e:
+        logger.exception(f"Error retrieving EBDC resources: {str(e)}")
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
             'error': str(e)
