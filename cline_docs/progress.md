@@ -45,9 +45,9 @@ The SSB Build Server Web application is currently in development with partial fu
 | Authentication | 95% | Implemented secure password hashing with bcrypt |
 | Configuration Management | 90% | Added environment variables management |
 | Terraform Generation | 100% | Complete implementation of Terraform file generation |
-| Atlantis Integration | 100% | API integration with fallback mechanism for API formatting issues |
-| VM Provisioning | 90% | Added direct VM provisioning when Atlantis API is unavailable |
-| Documentation | 95% | Updated memory bank with all recent changes |
+| Atlantis Integration | 100% | API integration with dynamic container discovery and reliable fallback mechanism |
+| VM Provisioning | 95% | Improved direct VM provisioning with container-based Terraform execution |
+| Documentation | 100% | Updated memory bank with all recent changes and improved accuracy |
 | Testing | 60% | Added end-to-end test script and connection testing functionality |
 | Deployment | 60% | Docker setup works, but production deployment not configured |
 
@@ -61,9 +61,9 @@ The SSB Build Server Web application is currently in development with partial fu
    - Implement IP address allocation through NetBox
    - Update the fetch_next_ip.py script integration
 
-3. **Security Improvements**
-   - Implement proper password hashing
-   - Secure sensitive information in configurations
+3. **Centralized Configuration Management**
+   - Create a centralized module for environment variable handling
+   - Improve validation and default values for configuration
 
 4. **Automated Testing**
    - Implement unit tests for key functions
@@ -96,6 +96,10 @@ The SSB Build Server Web application is currently in development with partial fu
 - Implemented connection testing for external services
 - Enhanced Atlantis integration with direct VM provisioning fallback
 - Created end-to-end test script for workflow validation
+- Updated documentation to accurately reflect implementation details
+- Improved Atlantis integration with dynamic container discovery
+- Refactored Terraform execution to exclusively use Atlantis container
+- Added helper function for container discovery to avoid hardcoded references
 
 ## Blockers
 

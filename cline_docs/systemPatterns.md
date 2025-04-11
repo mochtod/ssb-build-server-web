@@ -156,8 +156,13 @@ rhel9-vm-workspace/
 - **Asynchronous**: Plans and applies are initiated and then polled for completion
 - **Containerized Setup**: Atlantis can be run in a Docker container without GitHub integration
   - Direct API calls to Atlantis server
-  - Local Terraform execution without Git repository
+  - All Terraform execution occurs within the Atlantis container
   - Configuration through environment variables and config files
+- **Fallback Mechanism**: Includes graceful error handling for API issues
+  - Detects API format incompatibilities and other communication errors
+  - Falls back to direct Terraform execution in the Atlantis container
+  - Simulates plan and apply operations with unique IDs when API communication fails
+  - Provides consistent user experience regardless of backend execution path
 
 ### VMware Integration
 - **Indirect**: Terraform communicates with VMware vSphere
@@ -169,9 +174,10 @@ rhel9-vm-workspace/
 
 ## Improvement Opportunities
 
-1. **Terraform Module Generation**: Fix the issue with generating proper Terraform module files
+1. **NetBox Integration**: Complete the integration for automated IP address allocation
 2. **Database Storage**: Replace file-based storage with a database for better scalability
-3. **Secure Authentication**: Implement proper password hashing and secure authentication
+3. **Improved Container Integration**: Make container references dynamic to avoid hardcoded names
 4. **API Documentation**: Create OpenAPI/Swagger documentation for the API endpoints
 5. **Automated Testing**: Implement unit and integration tests
 6. **CI/CD Pipeline**: Set up continuous integration and deployment
+7. **Centralized Configuration**: Implement a centralized module for environment variable management

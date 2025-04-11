@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
 """
 Direct Terraform execution module for SSB Build Server Web.
-This provides a direct execution path for Terraform operations
-when the Atlantis API is unavailable or returns errors.
+
+This module provides a fallback execution path for Terraform operations when the
+Atlantis API is unavailable or returns errors. All Terraform operations are executed
+within the Atlantis container, with dynamic container discovery to avoid hardcoded
+container names.
+
+The module includes functions for:
+- Dynamically discovering the running Atlantis container
+- Running terraform init inside the container
+- Running terraform apply inside the container
+- Generating build receipts for the user interface
 """
 import os
 import subprocess
@@ -26,40 +35,55 @@ def get_base_url(atlantis_url):
     
     return atlantis_url
 
+def get_atlantis_container():
+    """
+    Dynamically discover the Atlantis container name/ID.
+    
+    Returns:
+        str or None: Container name if found, None otherwise
+    """
+    try:
+        # Get the container ID dynamically
+        container_result = subprocess.run(
+            ["docker", "ps", "--filter", "name=atlantis", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True
+        )
+        
+        # Get the first container that contains 'atlantis' in the name
+        atlantis_containers = container_result.stdout.strip().split('\n')
+        if not atlantis_containers or not atlantis_containers[0]:
+            logger.error("No running Atlantis container found")
+            return None
+            
+        atlantis_container = atlantis_containers[0]
+        logger.info(f"Using Atlantis container: {atlantis_container}")
+        return atlantis_container
+        
+    except Exception as e:
+        logger.exception(f"Error finding Atlantis container: {str(e)}")
+        return None
+
 def run_terraform_init(tf_directory):
-    """Run terraform init in the specified directory"""
+    """Run terraform init in the specified directory using the Atlantis container"""
     logger.info(f"Running terraform init in {tf_directory}")
     try:
-        # Check if terraform is available
-        try:
-            # Try direct terraform command
-            result = subprocess.run(
-                ["terraform", "--version"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            # Direct terraform available
-            result = subprocess.run(
-                ["terraform", "init"],
-                cwd=tf_directory,
-                capture_output=True,
-                text=True,
-                check=True
-            )
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # Try using docker exec with the atlantis container
-            logger.info("Terraform not found, using Atlantis container")
-            # Get absolute path of terraform directory
-            abs_path = os.path.abspath(tf_directory)
-            # Run terraform init in the Atlantis container
-            result = subprocess.run(
-                ["docker", "exec", "ssb-build-server-web-1-atlantis-1", "terraform", "init"],
-                cwd=tf_directory,
-                capture_output=True,
-                text=True,
-                check=True
-            )
+        # Get absolute path of terraform directory
+        abs_path = os.path.abspath(tf_directory)
+        
+        # Get the Atlantis container
+        atlantis_container = get_atlantis_container()
+        if not atlantis_container:
+            return False
+        
+        # Run terraform init in the Atlantis container
+        result = subprocess.run(
+            ["docker", "exec", atlantis_container, "terraform", "init"],
+            cwd=tf_directory,
+            capture_output=True,
+            text=True,
+            check=True
+        )
             
         logger.info(f"Terraform init completed successfully: {result.stdout}")
         return True
@@ -68,38 +92,29 @@ def run_terraform_init(tf_directory):
         return False
 
 def run_terraform_apply(tf_directory):
-    """Run terraform apply -auto-approve in the specified directory"""
+    """Run terraform apply -auto-approve in the specified directory using the Atlantis container"""
     logger.info(f"Running terraform apply in {tf_directory}")
     try:
         # Create a temporary file for the apply output
         with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix='.log') as tmp:
             apply_log_file = tmp.name
         
-        # Check if terraform is available
-        terraform_available = False
-        try:
-            subprocess.run(["terraform", "--version"], capture_output=True, check=True)
-            terraform_available = True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            logger.info("Terraform not found locally, will use Atlantis container")
-            
-        # Run terraform apply with auto-approve
-        if terraform_available:
-            result = subprocess.run(
-                ["terraform", "apply", "-auto-approve"],
-                cwd=tf_directory,
-                capture_output=True,
-                text=True
-            )
-        else:
-            # Run terraform apply using the Atlantis container
-            abs_path = os.path.abspath(tf_directory)
-            result = subprocess.run(
-                ["docker", "exec", "ssb-build-server-web-1-atlantis-1", "terraform", "apply", "-auto-approve"],
-                cwd=tf_directory,
-                capture_output=True,
-                text=True
-            )
+        # Get the Atlantis container
+        atlantis_container = get_atlantis_container()
+        if not atlantis_container:
+            return {
+                'success': False,
+                'error': "No running Atlantis container found"
+            }
+        
+        # Run terraform apply using the Atlantis container
+        abs_path = os.path.abspath(tf_directory)
+        result = subprocess.run(
+            ["docker", "exec", atlantis_container, "terraform", "apply", "-auto-approve"],
+            cwd=tf_directory,
+            capture_output=True,
+            text=True
+        )
         
         # Save the output to the log file
         with open(apply_log_file, 'w') as f:

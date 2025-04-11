@@ -71,7 +71,7 @@
 ## Technical Constraints
 
 ### Security Considerations
-1. **Authentication**: Simple username/password authentication is implemented, but passwords are stored in plaintext in the users.json file. This should be improved in a production environment.
+1. **Authentication**: Username/password authentication is implemented using bcrypt password hashing for secure storage of credentials in the users.json file.
 
 2. **Role-Based Access Control**: Two roles are defined:
    - `admin`: Can approve/reject VM configurations and manage users
@@ -85,7 +85,7 @@
      - Atlantis can be run in a Docker container alongside the web application
      - Direct API calls to Atlantis server without Git repository integration
      - Configuration through environment variables and config files
-     - Local Terraform execution within the container
+     - All Terraform execution occurs within the Atlantis container with fallback mechanisms for API issues
 
 2. **NetBox API**: Used indirectly through the fetch_next_ip.py script to allocate IP addresses.
 
@@ -119,9 +119,9 @@ The VM workspace (rhel9-vm-workspace) contains the Terraform configurations that
 
 ## Known Technical Limitations
 
-1. **Terraform Module Generation**: The application currently cannot properly generate the Terraform module files that Atlantis can read and action on. This is a critical issue that needs to be addressed.
+1. **NetBox Integration**: IP address allocation through NetBox is not yet fully implemented.
 
-2. **Password Storage**: User passwords are stored in plaintext, which is not secure for production use.
+2. **CI/CD Pipeline**: No automated testing or deployment pipeline is configured.
 
 3. **Error Handling**: Limited error handling for API communication failures.
 
