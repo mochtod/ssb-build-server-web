@@ -2,10 +2,11 @@
 
 ## Current Focus
 
-We're addressing two critical Terraform/Atlantis integration issues to ensure the system works smoothly:
+We're addressing three critical Terraform/Atlantis integration issues to ensure the system works smoothly:
 
 1. Fixed the Terraform validation issue by recognizing that the `terraform` binary only exists inside the Atlantis container, not on the host
 2. Fixed the Atlantis API payload formatting issue where the system was sending incorrect data structure for Terraform files
+3. Fixed app.py to use the updated API functions instead of its local implementations
 
 ## Recent Changes
 
@@ -13,6 +14,7 @@ We're addressing two critical Terraform/Atlantis integration issues to ensure th
 - Updated atlantis_api.py to also skip local validation since terraform is only in the Atlantis container
 - Fixed the Atlantis API payload generation to properly include file contents in the terraform_files field
 - Enhanced both generate_atlantis_payload and generate_atlantis_apply_payload_fixed functions to read the actual file contents
+- Modified app.py to use the updated and fixed functions from atlantis_api.py instead of its local implementations
 
 - Fixed syntax errors in vsphere_hierarchical_loader.py that were causing worker timeouts
 - Enhanced vsphere_cluster_resources.py with strict timeouts and improved error handling

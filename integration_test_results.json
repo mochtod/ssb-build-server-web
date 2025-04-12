@@ -1,73 +1,12 @@
 {
-  "start_time": "2025-04-12T14:13:53.054998",
-  "end_time": "2025-04-12T14:14:08.796912",
-  "duration_seconds": 15.741914,
+  "start_time": "2025-04-12T14:39:37.330782",
+  "end_time": "2025-04-12T14:39:37.352566",
+  "duration_seconds": 0.021784,
   "results": {
-    "vsphere": {
-      "success": true,
-      "message": "Successfully connected to vSphere server: virtualcenter.chrobinson.com",
-      "details": {
-        "version": "8.0.3",
-        "build": "24322831",
-        "name": "VMware vCenter Server",
-        "vendor": "VMware, Inc.",
-        "datacenters": [
-          "ebdc-prodk8s",
-          "ebdc-npk8s",
-          "ebdc-edi",
-          "FQ",
-          "EBDC PROD",
-          "EBDC NONPROD"
-        ]
-      }
-    },
-    "atlantis": {
-      "success": false,
-      "message": "Could not connect to Atlantis server: http://atlantis:4141",
-      "details": {
-        "error_type": "connection_error",
-        "verify_ssl": true,
-        "error": "HTTPConnectionPool(host='atlantis', port=4141): Max retries exceeded with url: /healthz (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x000002900B746B40>, 'Connection to atlantis timed out. (connect timeout=10)'))"
-      }
-    },
-    "netbox": {
-      "success": true,
-      "message": "NetBox connection successful (version 4.1.6)",
-      "details": {
-        "url": "https://netbox.chrobinson.com/api",
-        "version": "4.1.6",
-        "django_version": "5.0.9",
-        "python_version": "3.11.9"
-      }
-    },
-    "container_health": {
-      "atlantis": {
-        "healthy": true,
-        "url": "http://localhost:4141/healthz",
-        "status_code": 200,
-        "data": {
-          "status": "ok"
-        }
-      },
-      "web": {
-        "healthy": true,
-        "url": "http://localhost:5150/healthz",
-        "status_code": 200,
-        "data": {
-          "app_status": "running",
-          "status": "ok",
-          "timestamp": "2025-04-12T19:14:04.752662",
-          "users_file": "ok"
-        }
-      },
-      "netbox": {
-        "healthy": false,
-        "urls_tried": [
-          "http://localhost:8000/api/status/"
-        ],
-        "error": "All health check attempts failed"
-      }
-    },
+    "vsphere": {},
+    "atlantis": {},
+    "netbox": {},
+    "container_health": {},
     "terraform": {
       "directory": "test-tf",
       "valid": true
