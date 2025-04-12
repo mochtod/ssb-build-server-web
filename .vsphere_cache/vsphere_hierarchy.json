@@ -1,0 +1,15 @@
+{
+  "datacenters": [
+    {
+      "name": "EBDC PROD",
+      "id": "datacenter-270"
+    },
+    {
+      "name": "EBDC NONPROD",
+      "id": "datacenter-264"
+    }
+  ],
+  "clusters_by_dc": {},
+  "resources_by_cluster": {},
+  "timestamp": "2025-04-12T00:29:53.286808"
+}

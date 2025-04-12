@@ -1208,8 +1208,8 @@ def healthz():
 def vsphere_datacenters():
     """Return all available vSphere datacenters using the hierarchical loader"""
     try:
-        # Get datacenters from hierarchical loader
-        datacenters = vsphere_hierarchical_loader.get_datacenters()
+        # Force the loading of datacenters (don't rely on background processing)
+        datacenters = vsphere_hierarchical_loader.get_datacenters(force_load=True)
         
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
@@ -1228,8 +1228,8 @@ def vsphere_datacenters():
 def vsphere_datacenter_clusters(datacenter_name):
     """Return all clusters for a specific datacenter using the hierarchical loader"""
     try:
-        # Get clusters for specified datacenter
-        clusters = vsphere_hierarchical_loader.get_clusters(datacenter_name)
+        # Force the loading of clusters for the specified datacenter
+        clusters = vsphere_hierarchical_loader.get_clusters(datacenter_name, force_load=True)
         
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
@@ -1282,8 +1282,8 @@ def vsphere_hierarchical_cluster_resources(cluster_id):
         # Optionally pass cluster name if available
         cluster_name = request.args.get('cluster_name')
         
-        # Get resources from hierarchical loader
-        resources = vsphere_hierarchical_loader.get_resources(cluster_id, cluster_name)
+        # Force the loading of resources for the specified cluster
+        resources = vsphere_hierarchical_loader.get_resources(cluster_id, cluster_name, force_load=True)
         
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
