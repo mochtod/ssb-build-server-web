@@ -46,8 +46,16 @@ services:
       - NETBOX_PORT=8000
       - NETBOX_TOKEN=${NETBOX_TOKEN:-netbox-api-token}
       - NETBOX_URL=${NETBOX_URL:-https://netbox.chrobinson.com/api}
+      
+      # Redis cache configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     depends_on:
       atlantis:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - app-network
@@ -112,6 +120,23 @@ services:
       - app-network
     restart: unless-stopped
 
+  # Cache server for vSphere resource caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis-data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
   # Uncomment this section when you're ready to add NetBox support
   # netbox:
   #   image: netboxcommunity/netbox:latest
@@ -134,7 +159,7 @@ services:
   #   depends_on:
   #     postgres:
   #       condition: service_healthy
-  #     redis:
+  #     redis-netbox:
   #       condition: service_healthy
   #   networks:
   #     - app-network
@@ -176,4 +201,5 @@ volumes:
   configs:
   terraform:
   atlantis-data:
+  redis-data:  # Redis cache volume
   # pgdata:

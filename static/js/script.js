@@ -339,7 +339,8 @@ function initializeResourceLoading() {
             // Hide all dependent containers
             document.getElementById('resource_pool_container').style.display = 'none';
             document.getElementById('datastores_container').style.display = 'none';
-            document.getElementById('networks_templates_container').style.display = 'none';
+            document.getElementById('networks_container').style.display = 'none';
+            document.getElementById('templates_container').style.display = 'none';
             
             if (datacenterName) {
                 // Show cluster container
@@ -388,7 +389,8 @@ function initializeResourceLoading() {
                     // Hide all resource sections if no cluster is selected
                     document.getElementById('resource_pool_container').style.display = 'none';
                     document.getElementById('datastores_container').style.display = 'none';
-                    document.getElementById('networks_templates_container').style.display = 'none';
+                    document.getElementById('networks_container').style.display = 'none';
+                    document.getElementById('templates_container').style.display = 'none';
                     
                     if (resourceStatusElement) {
                         resourceStatusElement.textContent = 'Select a cluster to view available resources.';
@@ -535,16 +537,18 @@ function initializeResourceLoading() {
                     document.getElementById('datastores_container').style.display = 'flex';
                 }
                 
-                // Update networks and templates
-                if (data.networks && data.networks.length > 0 && 
-                    data.templates && data.templates.length > 0) {
+                // Update networks (now handled separately)
+                if (data.networks && data.networks.length > 0) {
                     const networkSelect = document.getElementById('network');
-                    const templateSelect = document.getElementById('template');
-                    
                     updateResourceDropdown(networkSelect, data.networks);
+                    document.getElementById('networks_container').style.display = 'flex';
+                }
+                
+                // Templates (now shown as requested)
+                if (data.templates && data.templates.length > 0) {
+                    const templateSelect = document.getElementById('template');
                     updateResourceDropdown(templateSelect, data.templates);
-                    
-                    document.getElementById('networks_templates_container').style.display = 'flex';
+                    document.getElementById('templates_container').style.display = 'flex';
                 }
                 
                 // Hide loading indicator

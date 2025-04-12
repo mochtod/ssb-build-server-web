@@ -20,6 +20,7 @@ import logging
 from vsphere_utils import test_vsphere_connection
 import vsphere_optimized_loader
 import vsphere_hierarchical_loader
+import vsphere_redis_cache
 from vsphere_resource_functions import generate_variables_file, generate_terraform_config
 from vsphere_resource_validator import verify_vsphere_resources, validate_default_pool, with_resource_validation
 from atlantis_api import run_atlantis_plan, run_atlantis_apply, check_atlantis_health, AtlantisApiError

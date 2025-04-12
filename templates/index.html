@@ -120,21 +120,27 @@
                             </div>
                         </div>
                         
-                        <!-- Networks and Templates -->
-                        <div id="networks_templates_container" class="form-row" style="display: none;">
+                        <!-- Networks - now separate from templates and shown after datastores -->
+                        <div id="networks_container" class="form-row" style="display: none;">
                             <div class="form-group">
                                 <label for="network">Network:</label>
                                 <select id="network" name="network" required>
                                     <option value="">-- Select Network --</option>
                                     <!-- Will be populated based on selected cluster -->
                                 </select>
+                                <div class="form-text">Select a network for this VM</div>
                             </div>
+                        </div>
+                        
+                        <!-- Templates - now shown as requested -->
+                        <div id="templates_container" class="form-row" style="display: none;">
                             <div class="form-group">
                                 <label for="template">VM Template:</label>
                                 <select id="template" name="template" required>
                                     <option value="">-- Select Template --</option>
                                     <!-- Will be populated based on selected cluster -->
                                 </select>
+                                <div class="form-text">Select a template for this VM</div>
                             </div>
                         </div>
         </div>

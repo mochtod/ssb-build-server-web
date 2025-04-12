@@ -380,6 +380,79 @@ class VSphereClusterResources:
         
         return result
     
+    def get_hosts_by_cluster(self, cluster_obj):
+        """Get hosts in a specific cluster, with memory info."""
+        if not self.content or not cluster_obj:
+            return []
+            
+        # If we're in simulation mode, return sample data
+        if self.content == "SIMULATION":
+            logger.info(f"Returning simulated hosts for cluster {cluster_obj.name}")
+            
+            # Determine cluster name
+            cluster_name = cluster_obj.name
+            host_count = 4  # Default host count
+            
+            # Create simulated hosts
+            hosts = []
+            for i in range(host_count):
+                # Generate different memory values to simulate variety
+                total_memory = 128 * 1024  # 128 GB in MB
+                used_memory = (40 + i * 10) * 1024  # Different usage per host
+                free_memory = total_memory - used_memory
+                
+                hosts.append({
+                    'name': f"esx-{cluster_name.lower()}-{i+1}.domain.com",
+                    'id': f"host-{i+1}-{cluster_name}",
+                    'type': 'HostSystem',
+                    'cluster_id': str(getattr(cluster_obj, '_moId', 'cluster-1')),
+                    'cluster_name': cluster_name,
+                    'connection_state': 'connected',
+                    'maintenance_mode': False,
+                    'total_memory_mb': total_memory,
+                    'used_memory_mb': used_memory,
+                    'free_memory_mb': free_memory,
+                    'percent_memory_free': round((free_memory / total_memory) * 100, 2)
+                })
+            
+            # Sort hosts by free memory (most to least)
+            hosts.sort(key=lambda host: host['free_memory_mb'], reverse=True)
+            return hosts
+        
+        # Normal mode - get real hosts
+        result = []
+        
+        # Process each host in the cluster
+        for host in cluster_obj.host:
+            # Skip hosts not in 'connected' state or in maintenance mode
+            if host.runtime.connectionState != 'connected' or host.runtime.inMaintenanceMode:
+                continue
+                
+            # Calculate memory usage
+            total_memory = host.hardware.memorySize / (1024 * 1024)  # Convert to MB
+            used_memory = (total_memory - host.summary.quickStats.overallMemoryUsage)
+            
+            # Create host info
+            host_info = {
+                'name': host.name,
+                'id': str(host._moId),
+                'type': 'HostSystem',
+                'cluster_id': str(cluster_obj._moId),
+                'cluster_name': cluster_obj.name,
+                'connection_state': host.runtime.connectionState,
+                'maintenance_mode': host.runtime.inMaintenanceMode,
+                'total_memory_mb': total_memory,
+                'used_memory_mb': used_memory,
+                'free_memory_mb': host.summary.quickStats.overallMemoryUsage,
+                'percent_memory_free': round((host.summary.quickStats.overallMemoryUsage / total_memory) * 100, 2) if total_memory > 0 else 0
+            }
+            
+            result.append(host_info)
+        
+        # Sort hosts by free memory (most to least)
+        result.sort(key=lambda host: host['free_memory_mb'], reverse=True)
+        return result
+    
     def get_templates_by_cluster(self, cluster_obj):
         """Get VM templates compatible with a specific cluster."""
         if not self.content or not cluster_obj:
@@ -649,6 +722,34 @@ class VSphereClusterResources:
                 }
             ]
             
+            # Create simulated hosts
+            hosts = []
+            for i in range(4):  # Simulate 4 hosts
+                # Generate different memory values
+                total_memory = 128 * 1024  # 128 GB in MB
+                used_memory = (40 + i * 10) * 1024  # Different usage per host
+                free_memory = total_memory - used_memory
+                
+                hosts.append({
+                    'name': f"esx-{cluster_name.lower()}-{i+1}.domain.com",
+                    'id': f"host-{i+1}-{cluster_id}",
+                    'type': 'HostSystem',
+                    'cluster_id': cluster_id,
+                    'cluster_name': cluster_name,
+                    'connection_state': 'connected',
+                    'maintenance_mode': False,
+                    'total_memory_mb': total_memory,
+                    'used_memory_mb': used_memory,
+                    'free_memory_mb': free_memory,
+                    'percent_memory_free': round((free_memory / total_memory) * 100, 2)
+                })
+            
+            # Sort hosts by free memory (most to least)
+            hosts.sort(key=lambda host: host['free_memory_mb'], reverse=True)
+            
+            # Select the recommended host (one with most memory)
+            recommended_host = hosts[0] if hosts else None
+
             # Create result structure
             result = {
                 'cluster_name': cluster_name,
@@ -657,6 +758,8 @@ class VSphereClusterResources:
                 'datastores': datastores,
                 'networks': networks,
                 'templates': templates,
+                'hosts': hosts,
+                'recommended_host': recommended_host,
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -705,6 +808,12 @@ class VSphereClusterResources:
             # Get templates
             templates = self.get_templates_by_cluster(cluster_obj)
             
+            # Get hosts (and sort by memory)
+            hosts = self.get_hosts_by_cluster(cluster_obj)
+            
+            # Identify the recommended host (first one has most memory available)
+            recommended_host = hosts[0] if hosts else None
+            
             logger.info(f"Retrieved all resources for cluster {cluster_obj.name} in {time.time() - start_time:.2f}s")
             
             # Create result structure
@@ -715,6 +824,8 @@ class VSphereClusterResources:
                 'datastores': datastores,
                 'networks': networks,
                 'templates': templates,
+                'hosts': hosts,
+                'recommended_host': recommended_host,
                 'timestamp': datetime.now().isoformat()
             }
             
