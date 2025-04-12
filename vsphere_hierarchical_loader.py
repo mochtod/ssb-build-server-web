@@ -584,6 +584,18 @@ class VSphereHierarchicalLoader:
                             'templates': []  # Will be loaded in background
                         }
                         
+                        # Always provide at least one template for the UI to display
+                        if not resources['templates']:
+                            resources['templates'] = [
+                                {
+                                    'id': 'vm-11682491',  # Use default template ID from env
+                                    'name': 'RHEL9 Template (Loading in background...)',
+                                    'guest_os': 'rhel9_64Guest',
+                                    'cpu_count': 2,
+                                    'memory_mb': 4096
+                                }
+                            ]
+                        
                         # Get datastores
                         logger.info(f"Retrieving datastores for cluster: {cluster_name or cluster_id}")
                         resources['datastores'] = instance.get_datastores_by_cluster(cluster_obj)

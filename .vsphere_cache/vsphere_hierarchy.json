@@ -1,10 +1,6 @@
 {
   "datacenters": [
     {
-      "name": "EBDC PROD",
-      "id": "datacenter-270"
-    },
-    {
       "name": "EBDC NONPROD",
       "id": "datacenter-264"
     }
@@ -474,5 +470,5 @@
       ]
     }
   },
-  "timestamp": "2025-04-12T01:19:18.711515"
+  "timestamp": "2025-04-12T01:36:52.260992"
 }
