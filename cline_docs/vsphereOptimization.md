@@ -99,11 +99,49 @@ else:
     print(f"Cannot provision VM: {message}")
 ```
 
+## Hierarchical Resource Loading
+
+Building on the initial optimization, a new hierarchical loading strategy has been implemented in `vsphere_hierarchical_loader.py`. This approach follows the natural VMware object model:
+
+1. **Datacenters** → 2. **Clusters** → 3. **Resources** (Pools, Networks, Datastores, Templates)
+
+### Benefits of Hierarchical Loading
+
+1. **Progressive Loading**: Users can select a datacenter first, then a cluster, then specific resources, allowing the UI to be responsive while resources load in the background
+2. **Reduced Resource Usage**: Only resources for the selected datacenter/cluster are loaded, significantly reducing memory usage
+3. **Asynchronous Processing**: All resource-intensive operations are performed in background threads
+4. **Improved User Experience**: The application remains responsive during resource loading
+5. **Event-Based Architecture**: Resource events are emitted as loading progresses, allowing the UI to update in real-time
+
+### Implementation Details
+
+The `VSphereHierarchicalLoader` class:
+- Uses background threads for all resource-intensive operations
+- Implements a thread-safe, multi-stage loading approach
+- Provides event notifications for loading status changes
+- Includes intelligent caching of resources by datacenter and cluster
+- Handles connection failures gracefully with informative error messages
+
+### API Integration
+
+The hierarchical loader is integrated into the application with new API endpoints:
+- `/api/vsphere/datacenters` - Returns all available datacenters
+- `/api/vsphere/datacenters/<name>/clusters` - Returns clusters for a specific datacenter
+- `/api/vsphere/hierarchical/clusters/<id>/resources` - Returns resources for a specific cluster
+
+These endpoints allow the UI to progressively load resources as the user navigates the hierarchy.
+
 ## Future Improvements
 
-Potential future enhancements include:
+Implemented enhancements:
+1. ✅ Hierarchical loading following the natural VMware object model
+2. ✅ Background thread processing for all resource-intensive operations
+3. ✅ Progressive loading with visual feedback in the UI
+4. ✅ Intelligent caching with datacenter and cluster-specific resources
 
+Additional potential enhancements:
 1. Implementing resource-specific TTLs (time-to-live) for caching
 2. Adding support for multiple environments (dev, test, prod)
 3. Creating a health check function to validate resource connectivity
 4. Extending the utility to support additional vSphere resource types
+5. Implementing WebSocket notifications for real-time resource loading status

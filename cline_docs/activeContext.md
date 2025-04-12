@@ -2,11 +2,16 @@
 
 ## Current Focus
 
-The current focus is on testing and validating the end-to-end workflow with the combined repository structure. We have successfully combined the SSB Build Server Web application and the VM workspace into a single repository with a containerized Atlantis setup.
+The current focus is on optimizing vSphere resource loading to reduce login times and prevent blocking operations that affect application responsiveness. We're implementing a hierarchical loading approach that follows the natural VMware object structure (vCenter → Datacenter → Cluster → Resources).
 
 ## Recent Changes
 
-- Implemented vSphere resource optimization to improve VM provisioning performance
+- Created new vsphere_hierarchical_loader.py module for staged, background loading of resources
+- Implemented datacenter → cluster → resources hierarchy for efficient resource loading
+- Added API endpoints to support the hierarchical loading model
+- Modified login and index routes to avoid blocking on resource loading
+- Used background threads for all resource-intensive operations
+- Implemented proper error handling for vSphere connection issues
 - Memory bank initialization for the project
 - Documentation of the web application and VM workspace structure
 - Implementation of the complete `generate_terraform_config()` function

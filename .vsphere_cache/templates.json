@@ -1,35 +1,5 @@
 [
   {
-    "name": "ubuntu-22.04-server-template",
-    "id": "vm-8285575",
-    "type": "VirtualMachine",
-    "is_template": true
-  },
-  {
-    "name": "template-rhel8-rancher",
-    "id": "vm-8558536",
-    "type": "VirtualMachine",
-    "is_template": true
-  },
-  {
-    "name": "rancher-rke2-rhel-8.6",
-    "id": "vm-8246621",
-    "type": "VirtualMachine",
-    "is_template": true
-  },
-  {
-    "name": "rhel_8.6_1",
-    "id": "vm-8226387",
-    "type": "VirtualMachine",
-    "is_template": true
-  },
-  {
-    "name": "cl40-rhel8-rancher",
-    "id": "vm-8231582",
-    "type": "VirtualMachine",
-    "is_template": true
-  },
-  {
     "name": "template-rhel8-rancher_p6",
     "id": "vm-8366816",
     "type": "VirtualMachine",

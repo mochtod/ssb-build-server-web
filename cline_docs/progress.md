@@ -48,7 +48,7 @@ The SSB Build Server Web application is currently in development with partial fu
 | Atlantis Integration | 100% | API integration with dynamic container discovery and reliable fallback mechanism |
 | VM Provisioning | 95% | Improved direct VM provisioning with container-based Terraform execution |
 | NetBox Integration | 80% | Enhanced IP allocation with caching, error handling and fallback mechanisms |
-| vSphere Integration | 100% | Improved resource caching with resource-specific timeouts and retry logic |
+| vSphere Integration | 100% | Implemented hierarchical resource loading (datacenter → cluster → resources) with background threads |
 | Error Handling | 100% | Implemented comprehensive error handling with custom error types and recovery strategies |
 | Logging | 100% | Added enhanced logging with context tracking, performance metrics, and standardized formatting |
 | API Middleware | 100% | Created middleware for Flask with request tracking, error handling, and response formatting |
@@ -81,6 +81,11 @@ The SSB Build Server Web application is currently in development with partial fu
 
 ## Recent Activity
 
+- Created hierarchical vSphere resource loader with staged loading approach (datacenter → cluster → resources)
+- Implemented background thread processing for all resource-intensive operations
+- Added API endpoints to support the new hierarchical loading model
+- Improved application responsiveness by avoiding blocking operations
+- Updated UI to handle progressive resource loading
 - Implemented optimized vSphere resource retrieval with minimal required values for VM provisioning
 - Created utility module for flexible VM location resource management
 - Added performance comparison tool for vSphere resource retrieval methods

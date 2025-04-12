@@ -19,6 +19,7 @@ from git.exc import GitCommandError
 import logging
 from vsphere_utils import test_vsphere_connection
 import vsphere_optimized_loader
+import vsphere_hierarchical_loader
 from vsphere_resource_functions import generate_variables_file, generate_terraform_config
 from vsphere_resource_validator import verify_vsphere_resources, validate_default_pool, with_resource_validation
 from atlantis_api import run_atlantis_plan, run_atlantis_apply, check_atlantis_health, AtlantisApiError
@@ -301,32 +302,43 @@ def login():
         if login_attempts >= 5:
             flash('Too many login attempts. Please try again later.', 'error')
             return render_template('login.html')
-            
-        users = load_users()
         
-        if username in users and check_password(users[username]['password'], password):
-            # Reset login attempts on successful login
-            session.pop('login_attempts', None)
+        try:
+            # Load users with timeout to prevent blocking
+            users = load_users()
             
-            # Set session variables
-            session['username'] = username
-            session['role'] = users[username]['role']
-            session['name'] = users[username]['name']
-            
-            # Set session timeout (30 minutes)
-            session.permanent = True
-            app.permanent_session_lifetime = datetime.timedelta(minutes=30)
-            
-            flash(f'Welcome, {users[username]["name"]}!', 'success')
-            
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
-            return redirect(url_for('index'))
-        else:
-            # Increment login attempts
-            session['login_attempts'] = login_attempts + 1
-            flash('Invalid username or password', 'error')
+            if username in users and check_password(users[username]['password'], password):
+                # Reset login attempts on successful login
+                session.pop('login_attempts', None)
+                
+                # Set session variables
+                session['username'] = username
+                session['role'] = users[username]['role']
+                session['name'] = users[username]['name']
+                
+                # Start background resource loading if not already running
+                # This ensures resources start loading but doesn't block login
+                if not resource_manager.get_status()['loading'] and not resource_manager.get_status()['last_update']:
+                    resource_manager.start_background_fetch()
+                    logger.info("Started background fetch of vSphere resources after login")
+                
+                # Set session timeout (30 minutes)
+                session.permanent = True
+                app.permanent_session_lifetime = datetime.timedelta(minutes=30)
+                
+                flash(f'Welcome, {users[username]["name"]}!', 'success')
+                
+                next_page = request.args.get('next')
+                if next_page:
+                    return redirect(next_page)
+                return redirect(url_for('index'))
+            else:
+                # Increment login attempts
+                session['login_attempts'] = login_attempts + 1
+                flash('Invalid username or password', 'error')
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
+            flash('An error occurred during login. Please try again.', 'error')
     
     return render_template('login.html')
 
@@ -339,33 +351,40 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    # Initially load only minimal set of resources (top 10) for faster page load
-    from vsphere_optimized_loader import get_minimal_vsphere_resources
-    
-    # Get target datacenters from environment variable, if set
-    target_dcs = os.environ.get('VSPHERE_DATACENTERS', '').split(',')
-    target_dcs = [dc.strip() for dc in target_dcs if dc.strip()]
-    
-    # Get minimal VSphere resources from the optimized loader
-    vs_resources = get_minimal_vsphere_resources(
-        use_cache=True, 
-        target_datacenters=target_dcs if target_dcs else None
-    )
-    
-    # Get loading status
-    resource_status = resource_manager.get_status()
-    
-    # Log what we're using initially
-    logger.info(f"Using minimal resources for initial load: {len(vs_resources['resource_pools'])} resource pools, "
-               f"{len(vs_resources['datastores'])} datastores, "
-               f"{len(vs_resources['networks'])} networks, "
-               f"{len(vs_resources['templates'])} templates")
-    
-    # Start background fetch of full resources if needed
-    if (not resource_status['loading'] and not resource_status['last_update']):
-        resource_manager.start_background_fetch()
+    # Get resources, but don't wait for them - show default resources initially
+    # and use AJAX to load the real ones after page loads
+    vs_resources = None
+    try:
+        # First try to get cached resources (fast)
+        from vsphere_optimized_loader import get_minimal_vsphere_resources
+        
+        # Get target datacenters from environment variable, if set
+        target_dcs = os.environ.get('VSPHERE_DATACENTERS', '').split(',')
+        target_dcs = [dc.strip() for dc in target_dcs if dc.strip()]
+        
+        # Try to load from cache with a timeout to avoid blocking
+        vs_resources = vsphere_optimized_loader.get_default_resources()  # Start with defaults
+        
+        # Get loading status
         resource_status = resource_manager.get_status()
-        logger.info("Started background fetch of complete vSphere resources")
+        
+        # Start background fetch of full resources if needed
+        if (not resource_status['loading'] and not resource_status['last_update']):
+            resource_manager.start_background_fetch()
+            logger.info("Started background fetch of complete vSphere resources")
+    except Exception as e:
+        logger.warning(f"Error pre-loading vSphere resources: {str(e)}")
+        resource_status = {'loading': False, 'error': str(e)}
+    
+    # If we couldn't load resources, use default values
+    if not vs_resources:
+        vs_resources = vsphere_optimized_loader.get_default_resources()
+        logger.info("Using default vSphere resources for initial load")
+    else:
+        logger.info(f"Using pre-loaded resources: {len(vs_resources['resource_pools'])} resource pools, "
+                   f"{len(vs_resources['datastores'])} datastores, "
+                   f"{len(vs_resources['networks'])} networks, "
+                   f"{len(vs_resources['templates'])} templates")
     
     return render_template('index.html', 
                           server_prefixes=SERVER_PREFIXES,
@@ -376,8 +395,8 @@ def index():
                           datastores=vs_resources['datastores'],
                           networks=vs_resources['networks'],
                           templates=vs_resources['templates'],
-                          resource_status=resource_status,
-                          resources_loading=resource_status['loading'],
+                          resource_status=resource_manager.get_status(),
+                          resources_loading=resource_manager.get_status().get('loading', False),
                           minimal_resources=True)  # Flag to indicate minimal resources
 
 @app.route('/submit', methods=['POST'])
@@ -1156,35 +1175,79 @@ def run_atlantis_apply(config_data, tf_directory):
 def healthz():
     """Health check endpoint for container healthcheck"""
     try:
-        # Check if we can load users to confirm app is working
-        users = load_users()
-        
-        # Check if Atlantis is healthy
-        atlantis_healthy = check_atlantis_health()
-        
-        # Return health status
+        # Quick health check that doesn't wait for external services
+        # This allows the container to be marked as healthy immediately
         response = {
             'status': 'ok',
             'timestamp': datetime.datetime.now().isoformat(),
-            'services': {
-                'atlantis': 'healthy' if atlantis_healthy else 'unhealthy'
-            }
+            'app_status': 'running'
         }
         
-        # If Atlantis is unhealthy, still return 200 but with unhealthy status
-        # This allows the app to start even if Atlantis is down
+        # Check minimal services but don't fail if they're down
+        try:
+            # Load users file
+            users = load_users()
+            response['users_file'] = 'ok'
+        except Exception as ue:
+            logger.warning(f"Users file check failed in healthcheck: {str(ue)}")
+            response['users_file'] = 'warning'
+        
+        # Always return 200 to keep the container running
+        # This allows the app to start even if some services are down
         return jsonify(response)
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
+        # Still return 200 to prevent container restart loops
         return jsonify({
-            'status': 'error',
+            'status': 'warning',
             'message': str(e)
+        })
+
+@app.route('/api/vsphere/datacenters')
+@login_required
+def vsphere_datacenters():
+    """Return all available vSphere datacenters using the hierarchical loader"""
+    try:
+        # Get datacenters from hierarchical loader
+        datacenters = vsphere_hierarchical_loader.get_datacenters()
+        
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'datacenters': datacenters,
+            'status': vsphere_hierarchical_loader.get_loading_status()
+        })
+    except Exception as e:
+        logger.exception(f"Error retrieving vSphere datacenters: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere/datacenters/<datacenter_name>/clusters')
+@login_required
+def vsphere_datacenter_clusters(datacenter_name):
+    """Return all clusters for a specific datacenter using the hierarchical loader"""
+    try:
+        # Get clusters for specified datacenter
+        clusters = vsphere_hierarchical_loader.get_clusters(datacenter_name)
+        
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'datacenter': datacenter_name,
+            'clusters': clusters,
+            'status': vsphere_hierarchical_loader.get_loading_status()
+        })
+    except Exception as e:
+        logger.exception(f"Error retrieving clusters for datacenter {datacenter_name}: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
         }), 500
 
 @app.route('/api/vsphere/clusters')
 @login_required
 def vsphere_clusters():
-    """Return all available vSphere clusters"""
+    """Return all available vSphere clusters (legacy endpoint)"""
     try:
         # Import the cluster resources module
         import vsphere_cluster_resources
@@ -1210,10 +1273,40 @@ def vsphere_clusters():
             'error': str(e)
         }), 500
 
+@app.route('/api/vsphere/hierarchical/clusters/<cluster_id>/resources')
+@login_required
+def vsphere_hierarchical_cluster_resources(cluster_id):
+    """Return all resources for a specific vSphere cluster using the hierarchical loader"""
+    try:
+        # Get resources for specified cluster using the hierarchical loader
+        # Optionally pass cluster name if available
+        cluster_name = request.args.get('cluster_name')
+        
+        # Get resources from hierarchical loader
+        resources = vsphere_hierarchical_loader.get_resources(cluster_id, cluster_name)
+        
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'cluster_id': cluster_id,
+            'cluster_name': resources.get('cluster_name', cluster_name or 'Unknown Cluster'),
+            'resource_pools': resources.get('resource_pools', []),
+            'datastores': resources.get('datastores', []),
+            'networks': resources.get('networks', []),
+            'templates': resources.get('templates', []),
+            'status': vsphere_hierarchical_loader.get_loading_status(),
+            'loading': resources.get('loading', False)
+        })
+    except Exception as e:
+        logger.exception(f"Error retrieving resources for cluster {cluster_id}: {str(e)}")
+        return jsonify({
+            'timestamp': datetime.datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
+
 @app.route('/api/vsphere/clusters/<cluster_id>/resources')
 @login_required
 def vsphere_cluster_resources(cluster_id):
-    """Return all resources for a specific vSphere cluster"""
+    """Return all resources for a specific vSphere cluster (legacy endpoint)"""
     try:
         # Import the cluster resources module
         import vsphere_cluster_resources

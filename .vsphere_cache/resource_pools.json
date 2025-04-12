@@ -1,36 +1,6 @@
 [
   {
     "name": "Resources",
-    "id": "resgroup-9338905",
-    "type": "ResourcePool"
-  },
-  {
-    "name": "Resources",
-    "id": "resgroup-11613604",
-    "type": "ResourcePool"
-  },
-  {
-    "name": "Resources",
-    "id": "resgroup-11593743",
-    "type": "ResourcePool"
-  },
-  {
-    "name": "Resources",
-    "id": "resgroup-8016317",
-    "type": "ResourcePool"
-  },
-  {
-    "name": "Resources",
-    "id": "resgroup-11832784",
-    "type": "ResourcePool"
-  },
-  {
-    "name": "Resources",
-    "id": "resgroup-10686924",
-    "type": "ResourcePool"
-  },
-  {
-    "name": "Resources",
     "id": "resgroup-11569223",
     "type": "ResourcePool"
   },
