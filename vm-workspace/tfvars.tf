@@ -24,6 +24,12 @@ variable "server_count" {
   type        = number
 }
 
+variable "quantity" {
+  description = "Number of machines to create"
+  type        = number
+  default     = 1
+}
+
 variable "netbox_token" {
   description = "Token for NetBox API"
   type        = string

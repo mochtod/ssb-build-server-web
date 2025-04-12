@@ -175,8 +175,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4685751648256,
-          "free_gb": 4363.95
+          "free_space": 4685485309952,
+          "free_gb": 4363.7
         },
         {
           "name": "np_cl7_esx_401",
@@ -186,8 +186,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2718290673664,
-          "free_gb": 2531.61
+          "free_space": 2718033772544,
+          "free_gb": 2531.37
         },
         {
           "name": "np_cl7_esx_402",
@@ -197,8 +197,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4372271464448,
-          "free_gb": 4072.0
+          "free_space": 4372194918400,
+          "free_gb": 4071.92
         },
         {
           "name": "np_cl7_esx_403",
@@ -208,8 +208,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2317187284992,
-          "free_gb": 2158.05
+          "free_space": 2317067747328,
+          "free_gb": 2157.94
         },
         {
           "name": "np_cl7_esx_404",
@@ -219,8 +219,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3534920613888,
-          "free_gb": 3292.15
+          "free_space": 3534826242048,
+          "free_gb": 3292.06
         },
         {
           "name": "np_cl7_esx_405",
@@ -230,8 +230,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3152414769152,
-          "free_gb": 2935.92
+          "free_space": 3152353951744,
+          "free_gb": 2935.86
         },
         {
           "name": "np_cl7_esx_iso",
@@ -252,8 +252,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2765098057728,
-          "free_gb": 2575.2
+          "free_space": 2765004734464,
+          "free_gb": 2575.11
         },
         {
           "name": "np_cl7_esx_407",
@@ -263,8 +263,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2497865318400,
-          "free_gb": 2326.32
+          "free_space": 2497850638336,
+          "free_gb": 2326.3
         },
         {
           "name": "np_cl7_esx_408",
@@ -274,8 +274,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4054896869376,
-          "free_gb": 3776.42
+          "free_space": 4054741680128,
+          "free_gb": 3776.27
         },
         {
           "name": "np_cl7_esx_410",
@@ -285,8 +285,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2549986885632,
-          "free_gb": 2374.86
+          "free_space": 2549959622656,
+          "free_gb": 2374.83
         },
         {
           "name": "np_cl7_esx_409",
@@ -296,8 +296,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4700683370496,
-          "free_gb": 4377.85
+          "free_space": 4698945880064,
+          "free_gb": 4376.23
         },
         {
           "name": "np-cl7-esx-411",
@@ -307,8 +307,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3050443898880,
-          "free_gb": 2840.95
+          "free_space": 3050190143488,
+          "free_gb": 2840.71
         },
         {
           "name": "np-cl7-esx-412",
@@ -318,8 +318,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3905746370560,
-          "free_gb": 3637.51
+          "free_space": 3904233275392,
+          "free_gb": 3636.1
         }
       ],
       "networks": [
@@ -1388,5 +1388,5 @@
       ]
     }
   },
-  "timestamp": "2025-04-12T03:06:05.521460"
+  "timestamp": "2025-04-12T18:03:10.240019"
 }

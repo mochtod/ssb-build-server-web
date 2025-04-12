@@ -1,0 +1,2 @@
+# Requirements for Terraform validation scripts
+python-hcl2>=3.0.0

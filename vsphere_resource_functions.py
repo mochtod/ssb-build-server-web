@@ -35,7 +35,25 @@ def generate_variables_file(variables_file, config):
     if not resource_pool_id or not datastore_id or not network_id or not template_uuid:
         logger.error("Missing required vSphere resources in VM configuration")
     
-    # Generate variables content
+    # Build additional disks configuration as a string
+    additional_disks_str = "["
+    for disk in config.get('additional_disks', []):
+        additional_disks_str += f'\n    {{ size = {disk["size"]}, type = "{disk["type"]}" }},'
+    additional_disks_str += "\n  ]"
+    
+    # Get environment variables for vsphere connection
+    vsphere_user = os.environ.get('VSPHERE_USER', '')
+    vsphere_password = os.environ.get('VSPHERE_PASSWORD', '')
+    vsphere_server = os.environ.get('VSPHERE_SERVER', '')
+    
+    # Get NetBox token from environment
+    netbox_token = os.environ.get('NETBOX_TOKEN', '')
+    netbox_api_url = os.environ.get('NETBOX_URL', 'https://netbox.chrobinson.com/api')
+    
+    # Format hostname prefix based on server name components
+    hostname_prefix = server_name.split('-')[0] if '-' in server_name else server_name
+    
+    # Generate variables content - including ALL variables from tfvars.tf
     variables_content = f"""
 # Terraform variables for {server_name}
 # Generated on {config['timestamp']}
@@ -46,22 +64,48 @@ num_cpus         = {config['num_cpus']}
 memory           = {config['memory']}
 disk_size        = {config['disk_size']}
 quantity         = {config['quantity']}
-start_number     = {config['start_number']}
+start_number     = {config.get('start_number', 1)}
+end_number       = 100  # Hard-coded default
 
 # Environment Configuration
 environment      = "{environment}"
+hostname_prefix  = "{hostname_prefix}"
+server_count     = {config['quantity']}
 
-# vSphere Environment
-# These values are configured specifically for this VM, not from global settings
+# vSphere Connection
+vsphere_user     = "{vsphere_user}"
+vsphere_password = "{vsphere_password}"
+vsphere_server   = "{vsphere_server}"
+
+# vSphere Resources
 resource_pool_id = "{resource_pool_id}"
 datastore_id     = "{datastore_id}"
 network_id       = "{network_id}"
 template_uuid    = "{template_uuid}"
-ipv4_address     = "192.168.1.100"  # This will be overridden by NetBox
+
+# Guest Configuration
+guest_id         = "rhel9_64Guest"
+adapter_type     = "vmxnet3"
+
+# Network Configuration
+ipv4_address     = "192.168.1.100"  # Will be overridden by NetBox
 ipv4_netmask     = 24
 ipv4_gateway     = "192.168.1.1"
 dns_servers      = ["8.8.8.8", "8.8.4.4"]
 time_zone        = "UTC"
+
+# NetBox Integration
+netbox_token     = "{netbox_token}"
+netbox_api_url   = "{netbox_api_url}"
+
+# Additional Storage
+additional_disks = {additional_disks_str}
+
+# Vault Configuration - Empty defaults as these are typically used in production
+vault_token      = ""
+vault_role_id    = ""
+vault_secret_id  = ""
+vault_k8s_role   = ""
 """
     
     # Write to file
