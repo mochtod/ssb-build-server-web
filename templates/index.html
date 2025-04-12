@@ -71,18 +71,30 @@
                         
                         <!-- Resource loading status -->
                         <div class="resource-status">
-                            <small id="resource_status">Select a cluster to view available resources.</small>
+                            <small id="resource_status">First select a datacenter, then a cluster to view available resources.</small>
                         </div>
                         
-                        <!-- Cluster selection (first step) -->
+                        <!-- Datacenter selection (first step) -->
                         <div class="form-row">
+                            <div class="form-group">
+                                <label for="datacenter">Datacenter:</label>
+                                <select id="datacenter" name="datacenter" required>
+                                    <option value="">-- Select a Datacenter --</option>
+                                    <!-- Datacenters will be loaded via JavaScript -->
+                                </select>
+                                <div class="form-text">First select a datacenter to see available clusters</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cluster selection (second step) -->
+                        <div class="form-row" id="cluster_container" style="display: none;">
                             <div class="form-group">
                                 <label for="cluster">Cluster:</label>
                                 <select id="cluster" name="cluster" required>
                                     <option value="">-- Select a Cluster --</option>
                                     <!-- Clusters will be loaded via JavaScript -->
                                 </select>
-                                <div class="form-text">First select a cluster to see available resources</div>
+                                <div class="form-text">Select a cluster to see available resources</div>
                             </div>
                         </div>
                         

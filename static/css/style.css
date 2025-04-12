@@ -1,5 +1,23 @@
 :root {
-  /* Light theme colors (default) */
+  /* Dark theme colors (default) */
+  --bg-color: #121212;           /* Deep dark background */
+  --card-bg: #1e1e1e;            /* Slightly lighter card background */
+  --text-color: #f0f0f0;         /* Brighter white for text */
+  --text-muted: #a0a0a0;         /* Lighter muted text */
+  --border-color: #383838;       /* Slightly lighter borders */
+  --primary-color: #5e82c0;      /* Brighter blue */
+  --secondary-color: #3d78e3;    /* Brighter secondary blue */
+  --success-color: #2dc653;      /* Brighter green */
+  --error-color: #e74c3c;        /* Brighter red */
+  --warning-color: #f1c40f;      /* Brighter yellow */
+  --input-bg: #2d2d2d;           /* Dark input background */
+  --input-border: #505050;       /* Slightly lighter input borders */
+  --header-bg: #1a1a1a;          /* Dark header background */
+  --hover-color: #383838;        /* Slightly lighter hover color */
+}
+
+/* Light theme colors */
+body.light-mode {
   --bg-color: #f8f9fa;
   --card-bg: #ffffff;
   --text-color: #212529;
@@ -14,19 +32,6 @@
   --input-border: #ced4da;
   --header-bg: #e9ecef;
   --hover-color: #e2e6ea;
-}
-
-/* Dark theme colors */
-body.dark-mode {
-  --bg-color: #121212;
-  --card-bg: #1e1e1e;
-  --text-color: #e0e0e0;
-  --text-muted: #909090;
-  --border-color: #333;
-  --input-bg: #2d2d2d;
-  --input-border: #444;
-  --header-bg: #1a1a1a;
-  --hover-color: #2c2c2c;
 }
 
 /* Theme toggle button */
