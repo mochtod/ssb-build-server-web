@@ -434,28 +434,13 @@ def run_atlantis_apply(config_data, tf_directory):
 
 def validate_terraform_files(tf_directory):
     """
-    Validate Terraform files using the terraform fmt command.
+    Skip local Terraform validation since terraform is only available in the Atlantis container.
     
     Args:
         tf_directory (str): Directory containing Terraform files
         
     Returns:
-        bool: True if validation passes, False otherwise
+        bool: Always returns True to skip validation
     """
-    try:
-        # Use terraform fmt to check syntax
-        result = subprocess.run(
-            ["terraform", "fmt", "-check", "-recursive", tf_directory],
-            capture_output=True,
-            text=True
-        )
-        
-        if result.returncode != 0:
-            logger.error(f"Terraform validation failed: {result.stderr}")
-            return False
-            
-        logger.info("Terraform files validation successful")
-        return True
-    except Exception as e:
-        logger.error(f"Error validating Terraform files: {str(e)}")
-        return False
+    logger.info("Skipping local Terraform validation (terraform binary is in Atlantis container)")
+    return True

@@ -15,7 +15,37 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 def generate_atlantis_payload(repo, workspace, dir, commit_hash, comment, user, files):
-    """Generate a properly formatted Atlantis API payload for plan operation"""
+    """
+    Generate a properly formatted Atlantis API payload for plan operation
+    
+    Args:
+        repo (str): Repository name
+        workspace (str): Workspace name
+        dir (str): Directory containing Terraform files
+        commit_hash (str): Commit hash
+        comment (str): Comment for the plan
+        user (str): Username
+        files (list or dict): Either a list of filenames or a dict of filename->content
+        
+    Returns:
+        dict: Payload dictionary for Atlantis API
+    """
+    # If files is a list of filenames, convert it to a dict with file contents
+    terraform_files = {}
+    if isinstance(files, list):
+        # Read the contents of each file
+        for filename in files:
+            file_path = os.path.join(dir, filename)
+            try:
+                with open(file_path, 'r') as f:
+                    terraform_files[filename] = f.read()
+            except Exception as e:
+                logger.warning(f"Error reading file {file_path}: {str(e)}")
+                terraform_files[filename] = f"# Error reading file: {str(e)}"
+    else:
+        # Files is already a dict with contents
+        terraform_files = files
+    
     payload_dict = {
         'repo': {
             'owner': 'fake',
@@ -38,15 +68,42 @@ def generate_atlantis_payload(repo, workspace, dir, commit_hash, comment, user, 
         'verbose': True,
         'cmd': 'plan',  # Command is 'plan' for planning operation
         'dir': '.',     # Critical: include the 'dir' field
-        'terraform_files': files
+        'terraform_files': terraform_files
     }
     
     return payload_dict
 
 def generate_atlantis_apply_payload_fixed(config_data, tf_directory, tf_files, plan_id):
-    """Generate a properly formatted Atlantis API payload for apply operation"""
+    """
+    Generate a properly formatted Atlantis API payload for apply operation
+    
+    Args:
+        config_data (dict): VM configuration data
+        tf_directory (str): Directory containing Terraform files
+        tf_files (list): List of Terraform files
+        plan_id (str): ID of the Terraform plan to apply
+        
+    Returns:
+        str: JSON formatted payload string for Atlantis API
+    """
     # Get the directory name for the Terraform files
     tf_dir_name = os.path.basename(tf_directory)
+    
+    # Convert list of files to a dictionary with file contents
+    terraform_files = {}
+    if isinstance(tf_files, list):
+        # Read the contents of each file
+        for filename in tf_files:
+            file_path = os.path.join(tf_directory, filename)
+            try:
+                with open(file_path, 'r') as f:
+                    terraform_files[filename] = f.read()
+            except Exception as e:
+                logger.warning(f"Error reading file {file_path}: {str(e)}")
+                terraform_files[filename] = f"# Error reading file: {str(e)}"
+    else:
+        # tf_files is already a dict with contents
+        terraform_files = tf_files
     
     # Create a dictionary with all the necessary fields
     payload_dict = {
@@ -72,7 +129,7 @@ def generate_atlantis_apply_payload_fixed(config_data, tf_directory, tf_files, p
         'verbose': True,
         'cmd': 'apply',  # Critical: ensure command is explicitly set to 'apply'
         'dir': '.',      # Critical: add the 'dir' field that's required
-        'terraform_files': tf_files
+        'terraform_files': terraform_files
     }
     
     # Convert to JSON string with proper formatting

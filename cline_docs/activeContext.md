@@ -2,9 +2,17 @@
 
 ## Current Focus
 
-The vSphere resource loading optimization has been successfully completed! We've dramatically reduced loading times from ~1 minute to milliseconds for cached resources, eliminated worker timeouts, and improved overall application responsiveness with a multi-layered optimization approach. The hierarchical loading structure follows the natural VMware object structure (vCenter → Datacenter → Cluster → Resources) with proper caching and error handling.
+We're addressing two critical Terraform/Atlantis integration issues to ensure the system works smoothly:
+
+1. Fixed the Terraform validation issue by recognizing that the `terraform` binary only exists inside the Atlantis container, not on the host
+2. Fixed the Atlantis API payload formatting issue where the system was sending incorrect data structure for Terraform files
 
 ## Recent Changes
+
+- Fixed the terraform validation error by modifying terraform_validator.py to skip local validation
+- Updated atlantis_api.py to also skip local validation since terraform is only in the Atlantis container
+- Fixed the Atlantis API payload generation to properly include file contents in the terraform_files field
+- Enhanced both generate_atlantis_payload and generate_atlantis_apply_payload_fixed functions to read the actual file contents
 
 - Fixed syntax errors in vsphere_hierarchical_loader.py that were causing worker timeouts
 - Enhanced vsphere_cluster_resources.py with strict timeouts and improved error handling

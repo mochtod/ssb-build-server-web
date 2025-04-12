@@ -24,57 +24,16 @@ class TerraformValidationError(Exception):
 
 def validate_terraform_files(tf_directory):
     """
-    Validate Terraform files in a directory using terraform validate.
+    Skip local Terraform validation since terraform is only available in the Atlantis container.
     
     Args:
         tf_directory (str): Directory containing Terraform files
         
     Returns:
-        bool: True if validation passes, False otherwise
+        bool: Always returns True to skip validation
     """
-    try:
-        # Initialize terraform if needed
-        init_result = subprocess.run(
-            ["terraform", "init", "-backend=false", "-input=false"],
-            cwd=tf_directory,
-            capture_output=True,
-            text=True
-        )
-        
-        if init_result.returncode != 0:
-            logger.error(f"Terraform init failed: {init_result.stderr}")
-            return False
-        
-        # Validate terraform configuration
-        validate_result = subprocess.run(
-            ["terraform", "validate", "-json"],
-            cwd=tf_directory,
-            capture_output=True,
-            text=True
-        )
-        
-        # Parse JSON output
-        if validate_result.returncode == 0:
-            try:
-                result_json = json.loads(validate_result.stdout)
-                if result_json.get('valid', False):
-                    logger.info("Terraform validation successful")
-                    return True
-                else:
-                    errors = result_json.get('diagnostics', [])
-                    for error in errors:
-                        logger.error(f"Terraform validation error: {error.get('summary')}")
-                    return False
-            except json.JSONDecodeError:
-                logger.error("Could not parse Terraform validation output")
-                return False
-        else:
-            logger.error(f"Terraform validation failed: {validate_result.stderr}")
-            return False
-            
-    except Exception as e:
-        logger.error(f"Error validating Terraform files: {str(e)}")
-        return False
+    logger.info("Skipping local Terraform validation (terraform binary is in Atlantis container)")
+    return True
 
 def check_required_fields(tf_directory):
     """
@@ -91,7 +50,7 @@ def check_required_fields(tf_directory):
         'datastore_id',
         'network_id',
         'template_uuid',
-        'vm_name'
+        'name'  # Changed from 'vm_name' to 'name' to match actual configuration
     ]
     
     missing_fields = []

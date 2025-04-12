@@ -1,6 +1,14 @@
 {
   "datacenters": [
     {
+      "name": "FQ",
+      "id": "datacenter-10673467"
+    },
+    {
+      "name": "EBDC PROD",
+      "id": "datacenter-270"
+    },
+    {
       "name": "EBDC NONPROD",
       "id": "datacenter-264"
     }
@@ -149,7 +157,8 @@
         "datacenter": "EBDC PROD",
         "host_count": 8
       }
-    ]
+    ],
+    "FQ": []
   },
   "resources_by_cluster": {
     "domain-c9891266": {
@@ -186,8 +195,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2718014898176,
-          "free_gb": 2531.35
+          "free_space": 2718006509568,
+          "free_gb": 2531.34
         },
         {
           "name": "np_cl7_esx_402",
@@ -197,7 +206,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4372194918400,
+          "free_space": 4372193869824,
           "free_gb": 4071.92
         },
         {
@@ -208,7 +217,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2317067747328,
+          "free_space": 2317066698752,
           "free_gb": 2157.94
         },
         {
@@ -219,7 +228,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3534824144896,
+          "free_space": 3534822047744,
           "free_gb": 3292.06
         },
         {
@@ -230,7 +239,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3152353951744,
+          "free_space": 3152352903168,
           "free_gb": 2935.86
         },
         {
@@ -274,8 +283,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4054734340096,
-          "free_gb": 3776.27
+          "free_space": 4054727000064,
+          "free_gb": 3776.26
         },
         {
           "name": "np_cl7_esx_410",
@@ -296,8 +305,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4698916519936,
-          "free_gb": 4376.21
+          "free_space": 4698912325632,
+          "free_gb": 4376.2
         },
         {
           "name": "np-cl7-esx-411",
@@ -307,7 +316,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3050181754880,
+          "free_space": 3050176512000,
           "free_gb": 2840.7
         },
         {
@@ -318,8 +327,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3904229081088,
-          "free_gb": 3636.1
+          "free_space": 3904224886784,
+          "free_gb": 3636.09
         }
       ],
       "networks": [
@@ -470,11 +479,24 @@
       ],
       "templates": [
         {
+          "name": "Jammy-Updated-Compatibility",
+          "id": "vm-8905184",
+          "type": "VirtualMachine",
+          "cluster_id": "domain-c9891266",
+          "cluster_name": "np-cl60-lin",
+          "is_template": true,
+          "guest_id": "ubuntu64Guest",
+          "guest_fullname": "Ubuntu Linux (64-bit)"
+        },
+        {
+          "name": "rhel9-template0314",
           "id": "vm-11682491",
-          "name": "RHEL 9 Template (Loading in background...)",
-          "guest_os": "rhel9_64Guest",
-          "cpu_count": 2,
-          "memory_mb": 4096
+          "type": "VirtualMachine",
+          "cluster_id": "domain-c9891266",
+          "cluster_name": "np-cl60-lin",
+          "is_template": true,
+          "guest_id": "rhel9_64Guest",
+          "guest_fullname": "Red Hat Enterprise Linux 9 (64-bit)"
         }
       ],
       "resource_pools": [
@@ -486,10 +508,11 @@
           "cluster_name": "np-cl60-lin",
           "is_primary": true
         }
-      ]
+      ],
+      "last_update": "2025-04-12T19:08:21.176860"
     },
     "domain-c10347033": {
-      "cluster_name": "np-cl20-kubespray",
+      "cluster_name": "domain-c10347033",
       "cluster_id": "domain-c10347033",
       "datastores": [
         {
@@ -603,275 +626,10 @@
           "free_gb": 4231.79
         }
       ],
-      "networks": [
-        {
-          "name": "VM Network",
-          "id": "network-256907",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": false
-        },
-        {
-          "name": "dc2-np-dvs-extwebnp88",
-          "id": "dvportgroup-4731475",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-hrnp464",
-          "id": "dvportgroup-4731477",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-train2-216",
-          "id": "dvportgroup-4731488",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-nonprod200",
-          "id": "dvportgroup-4731483",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-intappnp96",
-          "id": "dvportgroup-4731478",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-avi945",
-          "id": "dvportgroup-4731472",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "np-kub4-950",
-          "id": "dvportgroup-10655507",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-dvs-kub-infinity-979",
-          "id": "dvportgroup-5732244",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-sat949",
-          "id": "dvportgroup-6557489",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-semitrust404",
-          "id": "dvportgroup-4731484",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-linux-int-lb970",
-          "id": "dvportgroup-4731482",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "DC2-NPL-Container-232",
-          "id": "dvportgroup-4731473",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-vmotion242",
-          "id": "dvportgroup-4731489",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "np-k8-947-poc1",
-          "id": "dvportgroup-10628690",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "np-k8-948-poc2",
-          "id": "dvportgroup-10628691",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-linux-ext-lb971",
-          "id": "dvportgroup-4731481",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-kub980",
-          "id": "dvportgroup-4731479",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-train208",
-          "id": "dvportgroup-4731487",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-distributeddata982",
-          "id": "dvportgroup-4731474",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-hdfs990",
-          "id": "dvportgroup-4731476",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-sql64",
-          "id": "dvportgroup-4731485",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "np-dvs-01-DVUplinks-4731470",
-          "id": "dvportgroup-4731471",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "esxi-mgmt-192-tagged",
-          "id": "dvportgroup-6352146",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-npl-avi-2-977",
-          "id": "dvportgroup-5947911",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-npl-avi-3-976",
-          "id": "dvportgroup-5947912",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-termsrv80",
-          "id": "dvportgroup-4731486",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-np-dvs-linux989",
-          "id": "dvportgroup-4731480",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "esxi-mgmt-vlan192",
-          "id": "dvportgroup-4837463",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "esxi-mgmt-953",
-          "id": "dvportgroup-10347073",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        },
-        {
-          "name": "dc2-npl-avi-1-978",
-          "id": "dvportgroup-5992193",
-          "type": "Network",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_dvs": true
-        }
-      ],
-      "templates": [
-        {
-          "id": "vm-11682491",
-          "name": "RHEL 9 Template (Loading in background...)",
-          "guest_os": "rhel9_64Guest",
-          "cpu_count": 2,
-          "memory_mb": 4096
-        }
-      ],
-      "resource_pools": [
-        {
-          "name": "np-cl20-kubespray Resources",
-          "id": "resgroup-10347034",
-          "type": "ResourcePool",
-          "cluster_id": "domain-c10347033",
-          "cluster_name": "np-cl20-kubespray",
-          "is_primary": true
-        }
-      ]
+      "networks": [],
+      "templates": [],
+      "resource_pools": [],
+      "last_update": "2025-04-12T19:08:28.510062"
     },
     "domain-c6194930": {
       "cluster_name": "domain-c6194930",
@@ -929,11 +687,24 @@
       ],
       "templates": [
         {
+          "name": "Jammy-Updated-Compatibility",
+          "id": "vm-8905184",
+          "type": "VirtualMachine",
+          "cluster_id": "domain-c6194930",
+          "cluster_name": "DC2-EBDC-FWHosts",
+          "is_template": true,
+          "guest_id": "ubuntu64Guest",
+          "guest_fullname": "Ubuntu Linux (64-bit)"
+        },
+        {
+          "name": "rhel9-template0314",
           "id": "vm-11682491",
-          "name": "RHEL 9 Template (Loading in background...)",
-          "guest_os": "rhel9_64Guest",
-          "cpu_count": 2,
-          "memory_mb": 4096
+          "type": "VirtualMachine",
+          "cluster_id": "domain-c6194930",
+          "cluster_name": "DC2-EBDC-FWHosts",
+          "is_template": true,
+          "guest_id": "rhel9_64Guest",
+          "guest_fullname": "Red Hat Enterprise Linux 9 (64-bit)"
         }
       ],
       "resource_pools": [
@@ -945,7 +716,8 @@
           "cluster_name": "DC2-EBDC-FWHosts",
           "is_primary": true
         }
-      ]
+      ],
+      "last_update": "2025-04-12T19:13:05.082276"
     },
     "domain-c9814669": {
       "cluster_name": "domain-c9814669",
@@ -1386,7 +1158,32 @@
           "is_primary": true
         }
       ]
+    },
+    "domain-c11815092": {
+      "cluster_name": "domain-c11815092",
+      "cluster_id": "domain-c11815092",
+      "datastores": [],
+      "networks": [],
+      "templates": [
+        {
+          "id": "vm-11682491",
+          "name": "RHEL 9 Template (Loading in background...)",
+          "guest_os": "rhel9_64Guest",
+          "cpu_count": 2,
+          "memory_mb": 4096
+        }
+      ],
+      "resource_pools": [
+        {
+          "name": "build Resources",
+          "id": "resgroup-11815093",
+          "type": "ResourcePool",
+          "cluster_id": "domain-c11815092",
+          "cluster_name": "build",
+          "is_primary": true
+        }
+      ]
     }
   },
-  "timestamp": "2025-04-12T18:30:49.435300"
+  "timestamp": "2025-04-12T19:37:54.043489"
 }
