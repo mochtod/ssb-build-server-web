@@ -186,8 +186,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2718033772544,
-          "free_gb": 2531.37
+          "free_space": 2718014898176,
+          "free_gb": 2531.35
         },
         {
           "name": "np_cl7_esx_402",
@@ -219,7 +219,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3534826242048,
+          "free_space": 3534824144896,
           "free_gb": 3292.06
         },
         {
@@ -263,7 +263,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2497850638336,
+          "free_space": 2497849589760,
           "free_gb": 2326.3
         },
         {
@@ -274,7 +274,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4054741680128,
+          "free_space": 4054734340096,
           "free_gb": 3776.27
         },
         {
@@ -296,8 +296,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4698945880064,
-          "free_gb": 4376.23
+          "free_space": 4698916519936,
+          "free_gb": 4376.21
         },
         {
           "name": "np-cl7-esx-411",
@@ -307,8 +307,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3050190143488,
-          "free_gb": 2840.71
+          "free_space": 3050181754880,
+          "free_gb": 2840.7
         },
         {
           "name": "np-cl7-esx-412",
@@ -318,7 +318,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3904233275392,
+          "free_space": 3904229081088,
           "free_gb": 3636.1
         }
       ],
@@ -1388,5 +1388,5 @@
       ]
     }
   },
-  "timestamp": "2025-04-12T18:03:10.240019"
+  "timestamp": "2025-04-12T18:30:49.435300"
 }
