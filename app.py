@@ -27,6 +27,10 @@ from atlantis_api import run_atlantis_plan, run_atlantis_apply, check_atlantis_h
 from terraform_validator import validate_terraform_files, validate_template_compatibility
 from container_discovery import get_atlantis_url, check_container_health
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
 
