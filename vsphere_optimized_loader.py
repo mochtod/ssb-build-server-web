@@ -445,7 +445,6 @@ def get_default_resources():
     DEFAULT_DATASTORE_ID = os.environ.get('DATASTORE_ID', 'datastore-4395110')
     DEFAULT_NETWORK_ID_PROD = os.environ.get('NETWORK_ID_PROD', 'dvportgroup-4545393')
     DEFAULT_NETWORK_ID_DEV = os.environ.get('NETWORK_ID_DEV', 'dvportgroup-4545393')
-    DEFAULT_TEMPLATE_UUID = os.environ.get('TEMPLATE_UUID', 'vm-11682491')
     
     resource_pools = [{
         'name': 'Default Production Resource Pool',
@@ -481,13 +480,8 @@ def get_default_resources():
         'is_preferred': False
     }]
     
-    templates = [{
-        'name': 'RHEL 9 Template',
-        'id': DEFAULT_TEMPLATE_UUID,
-        'type': 'VirtualMachine',
-        'is_template': True,
-        'is_preferred': True
-    }]
+    # No default templates, return an empty list
+    templates = []
     
     return {
         'resource_pools': resource_pools,

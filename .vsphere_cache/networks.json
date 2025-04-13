@@ -1,5 +1,105 @@
 [
   {
+    "name": "Management Network",
+    "id": "network-11826810",
+    "type": "Network"
+  },
+  {
+    "name": "avi-kub-4-750",
+    "id": "network-11603799",
+    "type": "Network"
+  },
+  {
+    "name": "voice",
+    "id": "network-274252",
+    "type": "Network"
+  },
+  {
+    "name": "SIP_MGMT_Private",
+    "id": "network-276517",
+    "type": "Network"
+  },
+  {
+    "name": "voipheartbeat",
+    "id": "network-3783649",
+    "type": "Network"
+  },
+  {
+    "name": "VM Network",
+    "id": "network-255178",
+    "type": "Network"
+  },
+  {
+    "name": "Linux-Internal-LB",
+    "id": "network-1263887",
+    "type": "Network"
+  },
+  {
+    "name": "Avi Internal",
+    "id": "network-5938119",
+    "type": "Network"
+  },
+  {
+    "name": "backup-vlan-40",
+    "id": "network-11698787",
+    "type": "Network"
+  },
+  {
+    "name": "delay-rep",
+    "id": "network-103695",
+    "type": "Network"
+  },
+  {
+    "name": "AVI-745",
+    "id": "network-4563678",
+    "type": "Network"
+  },
+  {
+    "name": "EDI",
+    "id": "network-280324",
+    "type": "Network"
+  },
+  {
+    "name": "VPN-Outside",
+    "id": "network-3111632",
+    "type": "Network"
+  },
+  {
+    "name": "avi-3-749",
+    "id": "network-6016769",
+    "type": "Network"
+  },
+  {
+    "name": "other-vlan-200",
+    "id": "network-11698789",
+    "type": "Network"
+  },
+  {
+    "name": "avi-2-748",
+    "id": "network-6011858",
+    "type": "Network"
+  },
+  {
+    "name": "avi-1-747",
+    "id": "network-6016767",
+    "type": "Network"
+  },
+  {
+    "name": "LB-messaging",
+    "id": "network-266402",
+    "type": "Network"
+  },
+  {
+    "name": "D-Data",
+    "id": "network-319668",
+    "type": "Network"
+  },
+  {
+    "name": "Linux-External-LB",
+    "id": "network-1263888",
+    "type": "Network"
+  },
+  {
     "name": "Avi Internal",
     "id": "network-5373216",
     "type": "Network"

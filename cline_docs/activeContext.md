@@ -2,13 +2,20 @@
 
 ## Current Focus
 
-We're addressing three critical Terraform/Atlantis integration issues to ensure the system works smoothly:
+We're addressing Terraform/Atlantis integration issues to ensure the system works smoothly:
 
 1. Fixed the Terraform validation issue by recognizing that the `terraform` binary only exists inside the Atlantis container, not on the host
 2. Fixed the Atlantis API payload formatting issue where the system was sending incorrect data structure for Terraform files
 3. Fixed app.py to use the updated API functions instead of its local implementations
+4. Fixed the Atlantis plan templating issue where required fields were missing from the API payload
 
 ## Recent Changes
+
+- Fixed the Atlantis plan templating issue by enhancing the generate_atlantis_payload and generate_atlantis_apply_payload_fixed functions to include all required fields, specifically adding:
+  - 'environment' field to both plan and apply payloads
+  - Consistent repo naming with "build-server-repo"
+  - Proper head_commit reference using request-{request_id}
+  - Created test validation script to verify payload structure
 
 - Fixed the terraform validation error by modifying terraform_validator.py to skip local validation
 - Updated atlantis_api.py to also skip local validation since terraform is only in the Atlantis container

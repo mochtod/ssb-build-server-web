@@ -17,6 +17,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
     environment:
       # Flask application config
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change_this_to_a_random_secure_key}

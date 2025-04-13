@@ -25,12 +25,6 @@ variable "memory" {
   default     = 4096
 }
 
-variable "guest_id" {
-  description = "Guest OS ID"
-  type        = string
-  default     = "rhel9_64Guest"
-}
-
 variable "network_id" {
   description = "ID of the network"
   type        = string

@@ -1,0 +1,47 @@
+
+To fix the issue with the Atlantis apply API call, modify the generate_atlantis_apply_payload 
+function in app.py with these changes:
+
+```python
+def generate_atlantis_apply_payload(config_data, tf_directory, tf_files, plan_id):
+    """Generate a properly formatted Atlantis API payload for apply operation"""
+    # Get the directory name for the Terraform files
+    tf_dir_name = os.path.basename(tf_directory)
+    
+    # Create a dictionary with all the necessary fields
+    payload_dict = {
+        'repo': {
+            'owner': 'fake',
+            'name': 'terraform-repo',
+            'clone_url': 'https://github.com/fake/terraform-repo.git'
+        },
+        'pull_request': {
+            'num': 1,
+            'branch': 'main',
+            'author': config_data.get('build_owner', 'Admin User')
+        },
+        'head_commit': 'abcd1234',
+        'pull_num': 1,
+        'pull_author': config_data.get('build_owner', 'Admin User'),
+        'repo_rel_dir': tf_dir_name,
+        'workspace': config_data.get('environment', 'development'),
+        'project_name': config_data.get('server_name', 'default-server'),
+        'plan_id': plan_id,
+        'comment': f"Applying approved VM config: {config_data.get('server_name', 'unknown')}",
+        'user': config_data.get('build_owner', 'Admin User'),
+        'verbose': True,
+        'cmd': 'apply',  # Critical: ensure command is explicitly set to 'apply'
+        'dir': '.',      # Critical: add the 'dir' field that's required
+        'terraform_files': tf_files
+    }
+    
+    # Convert to JSON string with proper formatting
+    payload_string = json.dumps(payload_dict, ensure_ascii=False)
+    
+    return payload_string
+```
+
+The key changes are:
+1. Added the 'dir' field which was missing from the original request
+2. Made sure 'cmd' is explicitly set to 'apply'
+3. Added fallback defaults for important fields using .get() method

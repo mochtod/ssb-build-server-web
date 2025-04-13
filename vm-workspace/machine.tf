@@ -12,7 +12,6 @@ module "rhel9_vm" {
   datastore_id     = var.datastore_id
   num_cpus         = var.num_cpus
   memory           = var.memory
-  guest_id         = var.guest_id
   network_id       = var.network_id
   adapter_type     = var.adapter_type
   disk_size        = var.disk_size
@@ -32,7 +31,6 @@ resource "vsphere_virtual_machine" "vm" {
   datastore_id     = var.datastore_id
   num_cpus         = var.num_cpus
   memory           = var.memory
-  guest_id         = var.guest_id
   network_interface {
     network_id   = var.network_id
     adapter_type = var.adapter_type

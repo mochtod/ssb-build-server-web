@@ -5,7 +5,6 @@ resource_pool_id = "<resource_pool_id>"
 datastore_id     = "<datastore_id>"
 num_cpus         = 2
 memory           = 4096
-guest_id         = "rhel9_64Guest"
 network_id       = "<network_id>"
 adapter_type     = "vmxnet3"
 disk_size        = 20

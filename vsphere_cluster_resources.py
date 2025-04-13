@@ -551,19 +551,25 @@ class VSphereClusterResources:
                     pass
             
             return result
+        except vim.fault.NotAuthenticated:
+            logger.error("Session not authenticated, attempting to reconnect")
+            # Attempt to reconnect and try again
+            try:
+                self.disconnect()
+                if self.connect(timeout=30):
+                    logger.info("Successfully reconnected after session expiration")
+                    # Recursive call with new connection
+                    return self.get_templates_by_cluster(cluster_obj)
+                else:
+                    logger.error("Reconnection attempt failed")
+                    return []  # Return empty list on failure
+            except Exception as reconnect_error:
+                logger.exception(f"Error during reconnection: {str(reconnect_error)}")
+                return []  # Return empty list on failure
         except Exception as e:
             logger.error(f"Error retrieving templates: {str(e)}")
-            # Return fallback template info
-            return [{
-                'name': 'RHEL9 Template (Error retrieving templates)',
-                'id': 'vm-error',
-                'type': 'VirtualMachine',
-                'cluster_id': str(cluster_obj._moId) if hasattr(cluster_obj, '_moId') else 'unknown',
-                'cluster_name': cluster_obj.name if hasattr(cluster_obj, 'name') else 'Unknown Cluster',
-                'is_template': True,
-                'guest_id': 'rhel9_64Guest',
-                'guest_fullname': 'Red Hat Enterprise Linux 9 (64-bit)'
-            }]
+            # Return empty list instead of fallback template
+            return []
         finally:
             # Restore the original timeout
             socket.setdefaulttimeout(old_timeout)

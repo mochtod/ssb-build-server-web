@@ -84,7 +84,6 @@ network_id       = "{network_id}"
 template_uuid    = "{template_uuid}"
 
 # Guest Configuration
-guest_id         = "rhel9_64Guest"
 adapter_type     = "vmxnet3"
 
 # Network Configuration
@@ -131,7 +130,7 @@ def generate_terraform_config(config):
         additional_disks_tf += f'    {{ size = {disk["size"]}, type = "{disk["type"]}" }},\n'
     additional_disks_tf += "  ]"
     
-    # Generate the Terraform configuration
+    # Generate the Terraform configuration using the expected module pattern
     tf_config = f"""
 # Generated Terraform configuration for {server_name}
 # Request ID: {config['request_id']}
@@ -169,12 +168,6 @@ variable "memory" {{
   description = "Memory in MB"
   type        = number
   default     = {memory}
-}}
-
-variable "guest_id" {{
-  description = "Guest OS ID"
-  type        = string
-  default     = "rhel9_64Guest"
 }}
 
 variable "network_id" {{
@@ -242,6 +235,26 @@ variable "additional_disks" {{
   default     = {additional_disks_tf}
 }}
 
+# Use the rhel9_vm module as expected by the VM workspace
+module "rhel9_vm" {{
+  source = "./modules/machine"
+
+  name             = var.name
+  resource_pool_id = var.resource_pool_id
+  datastore_id     = var.datastore_id
+  num_cpus         = var.num_cpus
+  memory           = var.memory
+  network_id       = var.network_id
+  adapter_type     = var.adapter_type
+  disk_size        = var.disk_size
+  template_uuid    = var.template_uuid
+  ipv4_address     = var.ipv4_address
+  ipv4_netmask     = var.ipv4_netmask
+  ipv4_gateway     = var.ipv4_gateway
+  dns_servers      = var.dns_servers
+  time_zone        = var.time_zone
+}}
+
 resource "vsphere_virtual_machine" "vm" {{
   count = var.quantity
 
@@ -250,7 +263,6 @@ resource "vsphere_virtual_machine" "vm" {{
   datastore_id     = var.datastore_id
   num_cpus         = var.num_cpus
   memory           = var.memory
-  guest_id         = var.guest_id
   
   network_interface {{
     network_id   = var.network_id

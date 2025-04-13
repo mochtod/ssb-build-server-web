@@ -81,6 +81,18 @@ The SSB Build Server Web application is currently in development with partial fu
 
 ## Recent Activity
 
+- Fixed Terraform module structure to match VM workspace requirements:
+  - Added proper module references in machine.tf to use rhel9_vm module
+  - Created modules directory structure with machine/main.tf and machine/variables.tf
+  - Updated app.py to automatically copy module files when creating new configurations
+  - Fixed the generated Terraform configuration to properly reference the module pattern
+  - Tested the solution with real VM creation workflow
+
+- Fixed Atlantis plan templating issues by enhancing API payload generation:
+  - Added missing 'environment' field to both plan and apply payloads
+  - Ensured consistent repo naming with "build-server-repo"
+  - Added proper head_commit reference using request-{request_id}
+  - Created validation test script to verify payload structure
 - Fixed syntax errors in vsphere_hierarchical_loader.py that were causing worker timeouts
 - Implemented Redis caching for vSphere resources with credential-based namespacing
 - Added strict timeouts for template operations to prevent worker crashes
@@ -139,6 +151,7 @@ The SSB Build Server Web application is currently in development with partial fu
 - ✅ vSphere resource retrieval performance (Resolved with Redis caching and hierarchical loading, achieving <0.01s response time)
 - ✅ Terraform validation errors (Resolved by skipping local validation since terraform is only in Atlantis container)
 - ✅ Atlantis API payload format (Resolved by properly formatting terraform_files field with file contents instead of just filenames)
+- ✅ Atlantis plan templating issues (Resolved by adding required fields to API payload, specifically the 'environment' field)
 - Access to test environment for end-to-end validation
 - Need to configure GitHub repository for Atlantis integration
 - Need to configure NetBox for IP address allocation

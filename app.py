@@ -419,49 +419,65 @@ def submit():
         network = request.form.get('network', '')
         template = request.form.get('template', '')
         
-        # Validate that all required vSphere resources are selected
-        if not cluster or not resource_pool or not datastore or not network or not template:
-            flash('All vSphere resources (cluster, resource pool, datastore, network, and template) must be selected', 'error')
+        # Validate that all required vSphere resources except template are selected
+        # Templates can be loaded asynchronously and may not be available yet
+        if not cluster or not resource_pool or not datastore or not network:
+            flash('All vSphere resources (cluster, resource pool, datastore, and network) must be selected', 'error')
             return redirect(url_for('index'))
         
-        # Get resources from cluster-based selection (better approach)
+        # Template can be empty in some cases (if loading in background)
+        if not template:
+            logger.warning("Template not selected - will proceed with VM creation but template selection may be needed later")
+            flash('Warning: No VM template selected. You may need to update this configuration later.', 'warning')
+        
+        # Don't wait for resource validation that depends on vSphere template loading
+        # This allows us to continue with config creation even if template loading is slow
+        vs_resources = None
         try:
+            # Try to get cached resources quickly (no blocking operations)
             import vsphere_cluster_resources
             resources = vsphere_cluster_resources.get_resources_for_cluster(cluster, use_cache=True)
+            vs_resources = resources
         except Exception as e:
             logger.error(f"Error getting cluster resources: {str(e)}")
             # Fall back to resource manager if cluster-based retrieval fails
-            resources = resource_manager.get_resources()
-        
-        # Validate vSphere resources exist
-        temp_config = {
-            'vsphere_resources': {
-                'cluster_id': cluster,
-                'resource_pool_id': resource_pool,
-                'datastore_id': datastore,
-                'network_id': network,
-                'template_uuid': template
+            vs_resources = resource_manager.get_resources()
+            
+        # Only validate vSphere resources that we know we have
+        # Skip validation that depends on template information which might be loading
+        if vs_resources and template:
+            temp_config = {
+                'vsphere_resources': {
+                    'cluster_id': cluster,
+                    'resource_pool_id': resource_pool,
+                    'datastore_id': datastore,
+                    'network_id': network,
+                    'template_uuid': template
+                }
             }
-        }
-        
-        valid, errors = verify_vsphere_resources(vs_resources, temp_config)
-        if not valid:
-            error_msg = "; ".join(f"{k}: {v}" for k, v in errors.items())
-            flash(f'Invalid vSphere resources: {error_msg}', 'error')
-            return redirect(url_for('index'))
-        
-        # Validate resource pool is the default pool
-        is_default, pool_msg = validate_default_pool(vs_resources, resource_pool)
-        if not is_default:
-            logger.warning(pool_msg)
-            flash(f'Warning: {pool_msg}', 'warning')
-            # Continue despite warning about resource pool
-        
-        # Validate template compatibility with requested specs (if applicable)
-        compat_valid, compat_msg = validate_template_compatibility(template, num_cpus, memory, disk_size, vs_resources)
-        if not compat_valid:
-            flash(f'Template compatibility issue: {compat_msg}', 'warning')
-            # Continue despite warning about template compatibility
+            
+            try:
+                valid, errors = verify_vsphere_resources(vs_resources, temp_config)
+                if not valid:
+                    error_msg = "; ".join(f"{k}: {v}" for k, v in errors.items())
+                    flash(f'Warning: Some vSphere resources may be invalid: {error_msg}', 'warning')
+                    # Continue despite warnings - don't block VM creation
+                
+                # Only do these validations if we have template info
+                # Validate resource pool is the default pool (warning only)
+                is_default, pool_msg = validate_default_pool(vs_resources, resource_pool)
+                if not is_default:
+                    logger.warning(pool_msg)
+                    flash(f'Warning: {pool_msg}', 'warning')
+                
+                # Validate template compatibility with requested specs (warning only)
+                compat_valid, compat_msg = validate_template_compatibility(template, num_cpus, memory, disk_size, vs_resources)
+                if not compat_valid:
+                    flash(f'Warning: Template compatibility issue: {compat_msg}', 'warning')
+            except Exception as validation_error:
+                # Don't block VM creation due to validation errors
+                logger.error(f"Error during resource validation: {str(validation_error)}")
+                flash('Warning: Resource validation could not be completed. Proceeding with VM creation.', 'warning')
         
         # Determine environment based on server prefix
         environment = "production" if server_prefix in ENVIRONMENTS["prod"] else "development"
@@ -548,6 +564,29 @@ def submit():
         # Create variables.tfvars file
         variables_file = os.path.join(tf_directory, "terraform.tfvars")
         generate_variables_file(variables_file, config_data)
+        
+        # Create modules directory and copy necessary files
+        modules_dir = os.path.join(tf_directory, "modules", "machine")
+        os.makedirs(modules_dir, exist_ok=True)
+        
+        # Copy module files from vm-workspace
+        vm_workspace_module_dir = "vm-workspace/modules/machine"
+        for file_name in ["main.tf", "variables.tf"]:
+            source_path = os.path.join(vm_workspace_module_dir, file_name)
+            dest_path = os.path.join(modules_dir, file_name)
+            
+            try:
+                # Read the source file
+                with open(source_path, 'r') as src_file:
+                    content = src_file.read()
+                
+                # Write to the destination file
+                with open(dest_path, 'w') as dest_file:
+                    dest_file.write(content)
+                
+                logger.info(f"Copied module file {file_name} to {dest_path}")
+            except Exception as copy_error:
+                logger.error(f"Error copying module file {file_name}: {str(copy_error)}")
         
         flash('VM configuration created successfully!', 'success')
         return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))

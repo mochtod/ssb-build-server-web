@@ -1,5 +1,165 @@
 [
   {
+    "name": "esx2pr3cl20n118_local",
+    "id": "datastore-11826807",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n109_local",
+    "id": "datastore-11815498",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl70n106_local",
+    "id": "datastore-11815099",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n119_local",
+    "id": "datastore-11815107",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n108_local",
+    "id": "datastore-11759292",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n106_local",
+    "id": "datastore-11759240",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n105_local",
+    "id": "datastore-11759275",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n103_local",
+    "id": "datastore-11759241",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl20n102_local",
+    "id": "datastore-11759271",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "VeeamBackup_chr2pr1bu16.chrobinson.com",
+    "id": "datastore-11751302",
+    "type": "Datastore",
+    "capacity": 109951095668736,
+    "free_space": 67148081463296,
+    "free_gb": 62536.52
+  },
+  {
+    "name": "esx2pr3cl50n111_local",
+    "id": "datastore-11700812",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl71n11_local",
+    "id": "datastore-9508427",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2pr3cl71n41_local",
+    "id": "datastore-9598086",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2pr3cl60n10_local",
+    "id": "datastore-9379961",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl60n08_local",
+    "id": "datastore-9379962",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl71n100_local",
+    "id": "datastore-11569260",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl70n11_local",
+    "id": "datastore-8251885",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl60n109_local",
+    "id": "datastore-10210080",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
+    "name": "esx2pr3cl71n39_local",
+    "id": "datastore-9598084",
+    "type": "Datastore",
+    "capacity": 341449900032,
+    "free_space": 339935756288,
+    "free_gb": 316.59
+  },
+  {
+    "name": "esx2pr3cl60n106_local",
+    "id": "datastore-10031923",
+    "type": "Datastore",
+    "capacity": 342523641856,
+    "free_space": 341004255232,
+    "free_gb": 317.58
+  },
+  {
     "name": "esx2np3cl20n101_local",
     "id": "datastore-10347068",
     "type": "Datastore",

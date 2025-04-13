@@ -46,11 +46,20 @@ def generate_atlantis_payload(repo, workspace, dir, commit_hash, comment, user, 
         # Files is already a dict with contents
         terraform_files = files
     
+    # Ensure we have a valid repo name
+    repo_name = repo if repo else "build-server-repo"
+    
+    # Determine environment from workspace if provided, otherwise use development
+    # This is the critical field that Atlantis requires 
+    environment = workspace if workspace else "default"
+    if environment == "default":
+        environment = "development"  # Default to development if not specified
+    
     payload_dict = {
         'repo': {
             'owner': 'fake',
-            'name': repo,
-            'clone_url': f'https://github.com/fake/{repo}.git'
+            'name': repo_name,
+            'clone_url': f'https://github.com/fake/{repo_name}.git'
         },
         'pull_request': {
             'num': 1,
@@ -61,14 +70,15 @@ def generate_atlantis_payload(repo, workspace, dir, commit_hash, comment, user, 
         'pull_num': 1,
         'pull_author': user,
         'repo_rel_dir': os.path.basename(dir),
-        'workspace': workspace,
-        'project_name': repo,
+        'workspace': workspace if workspace else "default",
+        'project_name': repo_name,
         'comment': comment,
         'user': user,
         'verbose': True,
         'cmd': 'plan',  # Command is 'plan' for planning operation
         'dir': '.',     # Critical: include the 'dir' field
-        'terraform_files': terraform_files
+        'terraform_files': terraform_files,
+        'environment': environment  # Critical: environment field must be present and valid
     }
     
     return payload_dict
@@ -105,31 +115,42 @@ def generate_atlantis_apply_payload_fixed(config_data, tf_directory, tf_files, p
         # tf_files is already a dict with contents
         terraform_files = tf_files
     
+    # Ensure we have a valid repo name and server name
+    repo_name = "build-server-repo" 
+    server_name = config_data.get('server_name', 'default-server')
+    environment = config_data.get('environment', 'development')
+    request_id = config_data.get('request_id', 'unknown')
+    
+    # Make sure we have a valid environment - never use 'default' as this seems to be a reserved word
+    if not environment or environment == "default":
+        environment = "development"
+    
     # Create a dictionary with all the necessary fields
     payload_dict = {
         'repo': {
             'owner': 'fake',
-            'name': 'terraform-repo',
-            'clone_url': 'https://github.com/fake/terraform-repo.git'
+            'name': repo_name,
+            'clone_url': f'https://github.com/fake/{repo_name}.git'
         },
         'pull_request': {
             'num': 1,
             'branch': 'main',
             'author': config_data.get('build_owner', 'Admin User')
         },
-        'head_commit': 'abcd1234',
+        'head_commit': f"request-{request_id}",
         'pull_num': 1,
         'pull_author': config_data.get('build_owner', 'Admin User'),
         'repo_rel_dir': tf_dir_name,
-        'workspace': config_data.get('environment', 'development'),
-        'project_name': config_data.get('server_name', 'default-server'),
+        'workspace': environment,
+        'project_name': server_name,
         'plan_id': plan_id,
-        'comment': f"Applying approved VM config: {config_data.get('server_name', 'unknown')}",
+        'comment': f"Applying approved VM config: {server_name}",
         'user': config_data.get('build_owner', 'Admin User'),
         'verbose': True,
         'cmd': 'apply',  # Critical: ensure command is explicitly set to 'apply'
         'dir': '.',      # Critical: add the 'dir' field that's required
-        'terraform_files': terraform_files
+        'terraform_files': terraform_files,
+        'environment': environment  # Critical: environment field must be present and valid
     }
     
     # Convert to JSON string with proper formatting

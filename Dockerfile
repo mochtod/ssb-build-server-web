@@ -33,4 +33,4 @@ USER appuser
 EXPOSE 5150
 
 # Start the application with longer worker timeout
-CMD ["gunicorn", "--bind", "0.0.0.0:5150", "--timeout", "120", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5150", "--timeout", "300", "--workers", "4", "app:app"]

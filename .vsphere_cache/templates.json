@@ -1,5 +1,17 @@
 [
   {
+    "name": "template-rhel8-rancher_p6",
+    "id": "vm-8366816",
+    "type": "VirtualMachine",
+    "is_template": true
+  },
+  {
+    "name": "template-rhel8-rancher_p5",
+    "id": "vm-8366815",
+    "type": "VirtualMachine",
+    "is_template": true
+  },
+  {
     "name": "Jammy-Updated-Compatibility",
     "id": "vm-8905184",
     "type": "VirtualMachine",
