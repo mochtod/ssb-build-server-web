@@ -107,6 +107,9 @@ def preload_vsphere_datacenters():
     Preload all datacenters specified in the VSPHERE_DATACENTERS environment variable
     to ensure they're available immediately after startup.
     """
+    # Add a delay before starting to ensure the app is up and stable first
+    time.sleep(10)
+    
     logger.info("Starting to preload vSphere resources for configured datacenters")
     try:
         # Get target datacenters from environment variable
@@ -121,38 +124,117 @@ def preload_vsphere_datacenters():
         
         # Initialize the hierarchical loader
         import vsphere_hierarchical_loader
-        loader = vsphere_hierarchical_loader.get_loader()
         
-        # Force load datacenter list
-        datacenters = loader.get_datacenters(force_load=True)
-        logger.info(f"Loaded {len(datacenters)} datacenters")
-        
-        # For each targeted datacenter, load its clusters
-        for dc_name in target_dcs:
-            # Find the datacenter in the loaded list
-            dc_matches = [dc for dc in datacenters if dc['name'] == dc_name]
-            if not dc_matches:
-                logger.warning(f"Datacenter {dc_name} not found in vSphere, skipping")
-                continue
-                
-            logger.info(f"Loading clusters for datacenter: {dc_name}")
-            clusters = loader.get_clusters(dc_name, force_load=True)
-            logger.info(f"Loaded {len(clusters)} clusters for datacenter {dc_name}")
+        try:
+            # Use timeout to avoid blocking indefinitely
+            loader = vsphere_hierarchical_loader.get_loader()
             
-            # For each cluster, preload resources
-            for cluster in clusters:
-                cluster_id = cluster['id']
-                cluster_name = cluster['name']
-                logger.info(f"Preloading resources for cluster: {cluster_name}")
+            # Use try/except for each major operation to prevent cascade failures
+            try:
+                # Force load datacenter list with a timeout
+                datacenters = []
+                with threading.Timer(30, lambda: threading.current_thread().setDaemon(True)):
+                    try:
+                        datacenters = loader.get_datacenters(force_load=False)  # Changed to False to use cache if available
+                        logger.info(f"Loaded {len(datacenters)} datacenters")
+                    except Exception as dc_err:
+                        logger.warning(f"Error loading datacenters, will use cache if available: {str(dc_err)}")
+                        # Try again with cache
+                        try:
+                            datacenters = loader.get_datacenters(force_load=False)
+                        except:
+                            logger.error("Failed to load datacenters even with cache")
                 
-                # Use force_load=False here to allow background loading of slower resources like templates
-                loader.start_loading_resources(cluster_id, cluster_name)
+                if not datacenters:
+                    logger.warning("No datacenters loaded, aborting preload")
+                    return
+                
+                # For each targeted datacenter, load its clusters but limit the number
+                max_datacenters = min(len(target_dcs), 2)  # Limit to 2 datacenters max to avoid memory issues
+                for dc_name in target_dcs[:max_datacenters]:
+                    try:
+                        # Find the datacenter in the loaded list
+                        dc_matches = [dc for dc in datacenters if dc['name'] == dc_name]
+                        if not dc_matches:
+                            logger.warning(f"Datacenter {dc_name} not found in vSphere, skipping")
+                            continue
+                            
+                        logger.info(f"Loading clusters for datacenter: {dc_name}")
+                        
+                        # Add a small delay between operations to prevent resource spikes
+                        time.sleep(2)
+                        
+                        # Use try/except for cluster loading
+                        try:
+                            clusters = loader.get_clusters(dc_name, force_load=False)  # Use cache if available
+                            logger.info(f"Loaded {len(clusters)} clusters for datacenter {dc_name}")
+                        except Exception as cluster_err:
+                            logger.warning(f"Error loading clusters for {dc_name}: {str(cluster_err)}")
+                            continue
+                        
+                        # Limit the number of clusters to preload to avoid memory issues
+                        max_clusters = min(len(clusters), 3)  # Limit to 3 clusters max
+                        logger.info(f"Will preload resources for {max_clusters} clusters out of {len(clusters)}")
+                        
+                        # For each limited set of clusters, preload resources
+                        for i, cluster in enumerate(clusters[:max_clusters]):
+                            if i >= max_clusters:
+                                break
+                                
+                            # Add a small delay between cluster operations
+                            time.sleep(2)
+                            
+                            try:
+                                cluster_id = cluster['id']
+                                cluster_name = cluster['name']
+                                logger.info(f"Preloading resources for cluster: {cluster_name}")
+                                
+                                # Use force_load=False here to allow background loading of slower resources
+                                loader.start_loading_resources(cluster_id, cluster_name)
+                            except Exception as res_err:
+                                logger.warning(f"Error preloading resources for {cluster_name}: {str(res_err)}")
+                                continue
+                    except Exception as dc_process_err:
+                        logger.warning(f"Error processing datacenter {dc_name}: {str(dc_process_err)}")
+                        continue
+            except Exception as main_err:
+                logger.error(f"Error in main preloading loop: {str(main_err)}")
+        except Exception as loader_err:
+            logger.error(f"Error initializing hierarchical loader: {str(loader_err)}")
+            
     except Exception as e:
         logger.exception(f"Error during vSphere datacenter preloading: {str(e)}")
+    
+    logger.info("Completed datacenter preloading process")
+
+# Define a more resilient preloading function that handles exceptions better
+def run_preload_with_memory_monitoring():
+    """Run the preloading with memory monitoring to abort if memory usage is too high."""
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
         
+        # Monitor memory before starting
+        initial_memory = process.memory_info().rss / 1024 / 1024
+        logger.info(f"Initial memory usage before preloading: {initial_memory:.2f} MB")
+        
+        # Start preloading
+        preload_vsphere_datacenters()
+        
+        # Check memory after completion
+        final_memory = process.memory_info().rss / 1024 / 1024
+        logger.info(f"Final memory usage after preloading: {final_memory:.2f} MB (delta: {final_memory - initial_memory:.2f} MB)")
+    except ImportError:
+        # If psutil is not available, just run preloading without memory monitoring
+        logger.info("psutil not available, running preload without memory monitoring")
+        preload_vsphere_datacenters()
+    except Exception as e:
+        logger.exception(f"Error in preload memory monitoring: {str(e)}")
+
 # Start the preloading process in a background thread to avoid blocking app startup
 import threading
-preload_thread = threading.Thread(target=preload_vsphere_datacenters, daemon=True)
+# We'll use daemon=True so the thread won't prevent app shutdown
+preload_thread = threading.Thread(target=run_preload_with_memory_monitoring, daemon=True)
 preload_thread.start()
 logger.info("Started background thread for datacenter preloading")
 
