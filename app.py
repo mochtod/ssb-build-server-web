@@ -101,6 +101,61 @@ class VSphereResourceManager:
 # Initialize vSphere resource manager
 resource_manager = VSphereResourceManager()
 
+# Function to preload all configured datacenter resources at startup
+def preload_vsphere_datacenters():
+    """
+    Preload all datacenters specified in the VSPHERE_DATACENTERS environment variable
+    to ensure they're available immediately after startup.
+    """
+    logger.info("Starting to preload vSphere resources for configured datacenters")
+    try:
+        # Get target datacenters from environment variable
+        target_dcs = os.environ.get('VSPHERE_DATACENTERS', '').split(',')
+        target_dcs = [dc.strip() for dc in target_dcs if dc.strip()]
+        
+        if not target_dcs:
+            logger.info("No specific datacenters configured in VSPHERE_DATACENTERS, skipping preload")
+            return
+            
+        logger.info(f"Preloading resources for datacenters: {', '.join(target_dcs)}")
+        
+        # Initialize the hierarchical loader
+        import vsphere_hierarchical_loader
+        loader = vsphere_hierarchical_loader.get_loader()
+        
+        # Force load datacenter list
+        datacenters = loader.get_datacenters(force_load=True)
+        logger.info(f"Loaded {len(datacenters)} datacenters")
+        
+        # For each targeted datacenter, load its clusters
+        for dc_name in target_dcs:
+            # Find the datacenter in the loaded list
+            dc_matches = [dc for dc in datacenters if dc['name'] == dc_name]
+            if not dc_matches:
+                logger.warning(f"Datacenter {dc_name} not found in vSphere, skipping")
+                continue
+                
+            logger.info(f"Loading clusters for datacenter: {dc_name}")
+            clusters = loader.get_clusters(dc_name, force_load=True)
+            logger.info(f"Loaded {len(clusters)} clusters for datacenter {dc_name}")
+            
+            # For each cluster, preload resources
+            for cluster in clusters:
+                cluster_id = cluster['id']
+                cluster_name = cluster['name']
+                logger.info(f"Preloading resources for cluster: {cluster_name}")
+                
+                # Use force_load=False here to allow background loading of slower resources like templates
+                loader.start_loading_resources(cluster_id, cluster_name)
+    except Exception as e:
+        logger.exception(f"Error during vSphere datacenter preloading: {str(e)}")
+        
+# Start the preloading process in a background thread to avoid blocking app startup
+import threading
+preload_thread = threading.Thread(target=preload_vsphere_datacenters, daemon=True)
+preload_thread.start()
+logger.info("Started background thread for datacenter preloading")
+
 # Configuration paths
 CONFIG_DIR = os.environ.get('CONFIG_DIR', 'configs')
 TERRAFORM_DIR = os.environ.get('TERRAFORM_DIR', 'terraform')
