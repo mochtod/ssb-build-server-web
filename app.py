@@ -613,11 +613,11 @@ def submit():
                     # Continue despite warnings - don't block VM creation
                 
                 # Only do these validations if we have template info
-                # Validate resource pool is the default pool (warning only)
+                # Validate resource pool is the default pool (log only, no UI warning)
                 is_default, pool_msg = validate_default_pool(vs_resources, resource_pool)
                 if not is_default:
-                    logger.warning(pool_msg)
-                    flash(f'Warning: {pool_msg}', 'warning')
+                    logger.info(pool_msg)
+                    # Removed flash message as per user request
                 
                 # Validate template compatibility with requested specs (warning only)
                 compat_valid, compat_msg = validate_template_compatibility(template, num_cpus, memory, disk_size, vs_resources)
@@ -1553,3 +1553,39 @@ def build_receipt(request_id, timestamp):
     except Exception as e:
         flash(f'Error loading build receipt: {str(e)}', 'error')
         return redirect(url_for('configs'))
+
+@app.route('/delete_config/<request_id>_<timestamp>', methods=['POST'])
+@login_required
+def delete_config(request_id, timestamp):
+    """Delete a VM configuration and its associated Terraform files"""
+    try:
+        # Load configuration file
+        config_file = os.path.join(CONFIG_DIR, f"{request_id}_{timestamp}.json")
+        
+        # Check if config file exists
+        if not os.path.exists(config_file):
+            flash('Configuration not found', 'error')
+            return redirect(url_for('list_configs'))
+        
+        # Check if user has permission (must be admin or the creator)
+        with open(config_file, 'r') as f:
+            config_data = json.load(f)
+            
+        if session.get('role') != ROLE_ADMIN and session.get('username') != config_data.get('build_username'):
+            flash('You do not have permission to delete this configuration', 'error')
+            return redirect(url_for('list_configs'))
+        
+        # Delete the configuration file
+        os.remove(config_file)
+        
+        # Delete associated Terraform directory if it exists
+        tf_directory = os.path.join(TERRAFORM_DIR, f"{request_id}_{timestamp}")
+        if os.path.exists(tf_directory):
+            shutil.rmtree(tf_directory)
+        
+        flash('Configuration deleted successfully', 'success')
+        return redirect(url_for('list_configs'))
+    except Exception as e:
+        logger.exception(f"Error deleting configuration: {str(e)}")
+        flash(f'Error deleting configuration: {str(e)}', 'error')
+        return redirect(url_for('list_configs'))

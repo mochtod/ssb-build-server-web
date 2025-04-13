@@ -67,6 +67,12 @@
                                         {% if config.build_status == 'submitted' or config.build_status == 'completed' %}
                                         <a href="{{ url_for('build_receipt', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Receipt</a>
                                         {% endif %}
+                                        
+                                        {% if user_role == 'admin' or config.build_username == session.username %}
+                                        <form method="POST" action="{{ url_for('delete_config', request_id=config.request_id, timestamp=config.timestamp) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this configuration?');">
+                                            <button type="submit" class="btn-small delete">Delete</button>
+                                        </form>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}

@@ -51,7 +51,8 @@ def generate_atlantis_payload(repo, workspace, dir, commit_hash, comment, user, 
     
     # Determine environment from workspace if provided, otherwise use development
     # This is the critical field that Atlantis requires 
-    environment = workspace if workspace else "default"
+    environment = workspace if workspace else "development"
+    # Never use "default" as an environment name - it's a reserved word in Atlantis
     if environment == "default":
         environment = "development"  # Default to development if not specified
     
@@ -121,9 +122,12 @@ def generate_atlantis_apply_payload_fixed(config_data, tf_directory, tf_files, p
     environment = config_data.get('environment', 'development')
     request_id = config_data.get('request_id', 'unknown')
     
-    # Make sure we have a valid environment - never use 'default' as this seems to be a reserved word
+    # Make sure we have a valid environment - never use 'default' as it's a reserved word in Atlantis
     if not environment or environment == "default":
         environment = "development"
+    
+    # Also make sure workspace is set to the same environment value to maintain consistency
+    workspace = environment
     
     # Create a dictionary with all the necessary fields
     payload_dict = {

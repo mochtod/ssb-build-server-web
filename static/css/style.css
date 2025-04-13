@@ -263,6 +263,15 @@ small {
   font-size: 0.9rem;
 }
 
+.btn-small.delete {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.btn-small.delete:hover {
+  background-color: #c82333;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
