@@ -1302,15 +1302,55 @@ def healthz():
 @app.route('/api/vsphere/datacenters')
 @login_required
 def vsphere_datacenters():
-    """Return all available vSphere datacenters using the hierarchical loader"""
+    """Return all available vSphere datacenters using Redis cache with background refresh"""
     try:
-        # Force the loading of datacenters (don't rely on background processing)
-        datacenters = vsphere_hierarchical_loader.get_datacenters(force_load=True)
+        # Get credentials hash for Redis cache
+        creds_hash = vsphere_redis_cache.get_credentials_hash(
+            os.environ.get('VSPHERE_SERVER'), 
+            os.environ.get('VSPHERE_USER'),
+            os.environ.get('VSPHERE_PASSWORD')
+        )
+        
+        # Try to get datacenters from Redis cache first
+        datacenters_key = f"vsphere:{creds_hash}:datacenters"
+        r = vsphere_redis_cache.get_redis_connection()
+        from_cache = False
+        
+        if r:
+            cached_data = r.get(datacenters_key)
+            if cached_data:
+                try:
+                    datacenters = json.loads(cached_data)
+                    from_cache = True
+                    logger.info(f"Using Redis cache for datacenters list ({len(datacenters)} datacenters)")
+                except Exception as json_err:
+                    logger.warning(f"Error parsing cached datacenters: {str(json_err)}")
+                    datacenters = None
+            else:
+                logger.info("No cached datacenters found in Redis")
+                datacenters = None
+        else:
+            logger.warning("Could not connect to Redis")
+            datacenters = None
+        
+        # If cache miss, use hierarchical loader
+        if not datacenters:
+            logger.info("Cache miss for datacenters, falling back to hierarchical loader")
+            datacenters = vsphere_hierarchical_loader.get_datacenters(force_load=False)
+        
+        # ALWAYS start a background refresh regardless of cache hit/miss
+        # Import the background refresh module
+        import vsphere_background_refresh
+        vsphere_background_refresh.start_refresh_thread(
+            vsphere_background_refresh.refresh_all_datacenters_background
+        )
+        logger.info("Started background refresh thread for datacenters")
         
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
             'datacenters': datacenters,
-            'status': vsphere_hierarchical_loader.get_loading_status()
+            'status': vsphere_hierarchical_loader.get_loading_status(),
+            'from_cache': from_cache
         })
     except Exception as e:
         logger.exception(f"Error retrieving vSphere datacenters: {str(e)}")
@@ -1322,16 +1362,57 @@ def vsphere_datacenters():
 @app.route('/api/vsphere/datacenters/<datacenter_name>/clusters')
 @login_required
 def vsphere_datacenter_clusters(datacenter_name):
-    """Return all clusters for a specific datacenter using the hierarchical loader"""
+    """Return all clusters for a specific datacenter using Redis cache with background refresh"""
     try:
-        # Force the loading of clusters for the specified datacenter
-        clusters = vsphere_hierarchical_loader.get_clusters(datacenter_name, force_load=True)
+        # Get credentials hash for Redis cache
+        creds_hash = vsphere_redis_cache.get_credentials_hash(
+            os.environ.get('VSPHERE_SERVER'), 
+            os.environ.get('VSPHERE_USER'),
+            os.environ.get('VSPHERE_PASSWORD')
+        )
+        
+        # Try to get clusters from Redis cache first
+        dc_clusters_key = f"vsphere:{creds_hash}:datacenter:{datacenter_name}:clusters"
+        r = vsphere_redis_cache.get_redis_connection()
+        from_cache = False
+        
+        if r:
+            cached_data = r.get(dc_clusters_key)
+            if cached_data:
+                try:
+                    clusters = json.loads(cached_data)
+                    from_cache = True
+                    logger.info(f"Using Redis cache for datacenter {datacenter_name} clusters ({len(clusters)} clusters)")
+                except Exception as json_err:
+                    logger.warning(f"Error parsing cached clusters for datacenter {datacenter_name}: {str(json_err)}")
+                    clusters = None
+            else:
+                logger.info(f"No cached clusters found in Redis for datacenter {datacenter_name}")
+                clusters = None
+        else:
+            logger.warning("Could not connect to Redis")
+            clusters = None
+        
+        # If cache miss, use hierarchical loader
+        if not clusters:
+            logger.info(f"Cache miss for datacenter {datacenter_name} clusters, falling back to hierarchical loader")
+            clusters = vsphere_hierarchical_loader.get_clusters(datacenter_name, force_load=False)
+        
+        # ALWAYS start a background refresh regardless of cache hit/miss
+        # Import the background refresh module
+        import vsphere_background_refresh
+        vsphere_background_refresh.start_refresh_thread(
+            vsphere_background_refresh.refresh_datacenter_clusters_background,
+            datacenter_name
+        )
+        logger.info(f"Started background refresh thread for datacenter {datacenter_name} clusters")
         
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
             'datacenter': datacenter_name,
             'clusters': clusters,
-            'status': vsphere_hierarchical_loader.get_loading_status()
+            'status': vsphere_hierarchical_loader.get_loading_status(),
+            'from_cache': from_cache
         })
     except Exception as e:
         logger.exception(f"Error retrieving clusters for datacenter {datacenter_name}: {str(e)}")
@@ -1374,12 +1455,58 @@ def vsphere_clusters():
 def vsphere_hierarchical_cluster_resources(cluster_id):
     """Return all resources for a specific vSphere cluster using the hierarchical loader"""
     try:
-        # Get resources for specified cluster using the hierarchical loader
-        # Optionally pass cluster name if available
+        # Optionally get cluster name if available
         cluster_name = request.args.get('cluster_name')
         
-        # Force the loading of resources for the specified cluster
-        resources = vsphere_hierarchical_loader.get_resources(cluster_id, cluster_name, force_load=True)
+        # Get credentials hash for Redis cache
+        creds_hash = vsphere_redis_cache.get_credentials_hash(
+            os.environ.get('VSPHERE_SERVER'), 
+            os.environ.get('VSPHERE_USER'),
+            os.environ.get('VSPHERE_PASSWORD')
+        )
+        
+        # First try to get resources from Redis cache
+        cached_resources = {
+            'resource_pools': vsphere_redis_cache.get_cached_cluster_resources(cluster_id, 'resource_pools', creds_hash) or [],
+            'datastores': vsphere_redis_cache.get_cached_cluster_resources(cluster_id, 'datastores', creds_hash) or [],
+            'networks': vsphere_redis_cache.get_cached_cluster_resources(cluster_id, 'networks', creds_hash) or [],
+            'templates': vsphere_redis_cache.get_cached_cluster_resources(cluster_id, 'templates', creds_hash) or []
+        }
+        
+        # Check if we have cached resources
+        have_cache = (len(cached_resources['resource_pools']) > 0 and 
+                     len(cached_resources['datastores']) > 0 and 
+                     len(cached_resources['networks']) > 0)
+        
+        resources = None
+        from_cache = False
+        
+        if have_cache:
+            # Use cached resources
+            logger.info(f"Using Redis cached resources for cluster {cluster_id}")
+            resources = {
+                'cluster_name': cluster_name or 'Unknown Cluster',
+                'cluster_id': cluster_id,
+                'resource_pools': cached_resources['resource_pools'],
+                'datastores': cached_resources['datastores'],
+                'networks': cached_resources['networks'],
+                'templates': cached_resources['templates'],
+            }
+            from_cache = True
+        else:
+            # Fall back to hierarchical loader if cache miss
+            logger.info(f"Redis cache miss for cluster {cluster_id}, using hierarchical loader")
+            resources = vsphere_hierarchical_loader.get_resources(cluster_id, cluster_name, force_load=False)
+        
+        # ALWAYS start a background refresh regardless of cache hit/miss
+        # Import the background refresh module
+        import vsphere_background_refresh
+        vsphere_background_refresh.start_refresh_thread(
+            vsphere_background_refresh.refresh_cluster_resources_background,
+            cluster_id, 
+            cluster_name or resources.get('cluster_name', 'Unknown Cluster')
+        )
+        logger.info(f"Started background refresh thread for cluster {cluster_id}")
         
         return jsonify({
             'timestamp': datetime.datetime.now().isoformat(),
@@ -1390,7 +1517,8 @@ def vsphere_hierarchical_cluster_resources(cluster_id):
             'networks': resources.get('networks', []),
             'templates': resources.get('templates', []),
             'status': vsphere_hierarchical_loader.get_loading_status(),
-            'loading': resources.get('loading', False)
+            'loading': resources.get('loading', False),
+            'from_cache': from_cache
         })
     except Exception as e:
         logger.exception(f"Error retrieving resources for cluster {cluster_id}: {str(e)}")
