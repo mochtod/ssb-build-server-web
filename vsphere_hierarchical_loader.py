@@ -10,7 +10,8 @@ It follows the natural VMware hierarchy:
 4. Resource Pools, Networks, Datastores, Templates
 
 All operations are performed asynchronously in background threads to 
-avoid blocking the user interface.
+avoid blocking the user interface. This module now includes memory optimization
+techniques to reduce memory usage and improve performance.
 """
 import os
 import ssl
@@ -19,8 +20,11 @@ import time
 import logging
 import threading
 import queue
+import gc
+import weakref
 from datetime import datetime, timedelta
 from threading import Lock, Thread
+from typing import Dict, List, Optional, Set, Any
 
 # Import the pyVmomi module
 try:
@@ -35,6 +39,15 @@ import vsphere_cluster_resources
 # Import the Redis cache module
 import vsphere_redis_cache
 
+# Optional import for memory profiling
+try:
+    import tracemalloc
+    import linecache
+    from tracemalloc import Snapshot
+    MEMORY_PROFILING_AVAILABLE = True
+except ImportError:
+    MEMORY_PROFILING_AVAILABLE = False
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -45,6 +58,160 @@ CACHE_TTL = 86400  # 24 hours in seconds for base data
 RESOURCE_CACHE_TTL = 3600  # 1 hour for resources (more volatile)
 CACHE_LOCK = Lock()  # Lock for thread-safety
 
+# Memory optimization settings
+MEMORY_PROFILING_ENABLED = os.environ.get('VSPHERE_MEMORY_PROFILING', 'false').lower() == 'true'
+LAZY_LOADING_ENABLED = os.environ.get('VSPHERE_LAZY_LOADING', 'true').lower() == 'true'
+PAGINATION_SIZE = int(os.environ.get('VSPHERE_PAGINATION_SIZE', '50'))
+DATA_PRUNING_ENABLED = os.environ.get('VSPHERE_DATA_PRUNING', 'true').lower() == 'true'
+EXPLICIT_GC = os.environ.get('VSPHERE_EXPLICIT_GC', 'true').lower() == 'true'
+
+# Memory profiling top results to keep
+MEMORY_TOP_STATS = int(os.environ.get('VSPHERE_MEMORY_TOP_STATS', '25'))
+
+# Essential attributes to keep when pruning data
+ESSENTIAL_ATTRIBUTES = {
+    'datacenters': ['name', 'id'],
+    'clusters': ['name', 'id', 'datacenter', 'type', 'host_count'],
+    'datastores': ['name', 'id', 'type', 'free_gb', 'capacity', 'free_space', 'cluster_id', 
+                  'cluster_name', 'shared_across_cluster'],
+    'networks': ['name', 'id', 'type', 'cluster_id', 'cluster_name', 'is_dvs'],
+    'resource_pools': ['name', 'id', 'type', 'cluster_id', 'cluster_name', 'is_primary'],
+    'templates': ['name', 'id', 'type', 'cluster_id', 'cluster_name', 'is_template', 
+                 'guest_id', 'guest_fullname']
+}
+
+class MemoryProfiler:
+    """Memory profiling utility for vSphere resource loading operations."""
+    
+    def __init__(self):
+        """Initialize the memory profiler."""
+        self.enabled = MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE
+        self.lock = Lock()
+        self.last_snapshot = None
+        self.baseline_snapshot = None
+        self.snapshots = {}  # key: operation name, value: tracemalloc snapshot
+        
+        if self.enabled:
+            try:
+                tracemalloc.start()
+                logger.info("Memory profiling enabled")
+                # Take baseline snapshot
+                self.baseline_snapshot = tracemalloc.take_snapshot()
+            except Exception as e:
+                logger.error(f"Failed to start memory profiling: {e}")
+                self.enabled = False
+    
+    def take_snapshot(self, operation_name):
+        """Take a memory snapshot for a specific operation."""
+        if not self.enabled:
+            return
+            
+        with self.lock:
+            try:
+                snapshot = tracemalloc.take_snapshot()
+                self.snapshots[operation_name] = snapshot
+                self.last_snapshot = snapshot
+                logger.debug(f"Memory snapshot taken for operation: {operation_name}")
+            except Exception as e:
+                logger.error(f"Failed to take memory snapshot: {e}")
+    
+    def get_memory_diff(self, operation_name=None, baseline=False):
+        """Get memory usage difference between snapshots."""
+        if not self.enabled:
+            return None
+            
+        with self.lock:
+            if operation_name and operation_name in self.snapshots:
+                snapshot = self.snapshots[operation_name]
+            elif self.last_snapshot:
+                snapshot = self.last_snapshot
+            else:
+                return None
+                
+            # Compare with baseline or previous snapshot
+            compare_with = self.baseline_snapshot if baseline else self.snapshots.get(
+                list(self.snapshots.keys())[-2] if len(self.snapshots) > 1 else None,
+                self.baseline_snapshot
+            )
+            
+            if not compare_with:
+                return None
+                
+            # Calculate statistics
+            stats = snapshot.compare_to(compare_with, 'lineno')
+            
+            # Format results
+            result = []
+            for stat in stats[:MEMORY_TOP_STATS]:
+                frame = stat.traceback[0]
+                filename = os.path.basename(frame.filename)
+                line = linecache.getline(frame.filename, frame.lineno).strip()
+                result.append({
+                    'filename': filename,
+                    'lineno': frame.lineno,
+                    'line': line,
+                    'size': stat.size_diff,
+                    'size_human': f"{stat.size_diff / 1024:.1f} KB",
+                    'count': stat.count_diff
+                })
+            
+            # Add summary
+            total_size = sum(stat.size_diff for stat in stats)
+            total_count = sum(stat.count_diff for stat in stats)
+            summary = {
+                'operation': operation_name or 'latest',
+                'compared_to': 'baseline' if baseline else 'previous',
+                'total_size': total_size,
+                'total_size_human': f"{total_size / 1024 / 1024:.2f} MB",
+                'total_objects': total_count
+            }
+            
+            return {
+                'summary': summary,
+                'details': result
+            }
+    
+    def get_current_memory_usage(self):
+        """Get current memory usage."""
+        if not self.enabled:
+            return None
+            
+        try:
+            # Get current and peak memory usage
+            current, peak = tracemalloc.get_traced_memory()
+            
+            return {
+                'current': current,
+                'current_human': f"{current / 1024 / 1024:.2f} MB",
+                'peak': peak,
+                'peak_human': f"{peak / 1024 / 1024:.2f} MB"
+            }
+        except Exception as e:
+            logger.error(f"Failed to get memory usage: {e}")
+            return None
+    
+    def log_memory_usage(self, operation_name=None):
+        """Log memory usage for a specific operation."""
+        if not self.enabled:
+            return
+            
+        usage = self.get_current_memory_usage()
+        if usage:
+            logger.info(f"Memory usage {f'for {operation_name}' if operation_name else ''}: "
+                       f"Current: {usage['current_human']}, Peak: {usage['peak_human']}")
+    
+    def stop(self):
+        """Stop memory profiling."""
+        if self.enabled:
+            try:
+                tracemalloc.stop()
+                logger.info("Memory profiling stopped")
+            except Exception as e:
+                logger.error(f"Failed to stop memory profiling: {e}")
+
+# Initialize memory profiler
+memory_profiler = MemoryProfiler()
+
 class ResourceFetchEvent:
     """Event object for resource fetch operations."""
     
@@ -52,6 +219,63 @@ class ResourceFetchEvent:
         self.event_type = event_type
         self.data = data or {}
         self.timestamp = datetime.now().isoformat()
+        
+        # Add memory usage information if profiling is enabled
+        if MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE:
+            usage = memory_profiler.get_current_memory_usage()
+            if usage:
+                self.data['memory_usage'] = usage
+
+def prune_attributes(data, resource_type):
+    """Remove unnecessary attributes from resource objects to save memory."""
+    if not DATA_PRUNING_ENABLED or resource_type not in ESSENTIAL_ATTRIBUTES:
+        return data
+        
+    if isinstance(data, list):
+        # Handle list of resources
+        essential_attrs = set(ESSENTIAL_ATTRIBUTES.get(resource_type, []))
+        
+        pruned_data = []
+        for item in data:
+            if isinstance(item, dict):
+                # Only keep essential attributes
+                pruned_item = {k: v for k, v in item.items() if k in essential_attrs}
+                pruned_data.append(pruned_item)
+            else:
+                # Non-dict items (unlikely) are kept as is
+                pruned_data.append(item)
+        
+        return pruned_data
+    
+    elif isinstance(data, dict):
+        # Handle single resource
+        essential_attrs = set(ESSENTIAL_ATTRIBUTES.get(resource_type, []))
+        return {k: v for k, v in data.items() if k in essential_attrs}
+    
+    # Return unchanged for unsupported types
+    return data
+
+def batch_process(items, batch_size, processor_func, *args, **kwargs):
+    """Process items in batches to reduce peak memory usage."""
+    results = []
+    
+    # Process items in batches
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i+batch_size]
+        
+        # Process this batch
+        batch_results = processor_func(batch, *args, **kwargs)
+        
+        # Append batch results to overall results
+        if batch_results:
+            results.extend(batch_results)
+            
+        # Explicitly clear batch references to free memory
+        if EXPLICIT_GC:
+            del batch
+            gc.collect()
+    
+    return results
 
 class VSphereHierarchicalLoader:
     """
@@ -63,6 +287,7 @@ class VSphereHierarchicalLoader:
     3. Resources per cluster (slow, on-demand)
     
     All operations are performed in background threads to avoid blocking the UI.
+    Memory optimization techniques are applied to reduce RAM usage.
     """
     
     def __init__(self, 
@@ -72,7 +297,8 @@ class VSphereHierarchicalLoader:
                 timeout=None,
                 datacenters_filter=None,
                 auto_sync=True,
-                sync_interval=1800):  # 30 minutes default
+                sync_interval=1800,  # 30 minutes default
+                memory_optimization=True):
         """Initialize the hierarchical loader."""
         self.server = server or os.environ.get('VSPHERE_SERVER')
         self.username = username or os.environ.get('VSPHERE_USER')
@@ -81,11 +307,17 @@ class VSphereHierarchicalLoader:
         self.datacenters_filter = datacenters_filter or self._get_datacenter_filter()
         self.auto_sync = auto_sync
         self.sync_interval = sync_interval
+        self.memory_optimization = memory_optimization
         
         # Resource state
+        # Use WeakValueDictionary for resources to allow GC to reclaim memory
         self.datacenters = []
         self.clusters_by_dc = {}
         self.resources_by_cluster = {}
+        
+        # Lazy-loading trackers
+        self._lazy_loaded_datacenters = False
+        self._lazy_loading_datacenters = False
         
         # Status tracking
         self.status = {
@@ -98,7 +330,8 @@ class VSphereHierarchicalLoader:
             'loaded_clusters_for': set(),  # Set of datacenter names
             'loaded_resources_for': set(),  # Set of cluster IDs
             'is_syncing': False,
-            'last_sync': None
+            'last_sync': None,
+            'memory_profiling': MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE
         }
         
         # Thread management
@@ -110,6 +343,9 @@ class VSphereHierarchicalLoader:
         self.event_queue = queue.Queue()
         self.event_listeners = []
         
+        # Keep track of active worker threads for memory leak prevention
+        self._active_workers = weakref.WeakSet()
+        
         # Start event processor thread
         self.event_thread = Thread(target=self._process_events, daemon=True)
         self.event_thread.start()
@@ -118,13 +354,55 @@ class VSphereHierarchicalLoader:
         if self.auto_sync:
             self.sync_thread = Thread(target=self._background_sync_worker, daemon=True)
             self.sync_thread.start()
+            self._active_workers.add(self.sync_thread)
             self.worker_threads.append(self.sync_thread)
         
         # Ensure cache directory exists
         os.makedirs(CACHE_DIR, exist_ok=True)
         
+        # Take initial memory snapshot if profiling enabled
+        if MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE:
+            memory_profiler.take_snapshot("loader_init")
+        
         # Try to load from cache initially
         self._load_from_cache()
+        
+        # Perform initial lazy loading if enabled
+        if LAZY_LOADING_ENABLED and not self._lazy_loaded_datacenters and not self._lazy_loading_datacenters:
+            self._lazy_loading_datacenters = True
+            self._start_lazy_loading_thread()
+    
+    def _start_lazy_loading_thread(self):
+        """Start a thread for lazy loading initial data."""
+        if LAZY_LOADING_ENABLED:
+            lazy_thread = Thread(target=self._lazy_load_initial_data, daemon=True)
+            lazy_thread.start()
+            self._active_workers.add(lazy_thread)
+    
+    def _lazy_load_initial_data(self):
+        """Lazily load initial data in background."""
+        try:
+            # First, try to get datacenters
+            if not self.datacenters:
+                logger.debug("Starting lazy loading of datacenters")
+                self.get_datacenters(force_load=True)
+                
+                # Take memory snapshot after datacenter load
+                if MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE:
+                    memory_profiler.take_snapshot("lazy_load_datacenters")
+                    memory_profiler.log_memory_usage("lazy_load_datacenters")
+                
+                # After loading datacenters, pre-load first datacenter's clusters
+                if self.datacenters and not self.status['is_syncing']:
+                    first_dc = self.datacenters[0]['name']
+                    logger.debug(f"Lazy loading clusters for datacenter: {first_dc}")
+                    self.get_clusters(first_dc, force_load=False)  # Start background loading
+                    
+                self._lazy_loaded_datacenters = True
+        except Exception as e:
+            logger.error(f"Error during lazy loading: {str(e)}")
+        finally:
+            self._lazy_loading_datacenters = False
     
     def _get_datacenter_filter(self):
         """Get datacenter filter from environment."""
@@ -163,6 +441,10 @@ class VSphereHierarchicalLoader:
             except queue.Empty:
                 # No event, continue waiting
                 continue
+            
+            # Run garbage collection after processing events if explicit GC enabled
+            if EXPLICIT_GC and len(self._active_workers) > 5:  # Only run GC when we have many active threads
+                gc.collect()
     
     def _add_event(self, event_type, data=None):
         """Add an event to the queue."""
@@ -181,9 +463,25 @@ class VSphereHierarchicalLoader:
                         cached_data = json.load(f)
                     
                     with self.lock:
-                        self.datacenters = cached_data.get('datacenters', [])
-                        self.clusters_by_dc = cached_data.get('clusters_by_dc', {})
-                        self.resources_by_cluster = cached_data.get('resources_by_cluster', {})
+                        # Apply data pruning if enabled
+                        self.datacenters = prune_attributes(cached_data.get('datacenters', []), 'datacenters')
+                        
+                        # Process clusters by datacenter
+                        self.clusters_by_dc = {}
+                        for dc_name, clusters in cached_data.get('clusters_by_dc', {}).items():
+                            self.clusters_by_dc[dc_name] = prune_attributes(clusters, 'clusters')
+                        
+                        # Process resources by cluster
+                        self.resources_by_cluster = {}
+                        for cluster_id, resources in cached_data.get('resources_by_cluster', {}).items():
+                            # Process each resource type within the cluster resources
+                            pruned_resources = {}
+                            for res_type, res_items in resources.items():
+                                if res_type in ESSENTIAL_ATTRIBUTES and isinstance(res_items, list):
+                                    pruned_resources[res_type] = prune_attributes(res_items, res_type)
+                                else:
+                                    pruned_resources[res_type] = res_items
+                            self.resources_by_cluster[cluster_id] = pruned_resources
                         
                         # Update status
                         self.status['last_update'] = cached_data.get('timestamp')
@@ -198,6 +496,11 @@ class VSphereHierarchicalLoader:
                         logger.info(f"Loaded hierarchy from cache: {len(self.datacenters)} datacenters, " +
                                    f"{sum(len(clusters) for clusters in self.clusters_by_dc.values())} clusters, " +
                                    f"{len(self.resources_by_cluster)} clusters with resources")
+                    
+                    # Take memory snapshot after loading cache
+                    if MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE:
+                        memory_profiler.take_snapshot("load_from_cache")
+                        memory_profiler.log_memory_usage("load_from_cache")
                     
                     # Emit event for cache loaded
                     self._add_event('cache_loaded', {

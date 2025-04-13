@@ -91,6 +91,17 @@ In all cases, cached data is used when available, and simulated/fallback data is
 ## Future Improvements
 
 - Implement selective invalidation for fine-grained cache refresh
-- Add compression for larger cached objects
 - Enhanced metrics for performance monitoring
 - Customizable timeout settings per operation type
+
+## Memory Optimization
+
+We've implemented several memory optimization techniques to reduce RAM usage and improve system stability:
+
+- **Data pruning**: Selective retention of essential attributes (see `memory_optimization.md`)
+- **Compression**: Gzip compression for cached data and Redis entries, reducing storage footprint
+- **Batch processing**: Processing resources in configurable batches to limit peak memory usage
+- **Streaming**: Generator-based approach to handling large resource collections
+- **Explicit garbage collection**: Strategic GC at key points to reclaim memory
+
+For detailed information on memory optimization techniques, configuration options, and performance impact, see `cline_docs/memory_optimization.md`.
