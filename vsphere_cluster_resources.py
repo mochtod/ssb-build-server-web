@@ -60,18 +60,46 @@ class VSphereClusterResources:
             return True
         return False
             
-    def connect(self, timeout=None):
+    def validate_credentials(self):
         """
-        Connect to vSphere server with timeout control.
+        Validate that the provided credentials are not empty or default values.
+        
+        Returns:
+            tuple: (valid, message) - whether credentials are valid and error message if not
+        """
+        if not self.server:
+            return False, "vSphere server URL is empty"
+        
+        if not self.username:
+            return False, "vSphere username is empty"
+            
+        if not self.password:
+            return False, "vSphere password is empty"
+            
+        # Check for default/placeholder credentials
+        if (self.server == "vsphere-server" or 
+            self.server == "virtualcenter.chrobinson.com" and
+            self.username == "vsphere-username" and 
+            self.password == "vsphere-password"):
+            return False, "Using default placeholder credentials - please set proper credentials in .env file"
+            
+        return True, ""
+    
+    def connect(self, timeout=None, max_retries=2):
+        """
+        Connect to vSphere server with timeout control and retry mechanism.
         
         Args:
             timeout: Connection timeout in seconds (default: None, uses self.timeout)
-        
+            max_retries: Maximum number of connection retries (default: 2)
+            
         Returns:
             bool: True if connection successful, False otherwise
         """
-        if not (self.server and self.username and self.password):
-            logger.error("Missing vSphere connection details")
+        # Validate credentials before attempting connection
+        is_valid, error_message = self.validate_credentials()
+        if not is_valid:
+            logger.error(f"Invalid vSphere credentials: {error_message}")
             return False
         
         # Use provided timeout or instance default
@@ -83,42 +111,75 @@ class VSphereClusterResources:
             self.content = "SIMULATION"  # Set a marker that we can check for simulation mode
             return True
             
-        try:
-            # Create SSL context
-            context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-            context.verify_mode = ssl.CERT_NONE  # Disable certificate verification
-            
-            logger.info(f"Connecting to vSphere server: {self.server} (timeout: {connection_timeout}s)")
-            
-            # Set socket timeout before attempting connection
-            import socket
-            old_timeout = socket.getdefaulttimeout()
-            socket.setdefaulttimeout(connection_timeout)
-            
+        # Initialize retry loop
+        retries = 0
+        while retries <= max_retries:
             try:
-                # Attempt connection with timeout
-                self.service_instance = connect.SmartConnect(
-                    host=self.server,
-                    user=self.username,
-                    pwd=self.password,
-                    sslContext=context
-                )
-            finally:
-                # Restore original timeout
-                socket.setdefaulttimeout(old_timeout)
-            
-            if not self.service_instance:
-                logger.error("Failed to connect to vSphere server")
+                # Create SSL context
+                context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+                context.verify_mode = ssl.CERT_NONE  # Disable certificate verification
+                
+                retry_msg = f" (retry {retries}/{max_retries})" if retries > 0 else ""
+                logger.info(f"Connecting to vSphere server: {self.server} (timeout: {connection_timeout}s){retry_msg}")
+                
+                # Set socket timeout before attempting connection
+                import socket
+                old_timeout = socket.getdefaulttimeout()
+                socket.setdefaulttimeout(connection_timeout)
+                
+                try:
+                    # Attempt connection with timeout
+                    self.service_instance = connect.SmartConnect(
+                        host=self.server,
+                        user=self.username,
+                        pwd=self.password,
+                        sslContext=context
+                    )
+                finally:
+                    # Restore original timeout
+                    socket.setdefaulttimeout(old_timeout)
+                
+                if not self.service_instance:
+                    logger.error("Failed to connect to vSphere server (null service instance)")
+                    if retries < max_retries:
+                        retries += 1
+                        continue
+                    return False
+                
+                # Retrieve content
+                self.content = self.service_instance.RetrieveContent()
+                logger.info("Successfully connected to vSphere server")
+                return True
+                
+            except vim.fault.InvalidLogin as login_err:
+                logger.error(f"Authentication error - invalid vSphere credentials: {str(login_err)}")
+                # No need to retry for invalid login
                 return False
-            
-            # Retrieve content
-            self.content = self.service_instance.RetrieveContent()
-            logger.info("Successfully connected to vSphere server")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error connecting to vSphere server: {str(e)}")
-            return False
+                
+            except vim.fault.NotAuthenticated as auth_err:
+                logger.error(f"Session not authenticated: {str(auth_err)}")
+                # Try again with a fresh connection
+                if retries < max_retries:
+                    logger.info(f"Retrying connection after authentication failure (retry {retries+1}/{max_retries})")
+                    retries += 1
+                    # Wait briefly before retry
+                    time.sleep(1)
+                    continue
+                return False
+                
+            except Exception as e:
+                logger.error(f"Error connecting to vSphere server: {str(e)}")
+                # Try again for generic errors
+                if retries < max_retries:
+                    logger.info(f"Retrying connection after error (retry {retries+1}/{max_retries})")
+                    retries += 1
+                    # Wait briefly before retry
+                    time.sleep(1)
+                    continue
+                return False
+        
+        # If we get here, all retries failed
+        return False
     
     def disconnect(self):
         """Disconnect from vSphere server."""

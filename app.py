@@ -137,17 +137,25 @@ def preload_vsphere_datacenters():
             try:
                 # Force load datacenter list with a timeout
                 datacenters = []
-                with threading.Timer(30, lambda: threading.current_thread().setDaemon(True)):
+                # Create a timer that will terminate the operation if it takes too long
+                timer = threading.Timer(30, lambda: threading.current_thread().setDaemon(True))
+                try:
+                    # Start the timer
+                    timer.start()
+                    
+                    # Perform the operation
+                    datacenters = loader.get_datacenters(force_load=False)  # Changed to False to use cache if available
+                    logger.info(f"Loaded {len(datacenters)} datacenters")
+                except Exception as dc_err:
+                    logger.warning(f"Error loading datacenters, will use cache if available: {str(dc_err)}")
+                    # Try again with cache
                     try:
-                        datacenters = loader.get_datacenters(force_load=False)  # Changed to False to use cache if available
-                        logger.info(f"Loaded {len(datacenters)} datacenters")
-                    except Exception as dc_err:
-                        logger.warning(f"Error loading datacenters, will use cache if available: {str(dc_err)}")
-                        # Try again with cache
-                        try:
-                            datacenters = loader.get_datacenters(force_load=False)
-                        except:
-                            logger.error("Failed to load datacenters even with cache")
+                        datacenters = loader.get_datacenters(force_load=False)
+                    except:
+                        logger.error("Failed to load datacenters even with cache")
+                finally:
+                    # Cancel the timer to avoid any thread issues
+                    timer.cancel()
                 
                 if not datacenters:
                     logger.warning("No datacenters loaded, aborting preload")

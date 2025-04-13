@@ -16,11 +16,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 
 # Create directories for persistent storage if they don't exist
-RUN mkdir -p /app/configs /app/terraform
+RUN mkdir -p /app/configs /app/terraform /app/.vsphere_cache
 
-# Run as non-root user for better securitye4
+# Run as non-root user for better security
 RUN useradd -m appuser && \
-    chown -R appuser:appuser /app /app/configs /app/terraform
+    chown -R appuser:appuser /app /app/configs /app/terraform /app/.vsphere_cache && \
+    chmod 755 /app/.vsphere_cache
 
 # Switch to the non-root user
 USER appuser

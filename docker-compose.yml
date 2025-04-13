@@ -11,6 +11,7 @@ services:
       - ./terraform:/app/terraform
       - ./users.json:/app/users.json
       - ./vm-workspace:/app/vm-workspace
+      - vsphere-cache:/app/.vsphere_cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5150/healthz"]
       interval: 30s
@@ -208,4 +209,5 @@ volumes:
   terraform:
   atlantis-data:
   redis-data:  # Redis cache volume
+  vsphere-cache:  # Volume for vSphere cache files
   # pgdata:

@@ -451,72 +451,175 @@ class VSphereHierarchicalLoader:
         event = ResourceFetchEvent(event_type, data)
         self.event_queue.put(event)
     
-    def _load_from_cache(self):
-        """Load the hierarchical data from cache."""
+    def _is_valid_json_file(self, file_path):
+        """Validate if a file contains valid JSON data."""
         try:
-            if os.path.exists(HIERARCHY_CACHE_FILE):
-                file_age = time.time() - os.path.getmtime(HIERARCHY_CACHE_FILE)
+            with open(file_path, 'r') as f:
+                # Only read a small portion first to validate structure
+                start_content = f.read(1024)
+                if not start_content.strip().startswith('{'):
+                    return False
                 
-                # Only use cache if it's valid (within TTL)
-                if file_age < CACHE_TTL:
-                    with open(HIERARCHY_CACHE_FILE, 'r') as f:
-                        cached_data = json.load(f)
+                # Reset file pointer
+                f.seek(0)
+                
+                # Try to parse JSON
+                json.load(f)
+            return True
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in cache file: {str(e)}")
+            return False
+        except Exception as e:
+            logger.error(f"Error validating JSON file: {str(e)}")
+            return False
+    
+    def _load_from_cache(self):
+        """Load the hierarchical data from cache with robust error handling."""
+        try:
+            if not os.path.exists(HIERARCHY_CACHE_FILE):
+                logger.info("Cache file does not exist")
+                return False
+                
+            # Validate file age
+            file_age = time.time() - os.path.getmtime(HIERARCHY_CACHE_FILE)
+            if file_age >= CACHE_TTL:
+                logger.info(f"Cache file too old: {file_age:.1f} seconds (TTL: {CACHE_TTL})")
+                return False
+            
+            # Validate JSON before attempting to load
+            if not self._is_valid_json_file(HIERARCHY_CACHE_FILE):
+                logger.warning("Cache file contains invalid JSON, removing corrupted file")
+                try:
+                    # Create a backup of corrupted file for debugging
+                    backup_path = f"{HIERARCHY_CACHE_FILE}.corrupted"
+                    shutil.copy2(HIERARCHY_CACHE_FILE, backup_path)
+                    logger.info(f"Created backup of corrupted cache at: {backup_path}")
                     
-                    with self.lock:
-                        # Apply data pruning if enabled
-                        self.datacenters = prune_attributes(cached_data.get('datacenters', []), 'datacenters')
-                        
-                        # Process clusters by datacenter
-                        self.clusters_by_dc = {}
-                        for dc_name, clusters in cached_data.get('clusters_by_dc', {}).items():
-                            self.clusters_by_dc[dc_name] = prune_attributes(clusters, 'clusters')
-                        
-                        # Process resources by cluster
-                        self.resources_by_cluster = {}
-                        for cluster_id, resources in cached_data.get('resources_by_cluster', {}).items():
-                            # Process each resource type within the cluster resources
-                            pruned_resources = {}
-                            for res_type, res_items in resources.items():
-                                if res_type in ESSENTIAL_ATTRIBUTES and isinstance(res_items, list):
-                                    pruned_resources[res_type] = prune_attributes(res_items, res_type)
-                                else:
-                                    pruned_resources[res_type] = res_items
-                            self.resources_by_cluster[cluster_id] = pruned_resources
-                        
-                        # Update status
-                        self.status['last_update'] = cached_data.get('timestamp')
-                        self.status['loaded_datacenters'] = bool(self.datacenters)
-                        
-                        # Mark which datacenters have clusters loaded
-                        self.status['loaded_clusters_for'] = set(self.clusters_by_dc.keys())
-                        
-                        # Mark which clusters have resources loaded  
-                        self.status['loaded_resources_for'] = set(self.resources_by_cluster.keys())
-                        
-                        logger.info(f"Loaded hierarchy from cache: {len(self.datacenters)} datacenters, " +
-                                   f"{sum(len(clusters) for clusters in self.clusters_by_dc.values())} clusters, " +
-                                   f"{len(self.resources_by_cluster)} clusters with resources")
-                    
-                    # Take memory snapshot after loading cache
-                    if MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE:
-                        memory_profiler.take_snapshot("load_from_cache")
-                        memory_profiler.log_memory_usage("load_from_cache")
-                    
-                    # Emit event for cache loaded
-                    self._add_event('cache_loaded', {
-                        'datacenters_count': len(self.datacenters),
-                        'clusters_count': sum(len(clusters) for clusters in self.clusters_by_dc.values()),
-                        'resources_count': len(self.resources_by_cluster)
-                    })
-                    
-                    return True
+                    # Remove corrupted file
+                    os.remove(HIERARCHY_CACHE_FILE)
+                except Exception as backup_err:
+                    logger.error(f"Error backing up corrupted cache: {str(backup_err)}")
+                return False
+            
+            # Load cache data
+            with open(HIERARCHY_CACHE_FILE, 'r') as f:
+                try:
+                    cached_data = json.load(f)
+                except json.JSONDecodeError as json_err:
+                    # This shouldn't happen since we already validated the JSON,
+                    # but handle it just in case
+                    logger.error(f"JSON decode error when loading cache: {str(json_err)}")
+                    return False
+            
+            # Validate minimum required data
+            if not isinstance(cached_data, dict) or 'datacenters' not in cached_data:
+                logger.warning("Cache file missing required data structure")
+                return False
+            
+            with self.lock:
+                # Apply data pruning if enabled
+                self.datacenters = prune_attributes(cached_data.get('datacenters', []), 'datacenters')
+                
+                # Process clusters by datacenter
+                self.clusters_by_dc = {}
+                for dc_name, clusters in cached_data.get('clusters_by_dc', {}).items():
+                    self.clusters_by_dc[dc_name] = prune_attributes(clusters, 'clusters')
+                
+                # Process resources by cluster
+                self.resources_by_cluster = {}
+                for cluster_id, resources in cached_data.get('resources_by_cluster', {}).items():
+                    # Process each resource type within the cluster resources
+                    pruned_resources = {}
+                    for res_type, res_items in resources.items():
+                        if res_type in ESSENTIAL_ATTRIBUTES and isinstance(res_items, list):
+                            pruned_resources[res_type] = prune_attributes(res_items, res_type)
+                        else:
+                            pruned_resources[res_type] = res_items
+                    self.resources_by_cluster[cluster_id] = pruned_resources
+                
+                # Update status
+                self.status['last_update'] = cached_data.get('timestamp')
+                self.status['loaded_datacenters'] = bool(self.datacenters)
+                
+                # Mark which datacenters have clusters loaded
+                self.status['loaded_clusters_for'] = set(self.clusters_by_dc.keys())
+                
+                # Mark which clusters have resources loaded  
+                self.status['loaded_resources_for'] = set(self.resources_by_cluster.keys())
+                
+                logger.info(f"Loaded hierarchy from cache: {len(self.datacenters)} datacenters, " +
+                           f"{sum(len(clusters) for clusters in self.clusters_by_dc.values())} clusters, " +
+                           f"{len(self.resources_by_cluster)} clusters with resources")
+            
+            # Take memory snapshot after loading cache
+            if MEMORY_PROFILING_ENABLED and MEMORY_PROFILING_AVAILABLE:
+                memory_profiler.take_snapshot("load_from_cache")
+                memory_profiler.log_memory_usage("load_from_cache")
+            
+            # Emit event for cache loaded
+            self._add_event('cache_loaded', {
+                'datacenters_count': len(self.datacenters),
+                'clusters_count': sum(len(clusters) for clusters in self.clusters_by_dc.values()),
+                'resources_count': len(self.resources_by_cluster)
+            })
+            
+            return True
         except Exception as e:
             logger.error(f"Error loading cache: {str(e)}")
-        
-        return False
+            
+            # If there was an error loading the cache, let's ensure we don't use corrupted data
+            with self.lock:
+                self.datacenters = []
+                self.clusters_by_dc = {}
+                self.resources_by_cluster = {}
+            
+            # Attempt to delete the corrupted file
+            try:
+                if os.path.exists(HIERARCHY_CACHE_FILE):
+                    # Create a backup first
+                    backup_path = f"{HIERARCHY_CACHE_FILE}.error"
+                    shutil.copy2(HIERARCHY_CACHE_FILE, backup_path)
+                    os.remove(HIERARCHY_CACHE_FILE)
+                    logger.info(f"Removed corrupted cache file (backup at: {backup_path})")
+            except Exception as cleanup_err:
+                logger.error(f"Error cleaning up corrupted cache: {str(cleanup_err)}")
+            
+            return False
+    
+    def _check_cache_directory_permissions(self):
+        """Check if the cache directory exists and is writable, create if necessary."""
+        try:
+            # Check if directory exists, create if not
+            if not os.path.exists(CACHE_DIR):
+                try:
+                    os.makedirs(CACHE_DIR, exist_ok=True)
+                    logger.info(f"Created cache directory: {CACHE_DIR}")
+                except (OSError, PermissionError) as e:
+                    logger.error(f"Failed to create cache directory: {str(e)}")
+                    return False
+            
+            # Check if directory is writable by attempting to create a test file
+            test_file = os.path.join(CACHE_DIR, ".test_write")
+            try:
+                with open(test_file, 'w') as f:
+                    f.write("test")
+                os.remove(test_file)  # Clean up test file
+                return True
+            except (OSError, PermissionError) as e:
+                logger.error(f"Cache directory is not writable: {str(e)}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error checking cache directory permissions: {str(e)}")
+            return False
     
     def _save_to_cache(self):
-        """Save the hierarchical data to cache."""
+        """Save the hierarchical data to cache with permission handling."""
+        # Check if cache directory is writable first
+        if not self._check_cache_directory_permissions():
+            logger.warning("Skipping cache save - directory not writable")
+            return False
+            
         try:
             with self.lock:
                 cache_data = {
@@ -526,12 +629,34 @@ class VSphereHierarchicalLoader:
                     'timestamp': datetime.now().isoformat()
                 }
             
+            # First write to a temporary file, then rename to avoid partial writes
+            temp_file = f"{HIERARCHY_CACHE_FILE}.tmp"
             with CACHE_LOCK:
-                with open(HIERARCHY_CACHE_FILE, 'w') as f:
+                with open(temp_file, 'w') as f:
                     json.dump(cache_data, f, indent=2)
+                
+                # Atomic rename to final location
+                import shutil
+                shutil.move(temp_file, HIERARCHY_CACHE_FILE)
                     
             logger.info("Saved hierarchy to cache")
             return True
+            
+        except PermissionError as e:
+            logger.error(f"Permission denied when saving to cache: {str(e)}")
+            # Log helpful debugging information
+            try:
+                import os, pwd, grp
+                stat_info = os.stat(CACHE_DIR)
+                uid = stat_info.st_uid
+                gid = stat_info.st_gid
+                user = pwd.getpwuid(uid).pw_name
+                group = grp.getgrgid(gid).gr_name
+                mode = oct(stat_info.st_mode)[-3:]
+                logger.error(f"Cache directory owned by {user}:{group}, mode {mode}")
+            except Exception as debug_error:
+                logger.error(f"Error getting debug info: {debug_error}")
+            return False
             
         except Exception as e:
             logger.error(f"Error saving to cache: {str(e)}")
