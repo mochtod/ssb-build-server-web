@@ -250,6 +250,88 @@ def get_atlantis_headers():
     
     return headers
 
+def parse_terraform_plan_error(error_log):
+    """
+    Parse Terraform plan error logs to extract useful information.
+    
+    Args:
+        error_log (str): The terraform plan error log
+        
+    Returns:
+        dict: Parsed error details with missing resources
+    """
+    parsed_error = {
+        'missing_resources': [],
+        'error_type': 'unknown',
+        'summary': 'Unknown Terraform error'
+    }
+    
+    # Common error patterns
+    # Pattern 1: Missing required provider parameters
+    if "Missing required provider parameters" in error_log:
+        parsed_error['error_type'] = 'missing_provider_params'
+        
+        # Extract missing parameters
+        missing_params = []
+        
+        # Look for lines like: "The provider vsphere requires the following input values:"
+        import re
+        provider_match = re.search(r"The provider (\w+) requires the following input values:", error_log)
+        if provider_match:
+            provider = provider_match.group(1)
+            parsed_error['provider'] = provider
+            
+            # Find required parameters
+            param_pattern = re.compile(r"- (\w+) \(required\)")
+            param_matches = param_pattern.findall(error_log)
+            if param_matches:
+                missing_params = param_matches
+                parsed_error['missing_resources'] = missing_params
+                
+                # Create a readable summary
+                parsed_error['summary'] = f"Missing required {provider} provider parameters: {', '.join(missing_params)}"
+    
+    # Pattern 2: Invalid reference to non-existent resource
+    elif "Invalid reference to non-existent resource" in error_log or "No such resource exists" in error_log:
+        parsed_error['error_type'] = 'missing_resource_reference'
+        
+        # Try to extract the resource name
+        resource_match = re.search(r"resource \"([^\"]+)\"", error_log)
+        if resource_match:
+            resource_name = resource_match.group(1)
+            parsed_error['missing_resources'].append(resource_name)
+            parsed_error['summary'] = f"Reference to non-existent resource: {resource_name}"
+    
+    # Pattern 3: Missing required field
+    elif "Missing required argument" in error_log:
+        parsed_error['error_type'] = 'missing_required_field'
+        
+        # Extract the field name
+        field_match = re.search(r"Missing required argument: The argument \"([^\"]+)\" is required", error_log)
+        if field_match:
+            field_name = field_match.group(1)
+            parsed_error['missing_resources'].append(field_name)
+            parsed_error['summary'] = f"Missing required field: {field_name}"
+    
+    # Pattern 4: Authentication errors
+    elif "InvalidLogin" in error_log or "authentication failed" in error_log:
+        parsed_error['error_type'] = 'authentication_error'
+        parsed_error['summary'] = "Authentication failed - check your credentials"
+    
+    # If we couldn't match a specific pattern, provide a generic summary
+    if parsed_error['error_type'] == 'unknown':
+        # Try to find the most relevant error message line
+        error_lines = error_log.split('\n')
+        for line in error_lines:
+            if 'Error:' in line:
+                # Clean up the line
+                cleaned_line = line.replace('Error:', '').strip()
+                if len(cleaned_line) > 10:  # Make sure it's not just a short fragment
+                    parsed_error['summary'] = cleaned_line
+                    break
+    
+    return parsed_error
+
 @retry(max_retries=3, delay=2, backoff=2, 
        exceptions=(ConnectionError, Timeout, AtlantisConnectionError, AtlantisTimeoutError))
 def run_atlantis_plan(config_data, tf_directory):
@@ -320,6 +402,23 @@ def run_atlantis_plan(config_data, tf_directory):
         if response.status_code == 200:
             response_data = response.json()
             plan_id = response_data.get('id', '')
+            plan_log = response_data.get('log', '')
+            
+            # Check if plan has errors (Atlantis returns 200 but plan can still fail)
+            if "Plan failed" in plan_log or "Error:" in plan_log:
+                logger.warning("Terraform plan completed with errors")
+                
+                # Parse the error to provide more useful information
+                error_details = parse_terraform_plan_error(plan_log)
+                
+                return {
+                    'status': 'error',
+                    'plan_id': plan_id,
+                    'atlantis_url': f"{atlantis_url}/plan/{plan_id}",
+                    'plan_log': plan_log,
+                    'error_summary': error_details['summary'],
+                    'error_details': error_details
+                }
             
             logger.info(f"Atlantis plan successful: plan_id={plan_id}")
             
@@ -327,11 +426,20 @@ def run_atlantis_plan(config_data, tf_directory):
                 'status': 'success',
                 'plan_id': plan_id,
                 'atlantis_url': f"{atlantis_url}/plan/{plan_id}",
-                'plan_log': response_data.get('log', '')
+                'plan_log': plan_log
             }
         else:
             logger.error(f"Atlantis plan failed: HTTP {response.status_code}")
-            raise AtlantisResponseError(response.status_code, response.text)
+            
+            # Try to parse the error response
+            error_text = response.text
+            error_details = parse_terraform_plan_error(error_text)
+            
+            # Raise a more informative error
+            raise AtlantisResponseError(
+                response.status_code, 
+                f"Plan failed: {error_details['summary']}"
+            )
     
     except Timeout:
         logger.error(f"Timeout waiting for Atlantis plan: threshold={os.environ.get('TIMEOUT', 120)}s")
