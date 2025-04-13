@@ -184,7 +184,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4685485309952,
+          "free_space": 4685484261376,
           "free_gb": 4363.7
         },
         {
@@ -195,8 +195,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2717944643584,
-          "free_gb": 2531.28
+          "free_space": 2717920526336,
+          "free_gb": 2531.26
         },
         {
           "name": "np_cl7_esx_402",
@@ -206,7 +206,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4372163461120,
+          "free_space": 4372162412544,
           "free_gb": 4071.89
         },
         {
@@ -228,7 +228,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3534814707712,
+          "free_space": 3534808416256,
           "free_gb": 3292.05
         },
         {
@@ -239,7 +239,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3152346611712,
+          "free_space": 3152344514560,
           "free_gb": 2935.85
         },
         {
@@ -261,8 +261,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2764987957248,
-          "free_gb": 2575.1
+          "free_space": 2764980617216,
+          "free_gb": 2575.09
         },
         {
           "name": "np_cl7_esx_407",
@@ -272,7 +272,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2497844346880,
+          "free_space": 2497842249728,
           "free_gb": 2326.3
         },
         {
@@ -283,8 +283,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4054704979968,
-          "free_gb": 3776.24
+          "free_space": 4054681911296,
+          "free_gb": 3776.22
         },
         {
           "name": "np_cl7_esx_410",
@@ -294,7 +294,7 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 2549959622656,
+          "free_space": 2549958574080,
           "free_gb": 2374.83
         },
         {
@@ -305,8 +305,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 4698825293824,
-          "free_gb": 4376.12
+          "free_space": 4698792787968,
+          "free_gb": 4376.09
         },
         {
           "name": "np-cl7-esx-411",
@@ -316,8 +316,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3050118840320,
-          "free_gb": 2840.64
+          "free_space": 3050085285888,
+          "free_gb": 2840.61
         },
         {
           "name": "np-cl7-esx-412",
@@ -327,8 +327,8 @@
           "cluster_name": "np-cl60-lin",
           "shared_across_cluster": true,
           "capacity": 8795824586752,
-          "free_space": 3904180846592,
-          "free_gb": 3636.05
+          "free_space": 3904159875072,
+          "free_gb": 3636.03
         }
       ],
       "networks": [
@@ -479,24 +479,11 @@
       ],
       "templates": [
         {
-          "name": "Jammy-Updated-Compatibility",
-          "id": "vm-8905184",
-          "type": "VirtualMachine",
-          "cluster_id": "domain-c9891266",
-          "cluster_name": "np-cl60-lin",
-          "is_template": true,
-          "guest_id": "ubuntu64Guest",
-          "guest_fullname": "Ubuntu Linux (64-bit)"
-        },
-        {
-          "name": "rhel9-template0314",
           "id": "vm-11682491",
-          "type": "VirtualMachine",
-          "cluster_id": "domain-c9891266",
-          "cluster_name": "np-cl60-lin",
-          "is_template": true,
-          "guest_id": "rhel9_64Guest",
-          "guest_fullname": "Red Hat Enterprise Linux 9 (64-bit)"
+          "name": "RHEL 9 Template (Loading in background...)",
+          "guest_os": "rhel9_64Guest",
+          "cpu_count": 2,
+          "memory_mb": 4096
         }
       ],
       "resource_pools": [
@@ -508,8 +495,7 @@
           "cluster_name": "np-cl60-lin",
           "is_primary": true
         }
-      ],
-      "last_update": "2025-04-12T23:46:02.069615"
+      ]
     },
     "domain-c10347033": {
       "cluster_name": "domain-c10347033",
@@ -2102,5 +2088,5 @@
       "last_update": "2025-04-12T23:50:51.137666"
     }
   },
-  "timestamp": "2025-04-13T00:28:22.671883"
+  "timestamp": "2025-04-13T01:51:55.692161"
 }
