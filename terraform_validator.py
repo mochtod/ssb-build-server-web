@@ -35,6 +35,64 @@ def validate_terraform_files(tf_directory):
     logger.info("Skipping local Terraform validation (terraform binary is in Atlantis container)")
     return True
 
+def check_required_provider_config(tf_directory):
+    """
+    Check if the required Terraform provider configuration is present.
+    
+    Args:
+        tf_directory (str): Directory containing Terraform files
+        
+    Returns:
+        tuple: (bool, list) - Success flag and missing elements
+    """
+    required_elements = [
+        'terraform .*{',                              # terraform block
+        'required_providers .*{',                     # required_providers block
+        'vsphere .*{',                                # vsphere provider
+        'source.*"hashicorp/vsphere"',                # source for vsphere
+        'version',                                    # version constraint
+        'required_version',                           # terraform version constraint
+        'provider "vsphere"',                         # vsphere provider block
+        'user',                                       # user variable
+        'password',                                   # password variable
+        'vsphere_server',                             # server variable
+        'allow_unverified_ssl'                        # SSL verification setting
+    ]
+    
+    missing_elements = required_elements.copy()
+    provider_file_found = False
+    
+    # Check for providers.tf first
+    provider_file_path = os.path.join(tf_directory, 'providers.tf')
+    if os.path.exists(provider_file_path):
+        provider_file_found = True
+        with open(provider_file_path, 'r') as f:
+            content = f.read()
+            
+            # Check each required element
+            for element in required_elements[:]:
+                if re.search(element, content):
+                    missing_elements.remove(element)
+    
+    # If providers.tf doesn't exist or some elements are missing, check all .tf files
+    if not provider_file_found or missing_elements:
+        for filename in os.listdir(tf_directory):
+            if filename.endswith('.tf'):
+                file_path = os.path.join(tf_directory, filename)
+                with open(file_path, 'r') as f:
+                    content = f.read()
+                    
+                    # Check remaining missing elements
+                    for element in missing_elements[:]:
+                        if re.search(element, content):
+                            missing_elements.remove(element)
+    
+    if missing_elements:
+        logger.warning(f"Missing required provider configuration elements: {', '.join(missing_elements)}")
+        return False, missing_elements
+    
+    return True, []
+
 def check_required_fields(tf_directory):
     """
     Check if all required fields are present in the Terraform files.
@@ -139,11 +197,19 @@ def with_terraform_validation(f):
         if not validate_terraform_files(tf_directory):
             raise TerraformValidationError(f"Terraform validation failed for directory: {tf_directory}")
         
-        # Check required fields
+        # Check required provider configuration
+        valid_provider, missing_provider_elements = check_required_provider_config(tf_directory)
+        if not valid_provider:
+            raise TerraformValidationError(
+                f"Terraform files missing required provider configuration: {', '.join(missing_provider_elements)}",
+                {'missing_provider_elements': missing_provider_elements}
+            )
+        
+        # Check required resource fields
         valid_fields, missing_fields = check_required_fields(tf_directory)
         if not valid_fields:
             raise TerraformValidationError(
-                f"Terraform files missing required fields: {', '.join(missing_fields)}",
+                f"Terraform files missing required resource fields: {', '.join(missing_fields)}",
                 {'missing_fields': missing_fields}
             )
         

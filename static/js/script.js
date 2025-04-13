@@ -15,8 +15,38 @@
         if (themeCookie) {
             savedTheme = themeCookie.split('=')[1];
         }
-    }
+}
+
+/**
+ * Initialize accordion functionality for expandable sections
+ */
+function initializeAccordions() {
+    const accordions = document.querySelectorAll('.accordion');
     
+    accordions.forEach(accordion => {
+        const header = accordion.querySelector('.accordion-header');
+        
+        if (header) {
+            header.addEventListener('click', () => {
+                // Toggle active class on accordion
+                accordion.classList.toggle('active');
+                
+                // Find the content section
+                const content = accordion.querySelector('.accordion-content');
+                
+                // Toggle max-height based on active state
+                if (accordion.classList.contains('active')) {
+                    // Set max-height to a value larger than the content will be
+                    content.style.maxHeight = '500px';
+                } else {
+                    // Reset max-height to 0 to close the accordion
+                    content.style.maxHeight = '0';
+                }
+            });
+        }
+    });
+}
+
     // If still no theme, default to dark
     savedTheme = savedTheme || 'dark';
     
@@ -44,6 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // VSphere resource loading
     initializeResourceLoading();
+    
+    // Initialize accordions for expandable sections
+    initializeAccordions();
 });
 
 /**

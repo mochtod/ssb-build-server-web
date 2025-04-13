@@ -515,6 +515,53 @@ footer {
   gap: 5px;
 }
 
+/* Accordion styles */
+.accordion {
+  margin: 15px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background-color: var(--input-bg);
+  cursor: pointer;
+}
+
+.accordion-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.toggle-icon {
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: transform 0.3s;
+}
+
+.accordion.active .toggle-icon {
+  transform: rotate(45deg);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
+
+.accordion.active .accordion-content {
+  max-height: 500px; /* Set this to something larger than your content will be */
+}
+
+.error-log {
+  background-color: rgba(220, 53, 69, 0.05);
+  border-left: 4px solid var(--error-color);
+}
+
 /* Loader animation */
 .loader {
   border: 4px solid var(--input-bg);

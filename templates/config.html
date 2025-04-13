@@ -138,6 +138,23 @@
                 <div class="plan-status-section failed">
                     <h3>Plan Failed</h3>
                     <p>Error: {{ config.plan_error }}</p>
+                    
+                    {% if config.atlantis_url %}
+                    <p><a href="{{ config.atlantis_url }}" target="_blank" class="btn-small">View in Atlantis</a></p>
+                    {% endif %}
+                    
+                    <div class="accordion">
+                        <div class="accordion-header">
+                            <h4>View Full Logs</h4>
+                            <span class="toggle-icon">+</span>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="code-block error-log">
+                                <pre><code>{{ config.plan_log }}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    
                     {% if is_owner or user_role == 'admin' %}
                     <form action="{{ url_for('plan_config', request_id=request_id, timestamp=timestamp) }}" method="post">
                         <button type="submit" class="btn">Retry Plan</button>

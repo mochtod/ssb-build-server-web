@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Hierarchical vSphere Resource Loader
@@ -798,7 +799,13 @@ class VSphereHierarchicalLoader:
             )
             
             # Filter to only clusters in this datacenter
-            dc_clusters = [c for c in clusters if c.get('datacenter') == datacenter_name]
+            # Make sure we're only processing dictionaries (guard against string values)
+            dc_clusters = []
+            for c in clusters:
+                if isinstance(c, dict) and c.get('datacenter') == datacenter_name:
+                    dc_clusters.append(c)
+                elif isinstance(c, str):
+                    logger.warning(f"Unexpected string value in clusters data: {c}")
             
             # Update state
             with self.lock:

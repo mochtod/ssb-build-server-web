@@ -1,0 +1,46 @@
+{
+  "repo": {
+    "owner": "fake",
+    "name": "build-server-repo",
+    "clone_url": "https://github.com/fake/build-server-repo.git",
+    "full_name": "fake/build-server-repo",
+    "html_url": "https://github.com/fake/build-server-repo",
+    "ssh_url": "git@github.com:fake/build-server-repo.git",
+    "vcs_host": {
+      "hostname": "github.com",
+      "type": "github"
+    }
+  },
+  "pull_request": {
+    "num": 1,
+    "branch": "main",
+    "author": "test-owner",
+    "base_branch": "main",
+    "url": "https://github.com/fake/build-server-repo/pull/1",
+    "state": "open"
+  },
+  "head_commit": "request-test-request",
+  "pull_num": 1,
+  "pull_author": "test-owner",
+  "repo_rel_dir": "tmpcc_vlil2",
+  "workspace": "development",
+  "project_name": "test-server",
+  "plan_id": "test-plan-id",
+  "comment": "Applying approved VM config: test-server",
+  "user": "test-owner",
+  "verbose": true,
+  "cmd": "apply",
+  "dir": ".",
+  "terraform_files": {
+    "main.tf": "\nresource \"vsphere_virtual_machine\" \"test\" {\n  name = \"test-vm\"\n}\n",
+    "variables.tf": "# Provider Variables\nvariable \"vsphere_user\" {\n  description = \"vSphere user name\"\n  type        = string\n}\n\nvariable \"vsphere_password\" {\n  description = \"vSphere password\"\n  type        = string\n  sensitive   = true\n}\n\nvariable \"vsphere_server\" {\n  description = \"vSphere server\"\n  type        = string\n}\n\n# Environment Variables\nvariable \"environment\" {\n  description = \"Deployment environment\"\n  type        = string\n  default     = \"development\"\n}\n",
+    "providers.tf": "terraform {\n  required_providers {\n    vsphere = {\n      source  = \"hashicorp/vsphere\"\n      version = \"~> 2.4.0\"\n    }\n  }\n  required_version = \">= 1.0.0\"\n}\n\nprovider \"vsphere\" {\n  user                 = var.vsphere_user\n  password             = var.vsphere_password\n  vsphere_server       = var.vsphere_server\n  allow_unverified_ssl = true\n}\n"
+  },
+  "environment": "development",
+  "apply_requirements": [
+    "approved"
+  ],
+  "automerge": false,
+  "workflow": "default",
+  "atlantis_version": "0.24.0"
+}

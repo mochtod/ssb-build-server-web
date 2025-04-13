@@ -1,13 +1,12 @@
-variable "quantity" {
-  description = "Number of machines to create"
-  type        = number
-  default     = 1
+# Use server_count from variables.tf instead of redefining quantity
+locals {
+  vm_base_name = "${var.hostname_prefix}-${var.name}"
 }
 
 module "rhel9_vm" {
   source = "./modules/machine"
 
-  name             = var.name
+  name             = local.vm_base_name
   resource_pool_id = var.resource_pool_id
   datastore_id     = var.datastore_id
   num_cpus         = var.num_cpus
@@ -24,7 +23,7 @@ module "rhel9_vm" {
 }
 
 resource "vsphere_virtual_machine" "vm" {
-  count = var.quantity
+  count = var.server_count
 
   name             = "${var.name}-${var.start_number + count.index}"
   resource_pool_id = var.resource_pool_id

@@ -875,30 +875,68 @@ def plan_config(request_id, timestamp):
             from atlantis_api import run_atlantis_plan as improved_plan
             plan_result = improved_plan(config_data, tf_directory)
             
-            # Update config with plan info
-            config_data['plan_status'] = 'completed'
-            config_data['atlantis_url'] = plan_result.get('atlantis_url', '')
-            config_data['plan_log'] = plan_result.get('plan_log', '')
-            config_data['plan_id'] = plan_result.get('plan_id', '')
-            
-            with open(config_file, 'w') as f:
-                json.dump(config_data, f, indent=2)
-            
-            flash('Terraform plan completed successfully!', 'success')
-            return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
+            # Check if plan succeeded or had errors
+            if plan_result.get('status') == 'error':
+                # Plan completed but with errors
+                logger.warning(f"Plan completed with errors: {plan_result.get('error_summary')}")
+                
+                # Update config with plan info and error details
+                config_data['plan_status'] = 'failed'
+                config_data['atlantis_url'] = plan_result.get('atlantis_url', '')
+                config_data['plan_log'] = plan_result.get('plan_log', '')
+                config_data['plan_id'] = plan_result.get('plan_id', '')
+                config_data['plan_error'] = plan_result.get('error_summary', 'Unknown error')
+                config_data['error_details'] = plan_result.get('error_details', {})
+                
+                with open(config_file, 'w') as f:
+                    json.dump(config_data, f, indent=2)
+                
+                # Show a cleaner error message to the user, but store full logs
+                error_summary = plan_result.get('error_summary', 'Unknown error during plan')
+                
+                # Get full logs for the UI
+                full_logs = plan_result.get('plan_log', '')
+                config_data['plan_log'] = full_logs  # Store the full logs
+                
+                flash(f'Plan failed: {error_summary}', 'error')
+                
+                # Add a link to view the full logs
+                if plan_result.get('atlantis_url'):
+                    flash(f'View full logs at {plan_result.get("atlantis_url")}', 'info')
+                
+                return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))
+            else:
+                # Plan succeeded
+                # Update config with plan info
+                config_data['plan_status'] = 'completed'
+                config_data['atlantis_url'] = plan_result.get('atlantis_url', '')
+                config_data['plan_log'] = plan_result.get('plan_log', '')
+                config_data['plan_id'] = plan_result.get('plan_id', '')
+                
+                with open(config_file, 'w') as f:
+                    json.dump(config_data, f, indent=2)
+                
+                flash('Terraform plan completed successfully!', 'success')
+                return redirect(url_for('show_plan', request_id=request_id, timestamp=timestamp))
             
         except AtlantisApiError as e:
             # Handle Atlantis API errors gracefully
             logger.error(f"Atlantis API error: {str(e)}")
             
+            # Parse the error message to make it more user-friendly
+            error_msg = str(e)
+            # Extract the summary if it's in our format "Plan failed: XXX"
+            if "Plan failed:" in error_msg:
+                error_msg = error_msg.split("Plan failed:")[1].strip()
+            
             # Update config with failure
             config_data['plan_status'] = 'failed'
-            config_data['plan_error'] = str(e)
+            config_data['plan_error'] = error_msg
             
             with open(config_file, 'w') as f:
                 json.dump(config_data, f, indent=2)
             
-            flash(f'Plan failed: {str(e)}', 'error')
+            flash(f'Plan failed: {error_msg}', 'error')
             return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))
         
     except Exception as e:

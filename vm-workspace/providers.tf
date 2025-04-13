@@ -2,7 +2,7 @@ terraform {
   required_providers {
     vsphere = {
       source  = "hashicorp/vsphere"
-      version = "~> 2.0"
+      version = "~> 2.4.0"
     }
     vault = {
       source  = "hashicorp/vault"

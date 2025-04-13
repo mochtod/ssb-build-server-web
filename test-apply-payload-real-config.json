@@ -1,0 +1,47 @@
+{
+  "repo": {
+    "owner": "fake",
+    "name": "build-server-repo",
+    "clone_url": "https://github.com/fake/build-server-repo.git",
+    "full_name": "fake/build-server-repo",
+    "html_url": "https://github.com/fake/build-server-repo",
+    "ssh_url": "git@github.com:fake/build-server-repo.git",
+    "vcs_host": {
+      "hostname": "github.com",
+      "type": "github"
+    }
+  },
+  "pull_request": {
+    "num": 1,
+    "branch": "main",
+    "author": "test-owner",
+    "base_branch": "main",
+    "url": "https://github.com/fake/build-server-repo/pull/1",
+    "state": "open"
+  },
+  "head_commit": "request-test-request",
+  "pull_num": 1,
+  "pull_author": "test-owner",
+  "repo_rel_dir": "tmpkg9t3fwj",
+  "workspace": "development",
+  "project_name": "test-server",
+  "plan_id": "test-plan-id",
+  "comment": "Applying approved VM config: test-server",
+  "user": "test-owner",
+  "verbose": true,
+  "cmd": "apply",
+  "dir": ".",
+  "terraform_files": {
+    "main.tf": "terraform {\n  required_providers {\n    vsphere = {\n      source  = \"hashicorp/vsphere\"\n      version = \"~> 2.4.0\"\n    }\n    vault = {\n      source  = \"hashicorp/vault\"\n      version = \"~> 3.0\"\n    }\n  }\n}\n\nprovider \"vsphere\" {\n  user                 = var.vsphere_user\n  password             = var.vsphere_password\n  vsphere_server       = var.vsphere_server\n  allow_unverified_ssl = true\n}\n\nprovider \"vault\" {\n  address = \"https://vault-prod-centralus-core.chrazure.cloud\"\n  # Authentication can be configured using one of the following methods:\n  # 1. Token authentication (recommended for development only)\n  # token = var.vault_token\n  \n  # 2. AppRole authentication (recommended for production)\n  # auth_login {\n  #   path = \"auth/approle/login\"\n  #   parameters = {\n  #     role_id   = var.vault_role_id\n  #     secret_id = var.vault_secret_id\n  #   }\n  # }\n}\n\nmodule \"vm_deployment\" {\n  source = \"../../vm-workspace\"\n  \n  # Provider configuration\n  vsphere_user     = var.vsphere_user\n  vsphere_password = var.vsphere_password\n  vsphere_server   = var.vsphere_server\n  \n  # NetBox configuration\n  netbox_token     = var.netbox_token\n  netbox_api_url   = var.netbox_api_url\n  \n  # VM configuration\n  name              = \"rhel9-app\"\n  hostname_prefix   = var.hostname_prefix\n  server_count      = var.server_count\n  resource_pool_id  = data.vsphere_resource_pool.pool.id\n  datastore_id      = data.vsphere_datastore.datastore.id\n  network_id        = data.vsphere_network.network.id\n  template_uuid     = data.vsphere_virtual_machine.template.id\n  \n  # Network configuration\n  ipv4_address      = var.ipv4_address\n  ipv4_gateway      = var.ipv4_gateway\n  \n  # Resource specifications\n  num_cpus          = var.num_cpus\n  memory            = var.memory\n  disk_size         = var.disk_size\n  additional_disks  = var.additional_disks\n  \n  # Environment\n  environment       = var.environment\n}\n\n# Data sources\ndata \"vsphere_datacenter\" \"dc\" {\n  name = var.datacenter_name\n}\n\ndata \"vsphere_datastore\" \"datastore\" {\n  name          = var.datastore_name\n  datacenter_id = data.vsphere_datacenter.dc.id\n}\n\ndata \"vsphere_network\" \"network\" {\n  name          = var.network_name\n  datacenter_id = data.vsphere_datacenter.dc.id\n}\n\ndata \"vsphere_resource_pool\" \"pool\" {\n  name          = var.resource_pool_name\n  datacenter_id = data.vsphere_datacenter.dc.id\n}\n\ndata \"vsphere_virtual_machine\" \"template\" {\n  name          = var.template_name\n  datacenter_id = data.vsphere_datacenter.dc.id\n}\n",
+    "providers.tf": "terraform {\n  required_providers {\n    vsphere = {\n      source  = \"hashicorp/vsphere\"\n      version = \"~> 2.4.0\"\n    }\n  }\n  required_version = \">= 1.0.0\"\n}\n\nprovider \"vsphere\" {\n  user                 = var.vsphere_user\n  password             = var.vsphere_password\n  vsphere_server       = var.vsphere_server\n  allow_unverified_ssl = true\n}\n",
+    "terraform.tfvars": "# VSphere Provider Configuration\nvsphere_user     = \"vsphere_username\"  # Replace with actual credentials\nvsphere_password = \"vsphere_password\"  # Replace with actual credentials\nvsphere_server   = \"virtualcenter.chrobinson.com\"\n\n# Datacenter Configuration\ndatacenter_name    = \"EBDC NONPROD\"\nresource_pool_name = \"Resources\"\ndatastore_name     = \"main-nonprod-datastore\"\nnetwork_name       = \"VM Network\"\ntemplate_name      = \"rhel9-template\"\n\n# VM Configuration\nhostname_prefix = \"lin2dv2\"\nserver_count    = 1\nnum_cpus        = 2\nmemory          = 4096  # MB\ndisk_size       = 50    # GB\n\n# Network Configuration\nipv4_address    = \"192.168.1.100\"\nipv4_gateway    = \"192.168.1.1\"\n\n# Additional Disks\nadditional_disks = [\n  {\n    size = 50,   # GB\n    type = \"thin\"\n  },\n  {\n    size = 100,  # GB\n    type = \"thin\" \n  }\n]\n\n# NetBox Integration\nnetbox_token   = \"netbox_api_token\"  # Replace with actual token\nnetbox_api_url = \"https://netbox.chrobinson.com/api\"\n\n# Environment\nenvironment = \"development\"\n\n# Vault Configuration - Uncomment and set values if using Vault\n# vault_token     = \"\"\n# vault_role_id   = \"\"\n# vault_secret_id = \"\"\n",
+    "variables.tf": "# Provider Variables\nvariable \"vsphere_user\" {\n  description = \"vSphere user name\"\n  type        = string\n}\n\nvariable \"vsphere_password\" {\n  description = \"vSphere password\"\n  type        = string\n  sensitive   = true\n}\n\nvariable \"vsphere_server\" {\n  description = \"vSphere server\"\n  type        = string\n}\n\n# VM Configuration Variables\nvariable \"datacenter_name\" {\n  description = \"Name of the datacenter\"\n  type        = string\n  default     = \"EBDC NONPROD\"\n}\n\nvariable \"resource_pool_name\" {\n  description = \"Name of the resource pool\"\n  type        = string\n  default     = \"Resources\"\n}\n\nvariable \"datastore_name\" {\n  description = \"Name of the datastore\"\n  type        = string\n  default     = \"main-datastore\"\n}\n\nvariable \"network_name\" {\n  description = \"Name of the network\"\n  type        = string\n  default     = \"VM Network\"\n}\n\nvariable \"template_name\" {\n  description = \"Name of the VM template\"\n  type        = string\n  default     = \"rhel9-template\"\n}\n\nvariable \"hostname_prefix\" {\n  description = \"Hostname prefix for VMs\"\n  type        = string\n  default     = \"lin2dv2\"\n}\n\nvariable \"server_count\" {\n  description = \"Number of servers to create\"\n  type        = number\n  default     = 1\n}\n\nvariable \"num_cpus\" {\n  description = \"Number of CPUs\"\n  type        = number\n  default     = 2\n}\n\nvariable \"memory\" {\n  description = \"Memory in MB\"\n  type        = number\n  default     = 4096\n}\n\nvariable \"disk_size\" {\n  description = \"Disk size in GB\"\n  type        = number\n  default     = 50\n}\n\nvariable \"additional_disks\" {\n  description = \"List of additional disks to attach\"\n  type = list(object({\n    size = number\n    type = string\n  }))\n  default = []\n}\n\nvariable \"ipv4_address\" {\n  description = \"IPv4 address\"\n  type        = string\n  default     = \"192.168.1.100\"\n}\n\nvariable \"ipv4_gateway\" {\n  description = \"IPv4 gateway\"\n  type        = string\n  default     = \"192.168.1.1\"\n}\n\n# NetBox Integration Variables\nvariable \"netbox_token\" {\n  description = \"API token for NetBox\"\n  type        = string\n  default     = \"\"\n}\n\nvariable \"netbox_api_url\" {\n  description = \"NetBox API URL\"\n  type        = string\n  default     = \"\"\n}\n\n# Environment Variables\nvariable \"environment\" {\n  description = \"Deployment environment\"\n  type        = string\n  default     = \"development\"\n}\n\n# Vault Variables\nvariable \"vault_token\" {\n  description = \"Vault token\"\n  type        = string\n  default     = \"\"\n  sensitive   = true\n}\n\nvariable \"vault_role_id\" {\n  description = \"Vault role ID\"\n  type        = string\n  default     = \"\"\n}\n\nvariable \"vault_secret_id\" {\n  description = \"Vault secret ID\"\n  type        = string\n  default     = \"\"\n  sensitive   = true\n}\n\nvariable \"vault_k8s_role\" {\n  description = \"Vault Kubernetes role\"\n  type        = string\n  default     = \"\"\n}\n"
+  },
+  "environment": "development",
+  "apply_requirements": [
+    "approved"
+  ],
+  "automerge": false,
+  "workflow": "default",
+  "atlantis_version": "0.24.0"
+}

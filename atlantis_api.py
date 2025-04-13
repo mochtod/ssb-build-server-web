@@ -435,10 +435,13 @@ def run_atlantis_plan(config_data, tf_directory):
             error_text = response.text
             error_details = parse_terraform_plan_error(error_text)
             
-            # Raise a more informative error
+            # Log the full error text for debugging
+            logger.debug(f"Full Atlantis error response: {error_text}")
+            
+            # Raise a more informative error with both summary and full text
             raise AtlantisResponseError(
                 response.status_code, 
-                f"Plan failed: {error_details['summary']}"
+                f"Plan failed: {error_details['summary']}\n\nFull logs:\n{error_text}"
             )
     
     except Timeout:
