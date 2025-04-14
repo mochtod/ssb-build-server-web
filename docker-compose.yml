@@ -11,6 +11,7 @@ services:
       - ./vm-workspace:/app/vm-workspace
       - vsphere-cache:/app/.vsphere_cache
       - ./config:/app/config
+      - ./.env:/app/.env
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5150/healthz"]
       interval: 30s
