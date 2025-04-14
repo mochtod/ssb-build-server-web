@@ -627,18 +627,34 @@ function initializeResourceLoading() {
 
         // Fetch resources for the selected cluster using the hierarchical loader endpoint
         fetch(`/api/vsphere/hierarchical/clusters/${clusterId}/resources`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    // Try to parse error from response body, otherwise use status text
+                    return response.json().catch(() => null).then(errorData => {
+                        throw new Error(errorData?.error || response.statusText || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
-                // Update resource pools (should be only one per cluster)
+                // Check if the backend returned an error within the JSON
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                let resourcesFound = false; // Flag to track if any resources were actually loaded
+
+                // Update resource pools
                 if (data.resource_pools && data.resource_pools.length > 0) {
                     const resourcePoolSelect = document.getElementById('resource_pool');
                     updateResourceDropdown(resourcePoolSelect, data.resource_pools);
                     document.getElementById('resource_pool_container').style.display = 'flex';
-
-                    // If there's only one resource pool select it automatically
+                    resourcesFound = true;
                     if (data.resource_pools.length === 1) {
                         resourcePoolSelect.value = data.resource_pools[0].id;
                     }
+                } else {
+                    document.getElementById('resource_pool_container').style.display = 'none'; // Ensure it's hidden if empty
                 }
 
                 // Update datastores
@@ -646,20 +662,29 @@ function initializeResourceLoading() {
                     const datastoreSelect = document.getElementById('datastore');
                     updateResourceDropdown(datastoreSelect, data.datastores, 'free_gb');
                     document.getElementById('datastores_container').style.display = 'flex';
+                    resourcesFound = true;
+                } else {
+                    document.getElementById('datastores_container').style.display = 'none';
                 }
 
-                // Update networks (now handled separately)
+                // Update networks
                 if (data.networks && data.networks.length > 0) {
                     const networkSelect = document.getElementById('network');
                     updateResourceDropdown(networkSelect, data.networks);
                     document.getElementById('networks_container').style.display = 'flex';
+                    resourcesFound = true;
+                } else {
+                    document.getElementById('networks_container').style.display = 'none';
                 }
 
-                // Templates (now shown as requested)
+                // Update templates
                 if (data.templates && data.templates.length > 0) {
                     const templateSelect = document.getElementById('template');
                     updateResourceDropdown(templateSelect, data.templates);
                     document.getElementById('templates_container').style.display = 'flex';
+                    resourcesFound = true;
+                } else {
+                    document.getElementById('templates_container').style.display = 'none';
                 }
 
                 // Hide loading indicator
@@ -667,26 +692,36 @@ function initializeResourceLoading() {
                     loadingIndicator.style.display = 'none';
                 }
 
-                // Update status display
+                // Update status display based on whether resources were found
                 if (resourceStatusElement) {
                     const clusterName = data.cluster_name || 'selected cluster';
-                    resourceStatusElement.textContent = `Resources loaded for ${clusterName}. Found ${data.datastores.length} datastores, ${data.networks.length} networks, and ${data.templates.length} templates.`;
+                    if (resourcesFound) {
+                        resourceStatusElement.textContent = `Resources loaded for ${clusterName}. Found ${data.datastores?.length || 0} datastores, ${data.networks?.length || 0} networks, and ${data.templates?.length || 0} templates.`;
+                    } else {
+                        resourceStatusElement.textContent = `No resources (datastores, networks, templates) found for cluster ${clusterName}. Check vSphere configuration or select another cluster.`;
+                    }
                 }
 
-                console.log(`Loaded resources for cluster ${clusterId}`);
+                console.log(`Loaded resources for cluster ${clusterId}. Found resources: ${resourcesFound}`);
             })
             .catch(error => {
-                console.error(`Error fetching resources for cluster ${clusterId}:`, error);
+                console.error(`Error fetching or processing resources for cluster ${clusterId}:`, error);
 
-                // Update status to show error
+                // Update status to show a more specific error
                 if (resourceStatusElement) {
-                    resourceStatusElement.textContent = 'Error loading cluster resources. Please try another cluster or refresh the page.';
+                    resourceStatusElement.textContent = `Error loading resources: ${error.message}. Please try another cluster or refresh.`;
                 }
 
                 // Hide loading indicator
                 if (loadingIndicator) {
                     loadingIndicator.style.display = 'none';
                 }
+
+                // Ensure all resource sections are hidden on error
+                document.getElementById('resource_pool_container').style.display = 'none';
+                document.getElementById('datastores_container').style.display = 'none';
+                document.getElementById('networks_container').style.display = 'none';
+                document.getElementById('templates_container').style.display = 'none';
             });
     }
 

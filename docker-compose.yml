@@ -70,8 +70,8 @@ services:
 
   atlantis:
     image: ghcr.io/runatlantis/atlantis:latest
-    ports:
-      - "4141:4141"
+    # ports: # Removed port mapping as it conflicts and may not be needed for host access
+    #   - "4141:4141"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4141/healthz"]
       interval: 30s
@@ -130,8 +130,8 @@ services:
   # Cache server for vSphere resource caching
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    # ports: # Removed port mapping as it conflicts and is likely not needed for host access
+    #   - "6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

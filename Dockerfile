@@ -21,7 +21,7 @@ RUN mkdir -p /app/configs /app/terraform /app/.vsphere_cache
 # Run as non-root user for better security
 RUN useradd -m appuser && \
     chown -R appuser:appuser /app /app/configs /app/terraform /app/.vsphere_cache && \
-    chmod 755 /app/.vsphere_cache
+    chmod 775 /app/.vsphere_cache # Changed permissions to 775 to ensure writability
 
 # Switch to the non-root user
 USER appuser

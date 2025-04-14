@@ -1,0 +1,24 @@
+{
+  "timestamp": "2025-04-14T15:22:51.912439",
+  "unit_tests": {
+    "total": 14,
+    "failures": 0,
+    "errors": 3,
+    "skipped": 2,
+    "success": false
+  },
+  "integration_tests": {
+    "total": 0,
+    "failures": 0,
+    "errors": 1,
+    "skipped": 0,
+    "success": false,
+    "error_message": "No module named 'test_integration'"
+  },
+  "docker_health": {
+    "success": true,
+    "flask_healthy": true,
+    "atlantis_healthy": true
+  },
+  "overall_success": false
+}
