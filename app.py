@@ -297,7 +297,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Functions to manage environment variables
-def read_env_file(env_file='.env'):
+def read_env_file(env_file='config/.env'):
     """Read environment variables from a .env file"""
     env_vars = {}
     try:
@@ -316,7 +316,7 @@ def read_env_file(env_file='.env'):
         logger.error(f"Error reading environment file: {str(e)}")
         return {}
 
-def write_env_file(env_vars, env_file='.env'):
+def write_env_file(env_vars, env_file='config/.env'):
     """Write environment variables to a .env file"""
     try:
         # Create backup of current .env file
@@ -324,6 +324,9 @@ def write_env_file(env_vars, env_file='.env'):
             backup_file = f"{env_file}.bak"
             shutil.copy2(env_file, backup_file)
             logger.info(f"Created backup of {env_file} at {backup_file}")
+        
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(env_file), exist_ok=True)
         
         # Write new .env file
         with open(env_file, 'w') as f:
@@ -1164,7 +1167,14 @@ def add_user():
 @role_required(ROLE_ADMIN)
 def admin_settings():
     """Admin settings page"""
-    env_vars = read_env_file()
+    # First check for config/.env, then fall back to .env for backward compatibility
+    env_vars = read_env_file('config/.env')
+    if not env_vars and os.path.exists('.env'):
+        # If config/.env is empty but .env exists, read from .env and write to config/.env
+        env_vars = read_env_file('.env')
+        if env_vars:
+            write_env_file(env_vars, 'config/.env')
+            logger.info("Migrated environment variables from .env to config/.env")
     return render_template('admin_settings.html', env_vars=env_vars)
 
 @app.route('/admin/save_settings', methods=['POST'])
@@ -1176,7 +1186,7 @@ def admin_save_settings():
         form_data = {key: value for key, value in request.form.items() if key not in ['csrf_token']}
         
         # Read existing environment variables
-        env_vars = read_env_file()
+        env_vars = read_env_file('config/.env')
         
         # Update with new values (only if not empty)
         for key, value in form_data.items():

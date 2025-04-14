@@ -10,6 +10,7 @@ services:
       - ./users.json:/app/users.json
       - ./vm-workspace:/app/vm-workspace
       - vsphere-cache:/app/.vsphere_cache
+      - ./config:/app/config
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5150/healthz"]
       interval: 30s
