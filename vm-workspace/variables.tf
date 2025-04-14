@@ -15,6 +15,37 @@ variable "vsphere_server" {
   type        = string
 }
 
+# vSphere Resource Names for Dynamic Lookup
+variable "datacenter_name" {
+  description = "Name of the vSphere datacenter"
+  type        = string
+  default     = "Datacenter"
+}
+
+variable "datastore_name" {
+  description = "Name of the vSphere datastore"
+  type        = string
+  default     = "datastore1"
+}
+
+variable "resource_pool_name" {
+  description = "Name of the vSphere resource pool"
+  type        = string
+  default     = "Resources"
+}
+
+variable "network_name" {
+  description = "Name of the vSphere network"
+  type        = string
+  default     = "VM Network"
+}
+
+variable "template_name" {
+  description = "Name of the VM template"
+  type        = string
+  default     = "rhel9-template"
+}
+
 # VM Configuration Variables
 variable "name" {
   description = "Base name for the virtual machine"
@@ -25,11 +56,13 @@ variable "name" {
 variable "resource_pool_id" {
   description = "Resource pool ID"
   type        = string
+  default     = null
 }
 
 variable "datastore_id" {
   description = "Datastore ID"
   type        = string
+  default     = null
 }
 
 variable "num_cpus" {
@@ -47,6 +80,7 @@ variable "memory" {
 variable "network_id" {
   description = "Network ID"
   type        = string
+  default     = null
 }
 
 variable "adapter_type" {
@@ -64,11 +98,13 @@ variable "disk_size" {
 variable "template_uuid" {
   description = "Template UUID"
   type        = string
+  default     = null
 }
 
 variable "ipv4_address" {
   description = "IPv4 address"
   type        = string
+  default     = null
 }
 
 variable "ipv4_netmask" {
@@ -80,6 +116,7 @@ variable "ipv4_netmask" {
 variable "ipv4_gateway" {
   description = "IPv4 gateway"
   type        = string
+  default     = "192.168.1.1"
 }
 
 variable "dns_servers" {

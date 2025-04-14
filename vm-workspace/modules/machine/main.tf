@@ -16,12 +16,22 @@ resource "vsphere_virtual_machine" "vm" {
     eagerly_scrub    = false
     thin_provisioned = true
   }
+  
+  dynamic "disk" {
+    for_each = var.additional_disks
+    content {
+      label            = "disk${disk.key + 1}"
+      size             = disk.value.size
+      eagerly_scrub    = false
+      thin_provisioned = disk.value.type == "thin"
+    }
+  }
 
   clone {
     template_uuid = var.template_uuid
     customize {
       linux_options {
-        host_name = var.name
+        host_name = var.hostname != "" ? var.hostname : var.name
         domain    = ""
         time_zone = var.time_zone
       }
