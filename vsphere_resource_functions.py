@@ -53,7 +53,7 @@ def generate_variables_file(variables_file, config):
     # Format hostname prefix based on server name components
     hostname_prefix = server_name.split('-')[0] if '-' in server_name else server_name
     
-    # Generate variables content - including ALL variables from tfvars.tf
+# Generate variables content - including ALL variables from tfvars.tf
     variables_content = f"""
 # Terraform variables for {server_name}
 # Generated on {config['timestamp']}
@@ -63,14 +63,13 @@ name             = "{server_name}"
 num_cpus         = {config['num_cpus']}
 memory           = {config['memory']}
 disk_size        = {config['disk_size']}
-quantity         = {config['quantity']}
 start_number     = {config.get('start_number', 1)}
 end_number       = 100  # Hard-coded default
 
 # Environment Configuration
 environment      = "{environment}"
 hostname_prefix  = "{hostname_prefix}"
-server_count     = {config['quantity']}
+server_count     = {config['quantity']}  # Using server_count consistently
 
 # vSphere Connection
 vsphere_user     = "{vsphere_user}"
@@ -116,7 +115,7 @@ vault_k8s_role   = ""
 def generate_terraform_config(config):
     """Generate Terraform configuration based on user input"""
     server_name = config['server_name']
-    quantity = config['quantity']
+    server_count = config['quantity']  # Use server_count consistently
     num_cpus = config['num_cpus']
     memory = config['memory']
     disk_size = config['disk_size']
@@ -136,10 +135,10 @@ def generate_terraform_config(config):
 # Request ID: {config['request_id']}
 # Timestamp: {config['timestamp']}
 
-variable "quantity" {{
+variable "server_count" {{
   description = "Number of machines to create"
   type        = number
-  default     = {quantity}
+  default     = {server_count}
 }}
 
 variable "name" {{
@@ -238,8 +237,9 @@ variable "additional_disks" {{
 # Use the rhel9_vm module as expected by the VM workspace
 module "rhel9_vm" {{
   source = "./modules/machine"
+  count  = var.server_count
 
-  name             = var.name
+  name             = "${{var.name}}-${{var.start_number + count.index}}"
   resource_pool_id = var.resource_pool_id
   datastore_id     = var.datastore_id
   num_cpus         = var.num_cpus
@@ -255,54 +255,15 @@ module "rhel9_vm" {{
   time_zone        = var.time_zone
 }}
 
-resource "vsphere_virtual_machine" "vm" {{
-  count = var.quantity
-
-  name             = "${{var.name}}-${{var.start_number + count.index}}"
-  resource_pool_id = var.resource_pool_id
-  datastore_id     = var.datastore_id
-  num_cpus         = var.num_cpus
-  memory           = var.memory
-  
-  network_interface {{
-    network_id   = var.network_id
-    adapter_type = var.adapter_type
-  }}
-  
-  disk {{
-    label            = "disk0"
-    size             = var.disk_size
-    eagerly_scrub    = false
-    thin_provisioned = true
-  }}
-
-  dynamic "disk" {{
-    for_each = var.additional_disks
-    content {{
-      label            = "disk${{disk.key + 1}}"
-      size             = disk.value.size
-      eagerly_scrub    = false
-      thin_provisioned = disk.value.type == "thin"
-    }}
-  }}
-
-  clone {{
-    template_uuid = var.template_uuid
-  }}
-
-  custom_attributes = {{
-    ipv4_address = var.ipv4_address
-  }}
-}}
-
+# Remove duplicate VM resource - use only the module approach
 output "vm_ips" {{
   description = "List of IP addresses for the created VMs"
-  value       = [for vm in vsphere_virtual_machine.vm : vm.custom_attributes["ipv4_address"]]
+  value       = module.rhel9_vm[*].vm_ip
 }}
 
 output "vm_ids" {{
   description = "List of IDs for the created VMs"
-  value       = [for vm in vsphere_virtual_machine.vm : vm.id]
+  value       = module.rhel9_vm[*].vm_id
 }}
 """
     

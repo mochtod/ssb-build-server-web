@@ -553,6 +553,9 @@ def index():
 @login_required
 def submit():
     try:
+        # Log all form data for debugging
+        logger.info("Form submission received with data: %s", request.form)
+        
         # Get form data
         server_prefix = request.form.get('server_prefix')
         app_name = request.form.get('app_name')
@@ -562,16 +565,35 @@ def submit():
         disk_size = int(request.form.get('disk_size', DEFAULT_CONFIG['disk_size']))
         
         # Get vSphere resource selections
+        datacenter = request.form.get('datacenter', '')
         cluster = request.form.get('cluster', '')
         resource_pool = request.form.get('resource_pool', '')
         datastore = request.form.get('datastore', '')
         network = request.form.get('network', '')
         template = request.form.get('template', '')
         
+        # Log the vSphere resources for debugging
+        logger.info("vSphere resources selected: datacenter=%s, cluster=%s, resource_pool=%s, datastore=%s, network=%s, template=%s", 
+                    datacenter, cluster, resource_pool, datastore, network, template)
+        
         # Validate that all required vSphere resources except template are selected
         # Templates can be loaded asynchronously and may not be available yet
-        if not cluster or not resource_pool or not datastore or not network:
-            flash('All vSphere resources (cluster, resource pool, datastore, and network) must be selected', 'error')
+        missing_resources = []
+        if not datacenter:
+            missing_resources.append("datacenter")
+        if not cluster:
+            missing_resources.append("cluster")
+        if not resource_pool:
+            missing_resources.append("resource pool")
+        if not datastore:
+            missing_resources.append("datastore")
+        if not network:
+            missing_resources.append("network")
+            
+        if missing_resources:
+            error_msg = f"Missing required vSphere resources: {', '.join(missing_resources)}"
+            logger.error(error_msg)
+            flash(error_msg, 'error')
             return redirect(url_for('index'))
         
         # Template can be empty in some cases (if loading in background)
