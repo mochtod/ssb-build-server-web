@@ -30,8 +30,11 @@ from container_discovery import get_atlantis_url, check_container_health
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+# Import Redis client from centralized module
+from redis_client import redis_client
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
 
 class VSphereResourceManager:
@@ -729,6 +732,17 @@ def submit():
         config_file = os.path.join(CONFIG_DIR, f"{request_id}_{timestamp}.json")
         with open(config_file, 'w') as f:
             json.dump(config_data, f, indent=2)
+            
+        # Save configuration to Redis
+        try:
+            # Import redis_client here to ensure it's available in this route
+            from redis_client import redis_client
+            redis_key = f"request:{request_id}"
+            redis_client.set(redis_key, json.dumps(config_data).encode('utf-8'))
+            logger.info(f"Saved configuration to Redis with key: {redis_key}")
+        except Exception as redis_error:
+            logger.error(f"Error saving to Redis: {str(redis_error)}")
+            flash(f"Warning: Configuration saved to file but Redis storage failed. Some features may be limited.", "warning")
         
         # Generate Terraform configuration
         tf_config = generate_terraform_config(config_data)
@@ -833,47 +847,71 @@ def download_config(request_id, timestamp):
 @app.route('/configs')
 @login_required
 def list_configs():
-    configs = []
-    for filename in os.listdir(CONFIG_DIR):
-        if filename.endswith('.json'):
-            try:
-                with open(os.path.join(CONFIG_DIR, filename), 'r') as f:
-                    config = json.load(f)
-                    # Check if this is a VM configuration file (has required fields)
-                    if 'request_id' in config or 'server_name' in config:
-                        configs.append({
-                            'request_id': config.get('request_id', 'unknown'),
-                            'timestamp': config.get('timestamp', 'unknown'),
-                            'server_name': config.get('server_name', 'unknown'),
-                            'quantity': config.get('quantity', 0),
-                            'build_status': config.get('build_status', 'pending'),
-                            'plan_status': config.get('plan_status', 'pending'),
-                            'approval_status': config.get('approval_status', 'pending'),
-                            'build_owner': config.get('build_owner', 'unknown'),
-                            'build_username': config.get('build_username', 'unknown'),
-                            'environment': config.get('environment', 'development'),
-                            'filename': filename
-                        })
-            except Exception as e:
-                logger.error(f"Error loading config file {filename}: {str(e)}")
-                # Skip files that can't be loaded
+    """Lists all submitted VM build requests by reading from Redis."""
+    try:
+        # Import redis_client here to ensure it's available in this route
+        from redis_client import redis_client
+        # Scan for all keys matching the new request pattern
+        request_keys = redis_client.scan_iter("request:*")
+        configs = [] # Keep variable name 'configs' for template compatibility
+        for key_bytes in request_keys:
+            key = key_bytes.decode('utf-8')
+            # Fetch the JSON string for the key
+            request_data_json = redis_client.get(key)
+
+            if not request_data_json:
+                logger.warning(f"No data found for request key: {key}")
                 continue
-    
-    # Sort configs by timestamp (newest first)
-    configs.sort(key=lambda x: x['timestamp'], reverse=True)
-    
-    # Filter configs based on user role
-    user_role = session.get('role', '')
-    username = session.get('username', '')
-    
-    # If admin, show all configs
-    # If builder, only show their configs or approved configs
-    if user_role != ROLE_ADMIN:
-        configs = [c for c in configs if c['build_username'] == username]
-    
-    return render_template('configs.html', 
-                          configs=configs, 
-                          user_role=user_role)
+
+            try:
+                # Decode JSON string
+                request_data = json.loads(request_data_json.decode('utf-8'))
+
+                # Basic validation/check if essential data exists
+                if not isinstance(request_data, dict) or 'request_id' not in request_data or 'timestamp' not in request_data:
+                     logger.warning(f"Skipping invalid or incomplete request data for key: {key}")
+                     continue
+
+                # Add derived/default fields if missing for template rendering
+                # The template now expects 'vm_name' directly if available
+                request_data.setdefault('vm_name', 'N/A')
+                request_data.setdefault('build_owner', 'Unknown')
+                request_data.setdefault('build_username', 'unknown')
+                request_data.setdefault('environment', 'N/A')
+                # Add status fields if they are stored, otherwise default
+                request_data.setdefault('plan_status', 'pending')
+                request_data.setdefault('approval_status', 'pending')
+                request_data.setdefault('build_status', 'pending')
+
+                configs.append(request_data)
+
+            except (json.JSONDecodeError, TypeError) as e:
+                 logger.error(f"Error decoding JSON for key {key}: {e}")
+                 continue # Skip this entry
+
+        # Sort configs by timestamp descending (newest first)
+        configs.sort(key=lambda x: x.get('timestamp', '0'), reverse=True)
+
+        # Filter configs based on user role (Admins see all, builders see their own)
+        user_role = session.get('role', 'builder') # Default to builder if role not set
+        username = session.get('username', '')
+        if user_role != ROLE_ADMIN:
+             filtered_configs = [c for c in configs if c.get('build_username') == username]
+        else:
+             filtered_configs = configs
+
+        return render_template('configs.html',
+                               configs=filtered_configs, # Pass the potentially filtered list
+                               user_role=user_role,
+                               user_name=session.get('name', 'User')) # Pass user_name too
+    except Exception as e:
+        logger.exception(f"Error listing configurations from Redis: {str(e)}")
+        flash(f"Error loading configurations: {str(e)}", "error")
+        # Render the page with an empty list in case of error
+        return render_template('configs.html',
+                               configs=[],
+                               user_role=session.get('role', 'builder'),
+                               user_name=session.get('name', 'User'))
 
 @app.route('/plan/<request_id>_<timestamp>', methods=['POST'])
 @login_required
@@ -1744,59 +1782,175 @@ def connection_status():
             'error': str(e)
         }), 500
 
-@app.route('/build_receipt/<request_id>_<timestamp>')
+# ================== Request Detail View ==================
+@app.route('/request/<request_id>')
+@login_required
+def view_request(request_id):
+    """Displays details for a specific build request."""
+    redis_key = f"request:{request_id}"
+    request_data_json = redis_client.get(redis_key)
+
+    if not request_data_json:
+        flash(f"Request ID {request_id} not found.", "error")
+        return redirect(url_for('list_configs')) # Redirect to the list page
+
+    try:
+        # Decode JSON from Redis
+        request_data = json.loads(request_data_json.decode('utf-8'))
+    except json.JSONDecodeError:
+        logger.error(f"Failed to decode JSON for request {request_id}")
+        flash(f"Could not load data for request {request_id}.", "error")
+        return redirect(url_for('list_configs'))
+
+    # Pass the request ID and the data dictionary to the template
+    return render_template('request_detail.html', request_id=request_id, request_data=request_data)
+
+# ================== Request Plan/Apply (Placeholders) ==================
+@app.route('/request/<request_id>/plan', methods=['POST'])
+@login_required
+def plan_request(request_id):
+    """Triggers an Atlantis plan for the specific request."""
+    logger.info(f"Plan requested for request_id: {request_id}")
+    # TODO: Implement actual Atlantis API call for plan
+    # Need repo, branch/commit, directory (e.g., 'configs')
+    # For now, return dummy success
+    time.sleep(2) # Simulate network delay
+    output = f"--- Dummy Plan Output for {request_id} ---\nTerraform will perform the following actions:\n\n # vsphere_virtual_machine.vm will be created\n + resource \"vsphere_virtual_machine\" \"vm\" {{\n     + cpu = 2\n     + memory = 4096\n     # ... other attributes ...\n   }}\n\nPlan: 1 to add, 0 to change, 0 to destroy."
+    return jsonify({"success": True, "output": output})
+
+@app.route('/request/<request_id>/apply', methods=['POST'])
+@login_required
+# @role_required(ROLE_ADMIN) # Optional: Restrict apply to admins
+def apply_request(request_id):
+    """Triggers an Atlantis apply for the specific request."""
+    logger.info(f"Apply requested for request_id: {request_id}")
+    # TODO: Implement actual Atlantis API call for apply
+    # Need repo, branch/commit, directory (e.g., 'configs')
+    # For now, return dummy success
+    time.sleep(3) # Simulate network delay
+    output = f"--- Dummy Apply Output for {request_id} ---\nvsphere_virtual_machine.vm: Creating...\nvsphere_virtual_machine.vm: Creation complete after 3s [id=vm-1234]\n\nApply complete! Resources: 1 added, 0 changed, 0 destroyed."
+    return jsonify({"success": True, "output": output})
+
+
+# ================== Old Config Routes (Refactored/Updated) ==================
+# Updated /build_receipt and /delete_config to use new Redis key and Git interaction
+
+@app.route('/build_receipt/<request_id>_<timestamp>') # Keep timestamp for potential compatibility?
 @login_required
 def build_receipt(request_id, timestamp):
-    """Build receipt page"""
-    try:
-        # Load configuration
-        config_file = os.path.join(CONFIG_DIR, f"{request_id}_{timestamp}.json")
-        with open(config_file, 'r') as f:
-            config_data = json.load(f)
-        
-        return render_template(
-            'build_receipt.html',
-            config=config_data,
-            request_id=request_id,
-            timestamp=timestamp,
-            user_role=session.get('role', '')
-        )
-    except Exception as e:
-        flash(f'Error loading build receipt: {str(e)}', 'error')
-        return redirect(url_for('configs'))
+    """Displays the build receipt (details) for a completed build. (Updated)"""
+    new_redis_key = f"request:{request_id}"
+    logger.info(f"Accessing updated /build_receipt route for {request_id}")
 
-@app.route('/delete_config/<request_id>_<timestamp>', methods=['POST'])
+    request_data_json = redis_client.get(new_redis_key)
+    if request_data_json:
+         try:
+             request_data = json.loads(request_data_json.decode('utf-8'))
+             # Adapt data to fit build_receipt.html template if possible
+             # This is a placeholder - template might need rework or data needs mapping
+             adapted_data = {
+                 'request_id': request_id,
+                 'timestamp': request_data.get('timestamp', timestamp), # Use stored or passed timestamp
+                 'server_name': request_data.get('vm_name'),
+                 'build_owner': request_data.get('build_owner'),
+                 'build_username': request_data.get('build_username'),
+                 'form_data': request_data, # Pass the whole dict as form_data
+                 # Add other fields expected by build_receipt.html like status if available
+                 'plan_status': request_data.get('plan_status', 'unknown'), # Example
+                 'approval_status': request_data.get('approval_status', 'unknown'), # Example
+                 'build_status': request_data.get('build_status', 'unknown'), # Example
+                 'plan_output': request_data.get('plan_output', ''), # Example
+                 'apply_output': request_data.get('apply_output', ''), # Example
+             }
+             # Ensure the template 'build_receipt.html' exists and can handle this 'config' dict
+             return render_template('build_receipt.html', config=adapted_data)
+         except json.JSONDecodeError:
+             logger.error(f"Failed to decode JSON for request {request_id} in build_receipt")
+             flash(f"Could not load data for request {request_id}.", "error")
+             return redirect(url_for('list_configs'))
+         except Exception as e:
+              logger.exception(f"Error rendering build_receipt for {request_id}: {e}")
+              flash(f"Error displaying receipt for {request_id}: {e}", "error")
+              return redirect(url_for('list_configs'))
+
+    flash(f"Build receipt data for request {request_id} not found.", "error")
+    return redirect(url_for('list_configs'))
+
+
+@app.route('/delete_config/<request_id>_<timestamp>', methods=['POST']) # Keep timestamp for URL compatibility?
 @login_required
 def delete_config(request_id, timestamp):
-    """Delete a VM configuration and its associated Terraform files"""
+    """Deletes a request record from Redis and removes the tfvars file from Git. (Updated)"""
+    new_redis_key = f"request:{request_id}"
+    logger.info(f"Accessing updated /delete_config route for {request_id}")
+
+    # Fetch data using the new key
+    request_data_json = redis_client.get(new_redis_key)
+    if not request_data_json:
+        flash(f"Request {request_id} not found.", "error")
+        return redirect(url_for('list_configs'))
+
     try:
-        # Load configuration file
-        config_file = os.path.join(CONFIG_DIR, f"{request_id}_{timestamp}.json")
-        
-        # Check if config file exists
-        if not os.path.exists(config_file):
-            flash('Configuration not found', 'error')
-            return redirect(url_for('list_configs'))
-        
-        # Check if user has permission (must be admin or the creator)
-        with open(config_file, 'r') as f:
-            config_data = json.load(f)
-            
-        if session.get('role') != ROLE_ADMIN and session.get('username') != config_data.get('build_username'):
-            flash('You do not have permission to delete this configuration', 'error')
-            return redirect(url_for('list_configs'))
-        
-        # Delete the configuration file
-        os.remove(config_file)
-        
-        # Delete associated Terraform directory if it exists
-        tf_directory = os.path.join(TERRAFORM_DIR, f"{request_id}_{timestamp}")
-        if os.path.exists(tf_directory):
-            shutil.rmtree(tf_directory)
-        
-        flash('Configuration deleted successfully', 'success')
+        request_data = json.loads(request_data_json.decode('utf-8'))
+    except json.JSONDecodeError:
+        flash(f"Could not load data for request {request_id}.", "error")
         return redirect(url_for('list_configs'))
-    except Exception as e:
-        logger.exception(f"Error deleting configuration: {str(e)}")
-        flash(f'Error deleting configuration: {str(e)}', 'error')
+
+    # Check user permissions (Admin or owner)
+    build_username = request_data.get('build_username')
+    if session.get('role') != ROLE_ADMIN and session.get('username') != build_username:
+        flash("You do not have permission to delete this request.", "error")
         return redirect(url_for('list_configs'))
+
+    # --- Git Deletion ---
+    tfvars_filename = f"{request_id}.tfvars.json"
+    tfvars_filepath = os.path.join(CONFIG_DIR, tfvars_filename)
+    git_delete_successful = False
+    git_error_message = ""
+
+    if os.path.exists(tfvars_filepath):
+        try:
+            repo_path = os.getcwd()
+            # Stage the deletion
+            subprocess.run(["git", "rm", tfvars_filepath], check=True, cwd=repo_path, capture_output=True)
+            logger.info(f"Git: Staged deletion of {tfvars_filepath}")
+            # Commit the deletion
+            commit_message = f"Delete config for build request {request_id}"
+            subprocess.run(["git", "commit", "-m", commit_message], check=True, cwd=repo_path, capture_output=True)
+            logger.info(f"Git: Committed deletion: {commit_message}")
+            # Push the deletion
+            branch_result = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], check=True, cwd=repo_path, capture_output=True, text=True)
+            current_branch = branch_result.stdout.strip()
+            push_result = subprocess.run(["git", "push", "origin", current_branch], check=True, cwd=repo_path, capture_output=True, text=True)
+            logger.info(f"Git: Pushed deletion to origin/{current_branch}.")
+            git_delete_successful = True
+        except subprocess.CalledProcessError as e:
+            git_error_message = e.stderr.decode() if e.stderr else e.stdout.decode()
+            logger.error(f"Git command failed during deletion of {tfvars_filepath}: {git_error_message}")
+            # Attempt to restore the file if git rm failed mid-way? Maybe git reset --hard? Risky.
+            # For now, just log the error and proceed to Redis deletion.
+        except Exception as e:
+             git_error_message = str(e)
+             logger.error(f"Error removing file {tfvars_filepath} from Git: {e}")
+    else:
+        logger.warning(f"tfvars file not found for Git deletion: {tfvars_filepath}")
+        # If the file doesn't exist in the filesystem, assume it's already gone or never existed.
+        # Consider this 'successful' in terms of the file not being present.
+        git_delete_successful = True
+
+    # --- Redis Deletion ---
+    # Only delete from Redis if Git deletion was successful or file wasn't found
+    if git_delete_successful:
+        deleted_count = redis_client.delete(new_redis_key)
+        if deleted_count > 0:
+            logger.info(f"Deleted request metadata from Redis: {new_redis_key}")
+            flash(f"Request {request_id} deleted successfully.", "success")
+        else:
+            # This case is unlikely if we fetched data earlier, but handle it.
+            logger.warning(f"Attempted to delete non-existent request from Redis: {new_redis_key}")
+            flash(f"Request {request_id} config file removed from Git, but Redis entry was already gone.", "warning")
+    else:
+        # Git deletion failed
+        flash(f"Failed to remove config file from Git: {git_error_message}. Request data NOT deleted from Redis.", "error")
+
+    return redirect(url_for('list_configs'))

@@ -351,54 +351,62 @@ function initializeFormDebugging() {
         console.log('DEBUG: Form submission debugging initialized');
 
         createVmForm.addEventListener('submit', function(e) {
-            // Prevent form submission to check data
-            e.preventDefault();
+            try {
+                // Prevent form submission to check data
+                e.preventDefault();
 
-            console.log('DEBUG: Form submission attempted');
+                console.log('DEBUG: Form submission attempted');
 
-            // Check if all required fields are filled
-            const requiredFields = [
-                'server_prefix', 'app_name', 'datacenter',
-                'cluster', 'resource_pool', 'datastore', 'network'
-            ];
+                // Check if all required fields are filled
+                const requiredFields = [
+                    'server_prefix', 'app_name', 'datacenter',
+                    'cluster', 'resource_pool', 'datastore', 'network'
+                ];
 
-            let missingFields = [];
-            requiredFields.forEach(field => {
-                const element = document.getElementById(field);
-                if (!element || !element.value) {
-                    missingFields.push(field);
-                    console.error(`DEBUG: Required field missing: ${field}`);
+                let missingFields = [];
+                requiredFields.forEach(field => {
+                    const element = document.getElementById(field);
+                    if (!element || !element.value) {
+                        missingFields.push(field);
+                        console.error(`DEBUG: Required field missing: ${field}`);
+                    }
+                });
+
+                if (missingFields.length > 0) {
+                    alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+                    return;
                 }
-            });
 
-            if (missingFields.length > 0) {
-                alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
-                return;
+                // Check VSphere resources
+                const resourceData = {
+                    datacenter: document.getElementById('datacenter').value,
+                    cluster: document.getElementById('cluster').value,
+                    resource_pool: document.getElementById('resource_pool').value,
+                    datastore: document.getElementById('datastore').value,
+                    network: document.getElementById('network').value,
+                    template: document.getElementById('template').value || 'No template selected'
+                };
+
+                console.log('DEBUG: Resource data:', resourceData);
+
+                // Log all form data
+                const formData = new FormData(this);
+                const formValues = {};
+                for (let [key, value] of formData.entries()) {
+                    formValues[key] = value;
+                }
+                console.log('DEBUG: All form values:', formValues);
+
+                // Continue with form submission
+                console.log('DEBUG: Form submission proceeding');
+                this.submit();
+                console.log('DEBUG: Form submitted');
+            } catch (error) {
+                console.error('ERROR during form submission:', error);
+                alert('An error occurred during form submission. Please check the console for details.');
+                // Submit the form directly as a fallback
+                createVmForm.submit();
             }
-
-            // Check VSphere resources
-            const resourceData = {
-                datacenter: document.getElementById('datacenter').value,
-                cluster: document.getElementById('cluster').value,
-                resource_pool: document.getElementById('resource_pool').value,
-                datastore: document.getElementById('datastore').value,
-                network: document.getElementById('network').value,
-                template: document.getElementById('template').value || 'No template selected'
-            };
-
-            console.log('DEBUG: Resource data:', resourceData);
-
-            // Log all form data
-            const formData = new FormData(this);
-            const formValues = {};
-            for (let [key, value] of formData.entries()) {
-                formValues[key] = value;
-            }
-            console.log('DEBUG: All form values:', formValues);
-
-            // Continue with form submission
-            console.log('DEBUG: Form submission proceeding');
-            this.submit();
         });
     }
 }

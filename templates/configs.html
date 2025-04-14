@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+00000000000000000000000000000000000000.....<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -53,23 +53,20 @@
                             {% for config in configs %}
                                 <tr>
                                     <td>{{ config.timestamp }}</td>
-                                    <td>{{ config.server_name }}</td>
+                                    <td>{{ config.vm_name }}</td> <!-- Assuming vm_name is in the data -->
                                     <td>{{ config.environment }}</td>
                                     <td>{{ config.build_owner }}</td>
-                                    <td><span class="status-badge {{ config.plan_status }}">{{ config.plan_status|capitalize }}</span></td>
-                                    <td><span class="status-badge {{ config.approval_status }}">{{ config.approval_status|capitalize }}</span></td>
-                                    <td><span class="status-badge {{ config.build_status }}">{{ config.build_status|capitalize }}</span></td>
+                                    <td><span class="build-status {{ config.plan_status }}">{{ config.plan_status|capitalize }}</span></td>
+                                    <td><span class="build-status {{ config.approval_status }}">{{ config.approval_status|capitalize }}</span></td>
+                                    <td><span class="build-status {{ config.build_status }}">{{ config.build_status|capitalize }}</span></td>
                                     <td class="actions-cell">
-                                        <a href="{{ url_for('show_config', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">View</a>
-                                        {% if config.plan_status == 'completed' %}
-                                        <a href="{{ url_for('show_plan', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Plan</a>
-                                        {% endif %}
-                                        {% if config.build_status == 'submitted' or config.build_status == 'completed' %}
-                                        <a href="{{ url_for('build_receipt', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">Receipt</a>
-                                        {% endif %}
-                                        
+                                        <!-- Link to the request detail page -->
+                                        <a href="{{ url_for('show_config', request_id=config.request_id, timestamp=config.timestamp) }}" class="btn-small">View / Manage</a>
+
+                                        <!-- Keep delete form, but update action URL if needed (using request_id only) -->
                                         {% if user_role == 'admin' or config.build_username == session.username %}
-                                        <form method="POST" action="{{ url_for('delete_config', request_id=config.request_id, timestamp=config.timestamp) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this configuration?');">
+                                        <!-- The delete route might need adjustment later -->
+                                        <form method="POST" action="{{ url_for('delete_config', request_id=config.request_id, timestamp=config.timestamp) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this request and its config file?');">
                                             <button type="submit" class="btn-small delete">Delete</button>
                                         </form>
                                         {% endif %}
