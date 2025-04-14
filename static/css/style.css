@@ -10,7 +10,8 @@
   --success-color: #2dc653;      /* Brighter green */
   --error-color: #e74c3c;        /* Brighter red */
   --warning-color: #f1c40f;      /* Brighter yellow */
-  --input-bg: #2d2d2d;           /* Dark input background */
+  --input-bg: #ffffff;           /* White input background */
+  --input-text: #333333;         /* Dark text for inputs */
   --input-border: #505050;       /* Slightly lighter input borders */
   --header-bg: #1a1a1a;          /* Dark header background */
   --hover-color: #383838;        /* Slightly lighter hover color */
@@ -29,9 +30,41 @@ body.light-mode {
   --error-color: #dc3545;
   --warning-color: #ffc107;
   --input-bg: #f8f9fa;
+  --input-text: #212529;         /* Input text color for light mode */
   --input-border: #ced4da;
   --header-bg: #e9ecef;
   --hover-color: #e2e6ea;
+}
+
+/* Dark theme overrides for Bootstrap elements */
+body.dark-theme .form-control,
+body.dark-theme .form-select {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+}
+
+body.dark-theme .table {
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+body.dark-theme .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-theme .dropdown-menu {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+body.dark-theme .dropdown-item {
+  color: var(--text-color);
+}
+
+body.dark-theme .dropdown-item:hover,
+body.dark-theme .dropdown-item:focus {
+  background-color: var(--hover-color);
 }
 
 /* Theme toggle button */
@@ -165,6 +198,7 @@ label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
+  color: var(--text-color);
 }
 
 input[type="text"],
@@ -177,7 +211,7 @@ textarea {
   border: 1px solid var(--input-border);
   border-radius: 4px;
   background-color: var(--input-bg);
-  color: var(--text-color);
+  color: var(--input-text);
   font-size: 1rem;
 }
 
@@ -214,6 +248,7 @@ small {
   border-radius: 4px;
   margin-top: 10px;
   font-family: monospace;
+  color: var(--input-text);
 }
 
 .btn {
@@ -234,6 +269,7 @@ small {
 .btn-primary {
   background-color: var(--primary-color);
   border-color: var(--secondary-color);
+  color: white;
 }
 
 .btn-primary:hover {
@@ -243,6 +279,7 @@ small {
 .btn-success {
   background-color: var(--success-color);
   border-color: var(--success-color);
+  color: white;
 }
 
 .btn-success:hover {
@@ -252,6 +289,7 @@ small {
 .btn-danger {
   background-color: var(--error-color);
   border-color: var(--error-color);
+  color: white;
 }
 
 .btn-danger:hover {
@@ -283,6 +321,7 @@ small {
   padding: 15px;
   margin-bottom: 20px;
   border-radius: 4px;
+  color: var(--text-color);
 }
 
 .alert-success {
@@ -305,7 +344,7 @@ small {
   gap: 10px;
   align-items: center;
   margin-bottom: 10px;
-  background-color: var(--input-bg);
+  background-color: var(--card-bg);
   padding: 10px;
   border-radius: 4px;
 }
@@ -324,7 +363,7 @@ small {
 }
 
 .code-block {
-  background-color: var(--input-bg);
+  background-color: var(--card-bg);
   padding: 15px;
   border-radius: 4px;
   overflow-x: auto;
@@ -334,6 +373,7 @@ small {
 pre {
   font-family: 'Courier New', Courier, monospace;
   white-space: pre-wrap;
+  color: var(--text-color);
 }
 
 .config-summary {
@@ -345,7 +385,7 @@ pre {
 
 .config-item {
   padding: 10px;
-  background-color: var(--input-bg);
+  background-color: var(--card-bg);
   border-radius: 4px;
 }
 
@@ -449,7 +489,7 @@ footer {
 }
 
 .plan-output {
-  background-color: var(--input-bg);
+  background-color: var(--card-bg);
   padding: 15px;
   border-radius: 4px;
   overflow-x: auto;
@@ -480,7 +520,7 @@ footer {
 
 .approval-form, .rejection-form {
   flex: 1;
-  background-color: var(--input-bg);
+  background-color: var(--card-bg);
   padding: 15px;
   border-radius: 4px;
 }
@@ -490,6 +530,7 @@ footer {
   border-left: 4px solid var(--success-color);
   padding: 15px;
   margin: 20px 0;
+  color: var(--text-color);
 }
 
 .error-box {
@@ -497,6 +538,7 @@ footer {
   border-left: 4px solid var(--error-color);
   padding: 15px;
   margin: 20px 0;
+  color: var(--text-color);
 }
 
 /* Login styles */
@@ -528,7 +570,7 @@ footer {
   justify-content: space-between;
   align-items: center;
   padding: 12px 15px;
-  background-color: var(--input-bg);
+  background-color: var(--card-bg);
   cursor: pointer;
 }
 
@@ -564,7 +606,7 @@ footer {
 
 /* Loader animation */
 .loader {
-  border: 4px solid var(--input-bg);
+  border: 4px solid var(--card-bg);
   border-radius: 50%;
   border-top: 4px solid var(--primary-color);
   width: 30px;
@@ -617,6 +659,42 @@ footer {
 
 .text-muted {
   color: var(--text-muted);
+}
+
+/* Bootstrap overrides for dark mode */
+.dark-theme .form-control {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+}
+
+.dark-theme .modal-content {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+}
+
+.dark-theme .close {
+  color: var(--text-color);
+}
+
+.dark-theme .modal-header,
+.dark-theme .modal-footer {
+  border-color: var(--border-color);
+}
+
+/* Google Chrome specific optimizations */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  select {
+    padding-right: 35px;
+  }
+  
+  input[type="text"],
+  input[type="number"],
+  input[type="password"],
+  select,
+  textarea {
+    -webkit-appearance: none;
+  }
 }
 
 @media (max-width: 768px) {

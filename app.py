@@ -555,6 +555,12 @@ def index():
 @app.route('/submit', methods=['POST'])
 @login_required
 def submit():
+    """
+    Submit a new VM configuration request and save it to the configs directory.
+    Ensures the config directory exists and is writable.
+    """
+    # Create configs directory if it doesn't exist
+    os.makedirs(CONFIG_DIR, exist_ok=True)
     try:
         # Log all form data for debugging
         logger.info("Form submission received with data: %s", request.form)
@@ -830,21 +836,28 @@ def list_configs():
     configs = []
     for filename in os.listdir(CONFIG_DIR):
         if filename.endswith('.json'):
-            with open(os.path.join(CONFIG_DIR, filename), 'r') as f:
-                config = json.load(f)
-                configs.append({
-                    'request_id': config.get('request_id', 'unknown'),
-                    'timestamp': config.get('timestamp', 'unknown'),
-                    'server_name': config.get('server_name', 'unknown'),
-                    'quantity': config.get('quantity', 0),
-                    'build_status': config.get('build_status', 'pending'),
-                    'plan_status': config.get('plan_status', 'pending'),
-                    'approval_status': config.get('approval_status', 'pending'),
-                    'build_owner': config.get('build_owner', 'unknown'),
-                    'build_username': config.get('build_username', 'unknown'),
-                    'environment': config.get('environment', 'development'),
-                    'filename': filename
-                })
+            try:
+                with open(os.path.join(CONFIG_DIR, filename), 'r') as f:
+                    config = json.load(f)
+                    # Check if this is a VM configuration file (has required fields)
+                    if 'request_id' in config or 'server_name' in config:
+                        configs.append({
+                            'request_id': config.get('request_id', 'unknown'),
+                            'timestamp': config.get('timestamp', 'unknown'),
+                            'server_name': config.get('server_name', 'unknown'),
+                            'quantity': config.get('quantity', 0),
+                            'build_status': config.get('build_status', 'pending'),
+                            'plan_status': config.get('plan_status', 'pending'),
+                            'approval_status': config.get('approval_status', 'pending'),
+                            'build_owner': config.get('build_owner', 'unknown'),
+                            'build_username': config.get('build_username', 'unknown'),
+                            'environment': config.get('environment', 'development'),
+                            'filename': filename
+                        })
+            except Exception as e:
+                logger.error(f"Error loading config file {filename}: {str(e)}")
+                # Skip files that can't be loaded
+                continue
     
     # Sort configs by timestamp (newest first)
     configs.sort(key=lambda x: x['timestamp'], reverse=True)

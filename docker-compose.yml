@@ -5,7 +5,7 @@ services:
       - "5150:5150"  # Map port 5150 for the Flask app
     volumes:
       - .:/app
-      - ./configs:/app/configs
+      - ./configs:/app/configs:rw
       - ./terraform:/app/terraform
       - ./users.json:/app/users.json
       - ./vm-workspace:/app/vm-workspace
