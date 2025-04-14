@@ -74,3 +74,18 @@ variable "time_zone" {
   type        = string
   default     = "UTC"
 }
+
+variable "additional_disks" {
+  description = "List of additional disks to attach"
+  type = list(object({
+    size = number
+    type = string
+  }))
+  default = []
+}
+
+variable "hostname" {
+  description = "Hostname for the VM"
+  type        = string
+  default     = ""
+}
