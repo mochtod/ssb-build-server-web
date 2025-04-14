@@ -40,8 +40,8 @@
                         <span>{{ config.server_name }}</span>
                     </div>
                     <div class="config-item">
-                        <strong>Quantity:</strong>
-                        <span>{{ config.quantity }}</span>
+                        <strong>Server Count:</strong>
+                        <span>{{ config.server_count }}</span>
                     </div>
                     <div class="config-item">
                         <strong>Starting Number:</strong>
@@ -96,7 +96,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for i in range(config.quantity) %}
+                            {% for i in range(config.server_count) %}
                                 <tr>
                                     <td>{{ config.server_name }}-{{ '%05d' | format(config.start_number + i) }}</td>
                                 </tr>

@@ -64,3 +64,19 @@ To use this terraform configuration:
 - IP address allocation from NetBox
 - Support for additional disks and custom hostnames
 - Better integration with Atlantis workflow
+
+## Web Control Updates
+
+The web UI has been updated to consistently use `server_count` instead of `quantity` for VM counts. This ensures consistent naming across:
+
+1. Form input (`quantity` in the HTML form)
+2. App configuration (stored as `quantity` in configuration JSON)  
+3. Template display (shown as "Server Count" in the UI)
+4. Terraform variables (using `server_count` in the Terraform files)
+
+When a user submits the form, the app handles the mapping:
+```
+Form (quantity) → Config JSON (quantity) → Terraform (server_count)
+```
+
+This mapping happens in the `generate_terraform_config` function that uses the proper variable names required by Terraform.
