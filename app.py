@@ -250,11 +250,11 @@ def get_vsphere_inventory_data(si):
         logger.info(f"Received {len(raw_datastores) if raw_datastores is not None else 'None'} raw datastore objects.") # MODIFIED LOG
         datastore_names = []
         if raw_datastores: # Check if the list is not None and potentially check if iterable
-            logger.info("Starting processing of raw datastore objects...") # MOVED LOG
-            # Optional: Check if it's actually a list or iterable
+            logger.info("Starting processing of raw datastore objects...") # MOVED LOG            # Optional: Check if it's actually a list or iterable
             if not isinstance(raw_datastores, (list, tuple)):
                  logger.error(f"Received non-iterable object for datastores: {type(raw_datastores)}")
-            else:                try: # Add try block around the entire loop
+            else:
+                try: # Add try block around the entire loop
                     for i, ds in enumerate(raw_datastores): # Added enumerate
                         logger.debug(f"Processing datastore object #{i}: {ds}") # ADDED DEBUG LOG
                         try:
