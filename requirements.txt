@@ -5,3 +5,7 @@ gunicorn==21.2.0
 GitPython==3.1.37
 requests==2.31.0
 bcrypt==4.0.1
+redis==5.0.4 # Add redis client library
+pyvmomi==8.0.2.0.1 # Add vSphere client library
+pynetbox==7.3.3 # Add Netbox client library
+Flask-APScheduler==1.13.1 # Add scheduler library

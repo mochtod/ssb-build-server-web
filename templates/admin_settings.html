@@ -22,29 +22,6 @@
         <div class="card-body">
             <form method="POST" action="{{ url_for('admin_save_settings') }}">
                 <div class="accordion" id="settingsAccordion">
-                    <!-- Flask Application Section -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="flaskHeading">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#flaskSettings" aria-expanded="true" aria-controls="flaskSettings">
-                                Flask Application
-                            </button>
-                        </h2>
-                        <div id="flaskSettings" class="accordion-collapse collapse show" aria-labelledby="flaskHeading">
-                            <div class="accordion-body">
-                                <div class="mb-3">
-                                    <label for="FLASK_SECRET_KEY" class="form-label">Flask Secret Key</label>
-                                    <input type="text" class="form-control" id="FLASK_SECRET_KEY" name="FLASK_SECRET_KEY" value="{{ env_vars.get('FLASK_SECRET_KEY', '') }}">
-                                    <div class="form-text">Secret key for Flask sessions</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="TIMEOUT" class="form-label">Timeout (seconds)</label>
-                                    <input type="number" class="form-control" id="TIMEOUT" name="TIMEOUT" value="{{ env_vars.get('TIMEOUT', '120') }}">
-                                    <div class="form-text">API request timeout in seconds</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <!-- Atlantis Integration Section -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="atlantisHeading">
@@ -92,48 +69,10 @@
                                     <input type="text" class="form-control" id="VSPHERE_SERVER" name="VSPHERE_SERVER" value="{{ env_vars.get('VSPHERE_SERVER', '') }}">
                                     <div class="form-text">vSphere server address</div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- VM Location Section -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="vmLocationHeading">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#vmLocationSettings" aria-expanded="false" aria-controls="vmLocationSettings">
-                                VM Location Details
-                            </button>
-                        </h2>
-                        <div id="vmLocationSettings" class="accordion-collapse collapse" aria-labelledby="vmLocationHeading">
-                            <div class="accordion-body">
-                                <div class="mb-3">
-                                    <label for="RESOURCE_POOL_ID" class="form-label">Production Resource Pool ID</label>
-                                    <input type="text" class="form-control" id="RESOURCE_POOL_ID" name="RESOURCE_POOL_ID" value="{{ env_vars.get('RESOURCE_POOL_ID', '') }}">
-                                    <div class="form-text">Resource pool ID for production environments</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="DEV_RESOURCE_POOL_ID" class="form-label">Development Resource Pool ID</label>
-                                    <input type="text" class="form-control" id="DEV_RESOURCE_POOL_ID" name="DEV_RESOURCE_POOL_ID" value="{{ env_vars.get('DEV_RESOURCE_POOL_ID', '') }}">
-                                    <div class="form-text">Resource pool ID for development environments</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="DATASTORE_ID" class="form-label">Datastore ID</label>
-                                    <input type="text" class="form-control" id="DATASTORE_ID" name="DATASTORE_ID" value="{{ env_vars.get('DATASTORE_ID', '') }}">
-                                    <div class="form-text">Datastore ID for VM storage</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="NETWORK_ID_PROD" class="form-label">Production Network ID</label>
-                                    <input type="text" class="form-control" id="NETWORK_ID_PROD" name="NETWORK_ID_PROD" value="{{ env_vars.get('NETWORK_ID_PROD', '') }}">
-                                    <div class="form-text">Network ID for production VMs</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="NETWORK_ID_DEV" class="form-label">Development Network ID</label>
-                                    <input type="text" class="form-control" id="NETWORK_ID_DEV" name="NETWORK_ID_DEV" value="{{ env_vars.get('NETWORK_ID_DEV', '') }}">
-                                    <div class="form-text">Network ID for development VMs</div>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="TEMPLATE_UUID" class="form-label">VM Template UUID</label>
-                                    <input type="text" class="form-control" id="TEMPLATE_UUID" name="TEMPLATE_UUID" value="{{ env_vars.get('TEMPLATE_UUID', '') }}">
-                                    <div class="form-text">UUID of the VM template to clone</div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="VSPHERE_ALLOW_UNVERIFIED_SSL" name="VSPHERE_ALLOW_UNVERIFIED_SSL" value="true" {% if env_vars.get('VSPHERE_ALLOW_UNVERIFIED_SSL') == 'true' %}checked{% endif %}>
+                                    <label class="form-check-label" for="VSPHERE_ALLOW_UNVERIFIED_SSL">Allow Unverified SSL</label>
+                                    <div class="form-text">Allow connections to vSphere server with unverified SSL certificates (use with caution)</div>
                                 </div>
                             </div>
                         </div>
@@ -156,7 +95,12 @@
                                 <div class="mb-3">
                                     <label for="NETBOX_URL" class="form-label">NetBox URL</label>
                                     <input type="text" class="form-control" id="NETBOX_URL" name="NETBOX_URL" value="{{ env_vars.get('NETBOX_URL', '') }}">
-                                    <div class="form-text">URL for the NetBox API</div>
+                                    <div class="form-text">URL for the NetBox API (include https://)</div>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="NETBOX_ALLOW_UNVERIFIED_SSL" name="NETBOX_ALLOW_UNVERIFIED_SSL" value="true" {% if env_vars.get('NETBOX_ALLOW_UNVERIFIED_SSL') == 'true' %}checked{% endif %}>
+                                    <label class="form-check-label" for="NETBOX_ALLOW_UNVERIFIED_SSL">Allow Unverified SSL</label>
+                                    <div class="form-text">Allow connections to Netbox with unverified SSL certificates (use with caution)</div>
                                 </div>
                             </div>
                         </div>

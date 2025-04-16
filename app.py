@@ -14,6 +14,12 @@ from functools import wraps
 from git import Repo
 from git.exc import GitCommandError
 import logging
+import redis # Import redis library
+import ssl # For handling SSL verification
+from pyVim import connect
+from pyVmomi import vim, vmodl # Import pyvmomi modules
+import pynetbox # Import pynetbox library
+from flask_apscheduler import APScheduler # Import APScheduler
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
@@ -27,6 +33,8 @@ GIT_USERNAME = os.environ.get('GIT_USERNAME', '')
 GIT_TOKEN = os.environ.get('GIT_TOKEN', '')
 ATLANTIS_URL = os.environ.get('ATLANTIS_URL', 'https://atlantis.chrobinson.com')
 ATLANTIS_TOKEN = os.environ.get('ATLANTIS_TOKEN', '')
+REDIS_HOST = os.environ.get('REDIS_HOST', 'redis') # Get Redis host from env or default to service name
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379)) # Get Redis port from env or default
 
 # Ensure directories exist
 os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -61,8 +69,336 @@ ROLE_ADMIN = 'admin'
 ROLE_BUILDER = 'builder'
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO) # Change this line
+logging.basicConfig(level=logging.DEBUG) # To this line
 logger = logging.getLogger(__name__)
+
+# Initialize Redis client
+try:
+    redis_client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0, decode_responses=True)
+    redis_client.ping() # Test connection
+    logger.info(f"Successfully connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
+except redis.exceptions.ConnectionError as e:
+    logger.error(f"Failed to connect to Redis at {REDIS_HOST}:{REDIS_PORT}: {e}")
+    redis_client = None # Set client to None if connection fails
+
+# Scheduler configuration
+scheduler = APScheduler()
+
+# Cache helper functions
+def get_cache(key):
+    """Get data from Redis cache."""
+    if redis_client:
+        try:
+            cached_data = redis_client.get(key)
+            if cached_data:
+                return json.loads(cached_data) # Assuming stored data is JSON
+        except redis.exceptions.RedisError as e:
+            logger.error(f"Redis GET error for key '{key}': {e}")
+    return None
+
+def set_cache(key, value, ttl=3600):
+    """Set data in Redis cache with a TTL (default 1 hour)."""
+    if redis_client:
+        try:
+            # Serialize value to JSON before storing
+            redis_client.setex(key, ttl, json.dumps(value))
+        except redis.exceptions.RedisError as e:
+            logger.error(f"Redis SETEX error for key '{key}': {e}")
+
+# --- vSphere Interaction ---
+
+def connect_to_vsphere():
+    """Connects to vSphere using environment variables."""
+    host = os.environ.get('VSPHERE_SERVER')
+    user = os.environ.get('VSPHERE_USER')
+    password = os.environ.get('VSPHERE_PASSWORD')
+    allow_unverified = os.environ.get('VSPHERE_ALLOW_UNVERIFIED_SSL', 'false').lower() == 'true'
+
+    if not all([host, user, password]):
+        logger.error("vSphere connection details missing in environment variables.")
+        return None
+
+    service_instance = None
+    try:
+        context = None
+        if allow_unverified:
+            logger.warning("Attempting to disable SSL verification for vSphere connection.") # ADDED LOG
+            # Disable SSL certificate verification if allowed
+            if hasattr(ssl, '_create_unverified_context'):
+                context = ssl._create_unverified_context()
+            else:
+                # For older Python versions
+                logger.warning("Cannot disable SSL verification on this Python version.")
+
+        connect_args = {
+            'host': host,
+            'user': user,
+            'pwd': password,
+            'port': 443
+        }
+        if allow_unverified:
+            # Try both methods for disabling SSL verification
+            connect_args['disableSslCertValidation'] = True
+            connect_args['sslContext'] = context
+        
+        service_instance = connect.SmartConnect(**connect_args)
+        logger.info(f"Successfully connected to vSphere server: {host}")
+        return service_instance
+    except vim.fault.InvalidLogin as e:
+        logger.error(f"vSphere login failed for user {user}: {e.msg}")
+    except Exception as e:
+        logger.error(f"Failed to connect to vSphere server {host}: {e}")
+
+    # Disconnect if connection partially succeeded but failed later
+    if service_instance:
+        connect.Disconnect(service_instance)
+    return None
+
+def get_vsphere_objects(si, vimtype):
+    """Gets managed objects of a specific type."""
+    logger.debug(f"Entering get_vsphere_objects for type: {vimtype}") # ADDED LOG
+    if not si:
+        logger.warning("get_vsphere_objects called with no service instance (si).") # ADDED LOG
+        return []
+    try:
+        logger.debug("Attempting si.RetrieveContent()...") # ADDED LOG
+        content = si.RetrieveContent()
+        logger.debug("si.RetrieveContent() successful.") # ADDED LOG
+        container = content.viewManager.CreateContainerView(content.rootFolder, vimtype, True)
+        objects = container.view
+        container.Destroy()
+        return objects
+    except Exception as e:
+        logger.error(f"Error retrieving vSphere objects of type {vimtype}: {e}")
+        return []
+
+def get_vsphere_inventory_data(si):
+    """Fetches Datacenters, Resource Pools, Datastores, and VM Templates."""
+    if not si:
+        return None
+
+    inventory = {
+        'datacenters': [],
+        'resource_pools': [],
+        'datastores': [],
+        'templates': []
+    }
+
+    try:
+        # Get Datacenters
+        datacenters = get_vsphere_objects(si, [vim.Datacenter])
+        inventory['datacenters'] = sorted([dc.name for dc in datacenters])
+        logger.info(f"Successfully fetched {len(inventory['datacenters'])} datacenters.") # ADDED LOG
+
+        # Get Clusters (these represent the resource pools we care about) with enhanced logging/error handling
+        logger.info("Attempting to fetch raw cluster objects...") # ADDED LOG
+        raw_clusters = get_vsphere_objects(si, [vim.ClusterComputeResource])
+        logger.info(f"Received {len(raw_clusters) if raw_clusters is not None else 'None'} raw cluster objects.") # MODIFIED LOG
+        cluster_names_list = []
+        if raw_clusters:
+            logger.info("Starting processing of raw cluster objects...")
+            for i, c in enumerate(raw_clusters): # Added enumerate for index logging
+                logger.debug(f"Processing cluster object #{i}: {c}") # ADDED DEBUG LOG (use debug level)
+                try:
+                    if hasattr(c, 'name') and c.name:
+                        cluster_names_list.append(c.name)
+                        logger.debug(f"Successfully processed name for cluster #{i}: {c.name}") # ADDED DEBUG LOG
+                    else:
+                        logger.warning(f"Cluster object #{i} found without a valid name: {c}")
+                except Exception as c_err:
+                    logger.error(f"Error accessing name for cluster object #{i} ({c}): {c_err}", exc_info=True)
+            logger.info("Finished processing raw cluster objects.") # ADDED LOG
+        else:
+            logger.info("No raw cluster objects received.") # ADDED LOG
+
+        # Use a set to ensure uniqueness before sorting
+        inventory['resource_pools'] = sorted(list(set(cluster_names_list)))
+        logger.info(f"Successfully processed {len(inventory['resource_pools'])} resource pool/cluster names.")
+
+        # Get Datastores with enhanced logging/error handling
+        logger.info("Attempting to fetch raw datastore objects...") # ADDED LOG
+        raw_datastores = get_vsphere_objects(si, [vim.Datastore])
+        logger.info(f"Received {len(raw_datastores) if raw_datastores is not None else 'None'} raw datastore objects.") # MODIFIED LOG
+        datastore_names = []
+        if raw_datastores: # Check if the list is not None and potentially check if iterable
+            logger.info("Starting processing of raw datastore objects...") # MOVED LOG
+            # Optional: Check if it's actually a list or iterable
+            if not isinstance(raw_datastores, (list, tuple)):
+                 logger.error(f"Received non-iterable object for datastores: {type(raw_datastores)}")
+            else:
+                try: # Add try block around the entire loop
+                    for i, ds in enumerate(raw_datastores): # Added enumerate
+                        logger.debug(f"Processing datastore object #{i}: {ds}") # ADDED DEBUG LOG
+                        try:
+                            # Attempt to access the name attribute safely
+                            if hasattr(ds, 'name') and ds.name:
+                                datastore_names.append(ds.name)
+                                logger.debug(f"Successfully processed name for datastore #{i}: {ds.name}") # ADDED DEBUG LOG
+                            else:
+                                logger.warning(f"Datastore object #{i} found without a valid name: {ds}")
+                            # Add specific log after processing object #12 name attempt
+                            if i == 12:
+                                logger.debug("Finished name access attempt for datastore object #12.")
+                        except Exception as ds_err:
+                            # Log error accessing name for a specific datastore
+                            logger.error(f"Error accessing name for datastore object #{i} ({ds}): {ds_err}", exc_info=True)
+                    logger.info("Finished processing raw datastore objects.") # ADDED LOG
+                except Exception as loop_err: # Catch errors during the loop itself
+                    logger.error(f"Error during datastore processing loop: {loop_err}", exc_info=True)
+        else:
+             logger.info("No raw datastore objects received or fetch failed.") # MODIFIED LOG
+        inventory['datastores'] = sorted(datastore_names)
+        logger.info(f"Successfully processed {len(inventory['datastores'])} datastore names.")
+
+        # Get VM Templates
+        vms = get_vsphere_objects(si, [vim.VirtualMachine])
+        inventory['templates'] = sorted([vm.name for vm in vms if vm.config.template])
+        logger.info(f"Successfully fetched {len(inventory['templates'])} VM templates.") # ADDED LOG
+
+        return inventory
+    except Exception as e:
+        # Log the specific error encountered during inventory fetching
+        logger.error(f"Error fetching vSphere inventory details: {e}", exc_info=True) # ADDED exc_info=True
+        return None
+    finally:
+        # Always disconnect after fetching data
+        if si:
+            connect.Disconnect(si)
+            logger.info("Disconnected from vSphere.")
+
+def background_vsphere_sync():
+    """Background task to fetch vSphere inventory and update cache."""
+    with app.app_context(): # Ensure task runs within app context if needed
+        logger.info("Background task: Starting vSphere inventory sync...") # Modified log
+        service_instance = None # Initialize service_instance
+        try: # Add outer try block
+            service_instance = connect_to_vsphere()
+            if not service_instance:
+                logger.error("Background task: Failed to connect to vSphere. Aborting sync.")
+                return # Connection failed
+
+            inventory_data = get_vsphere_inventory_data(service_instance) # Pass si here
+            cache_key = 'vsphere_inventory'
+
+            if inventory_data:
+                set_cache(cache_key, inventory_data, ttl=3600 * 2) # Cache for 2 hours
+                logger.info("Background task: Successfully fetched and cached vSphere inventory.")
+            else:
+                # get_vsphere_inventory_data logs errors internally now
+                logger.error("Background task: Failed to fetch vSphere inventory data (check previous logs).")
+
+        except Exception as e: # Catch any unexpected errors during the process
+            logger.error(f"Background task: Unhandled exception during vSphere sync: {e}", exc_info=True)
+            # Optionally log the full traceback
+            # logger.error(f"Traceback: {traceback.format_exc()}")
+
+        finally:
+            # Ensure disconnection even if errors occur after connection
+            if service_instance:
+                try:
+                    # Check if disconnect is needed (get_vsphere_inventory_data might have already disconnected)
+                    # A more robust check might involve checking the connection state if possible
+                    # For now, we rely on the internal disconnect in get_vsphere_inventory_data
+                    # and this is a fallback. A double disconnect might log an error but is generally safe.
+                    # connect.Disconnect(service_instance) # Removed redundant disconnect here
+                    pass # Disconnect is handled within get_vsphere_inventory_data's finally block
+                except Exception as disconnect_err:
+                    logger.error(f"Background task: Error during final disconnect attempt: {disconnect_err}")
+            logger.info("Background task: vSphere inventory sync finished.") # Modified log
+
+def get_vsphere_inventory():
+    """Gets vSphere inventory ONLY from cache."""
+    cache_key = 'vsphere_inventory'
+    cached_data = get_cache(cache_key)
+    if cached_data:
+        logger.info("Returning vSphere inventory from cache.")
+        return cached_data
+    else:
+        logger.warning("vSphere inventory not found in cache. Waiting for background sync.")
+        # Return empty structure or None if cache is empty
+        return {
+            'datacenters': [],
+            'resource_pools': [],
+            'datastores': [],
+            'templates': []
+        }
+
+# --- End vSphere Interaction ---
+
+# --- Netbox Interaction ---
+
+def connect_to_netbox():
+    """Connects to Netbox using environment variables."""
+    url = os.environ.get('NETBOX_URL')
+    token = os.environ.get('NETBOX_TOKEN')
+
+    if not url or not token:
+        logger.error("Netbox URL or Token missing in environment variables.")
+        return None
+
+    try:
+        # pynetbox automatically handles adding /api if needed
+        nb = pynetbox.api(url, token=token)
+        
+        # Disable SSL verification if NETBOX_ALLOW_UNVERIFIED_SSL is true
+        netbox_allow_unverified = os.environ.get('NETBOX_ALLOW_UNVERIFIED_SSL', 'false').lower() == 'true'
+        if netbox_allow_unverified:
+            logger.warning(f"Disabling SSL verification for Netbox connection to {url}")
+            nb.http_session.verify = False
+            # Suppress InsecureRequestWarning globally when disabled for Netbox
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+        # Test connection by fetching something simple
+        nb.dcim.sites.count()
+        logger.info(f"Successfully connected to Netbox API at: {url}")
+        return nb
+    except Exception as e:
+        logger.error(f"Failed to connect to Netbox API at {url}: {e}")
+        return None
+
+def get_netbox_ip_ranges_data(nb):
+    """Fetches IP Prefixes (ranges) from Netbox."""
+    if not nb:
+        return None
+    try:
+        # Fetch prefixes - adjust filters as needed (e.g., by status, role, tag)
+        prefixes = nb.ipam.prefixes.all()
+        # We need the prefix string (e.g., "192.168.1.0/24")
+        ip_ranges = sorted([p.prefix for p in prefixes])
+        return ip_ranges
+    except Exception as e:
+        logger.error(f"Error fetching IP ranges from Netbox: {e}")
+        return None
+
+def get_netbox_ip_ranges(force_refresh=False):
+    """Gets Netbox IP ranges, using cache if available."""
+    cache_key = 'netbox_ip_ranges'
+    cached_data = None
+
+    if not force_refresh:
+        cached_data = get_cache(cache_key)
+        if cached_data:
+            logger.info("Returning Netbox IP ranges from cache.")
+            return cached_data
+
+    logger.info("Fetching fresh Netbox IP ranges...")
+    nb_api = connect_to_netbox()
+    if not nb_api:
+        return None # Connection failed
+
+    ip_ranges_data = get_netbox_ip_ranges_data(nb_api)
+
+    if ip_ranges_data:
+        set_cache(cache_key, ip_ranges_data, ttl=3600) # Cache for 1 hour
+        logger.info("Successfully fetched and cached Netbox IP ranges.")
+        return ip_ranges_data
+    else:
+        logger.error("Failed to fetch Netbox IP ranges data.")
+        return None
+
+# --- End Netbox Interaction ---
 
 # Functions to manage environment variables
 def read_env_file(env_file='.env'):
@@ -259,11 +595,20 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html', 
-                          server_prefixes=SERVER_PREFIXES,
-                          environments=ENVIRONMENTS,
-                          user_role=session.get('role', ''),
-                          user_name=session.get('name', ''))
+    # Attempt to get vSphere inventory for dropdowns
+    # Note: This is a simple approach. For better UX with long loads,
+    # consider loading the page first and fetching data via JavaScript/API.
+    vsphere_data = get_vsphere_inventory()
+    netbox_ranges = get_netbox_ip_ranges()
+
+    return render_template('index.html',
+                           server_prefixes=SERVER_PREFIXES,
+                           environments=ENVIRONMENTS,
+                           user_role=session.get('role', ''),
+                           user_name=session.get('name', ''),
+                           vsphere_data=vsphere_data or {}, # Pass empty dict if fetch fails
+                           netbox_ranges=netbox_ranges or [] # Pass empty list if fetch fails
+                          )
 
 @app.route('/submit', methods=['POST'])
 @login_required
@@ -276,13 +621,20 @@ def submit():
         num_cpus = int(request.form.get('num_cpus', DEFAULT_CONFIG['num_cpus']))
         memory = int(request.form.get('memory', DEFAULT_CONFIG['memory']))
         disk_size = int(request.form.get('disk_size', DEFAULT_CONFIG['disk_size']))
+
+        # Get vSphere and Netbox selections
+        vsphere_datacenter = request.form.get('vsphere_datacenter')
+        vsphere_resource_pool = request.form.get('vsphere_resource_pool')
+        vsphere_datastore = request.form.get('vsphere_datastore')
+        vsphere_template = request.form.get('vsphere_template')
+        netbox_ip_range = request.form.get('netbox_ip_range')
         
         # Determine environment based on server prefix
         environment = "production" if server_prefix in ENVIRONMENTS["prod"] else "development"
         
-        # Validate input
-        if not server_prefix or not app_name:
-            flash('Server prefix and app name are required', 'error')
+        # Validate input (including new fields)
+        if not all([server_prefix, app_name, vsphere_datacenter, vsphere_resource_pool, vsphere_datastore, vsphere_template, netbox_ip_range]):
+            flash('All fields including vSphere and Netbox selections are required', 'error')
             return redirect(url_for('index'))
         
         if not 3 <= len(app_name) <= 5:
@@ -333,7 +685,13 @@ def submit():
             'plan_log': '',
             'build_owner': session.get('name', 'unknown'),
             'build_username': session.get('username', 'unknown'),
-            'created_at': datetime.datetime.now().isoformat()
+            'created_at': datetime.datetime.now().isoformat(),
+            # Add new selections to config data
+            'vsphere_datacenter': vsphere_datacenter,
+            'vsphere_resource_pool': vsphere_resource_pool,
+            'vsphere_datastore': vsphere_datastore,
+            'vsphere_template': vsphere_template,
+            'netbox_ip_range': netbox_ip_range
         }
         
         # Save configuration to JSON file
@@ -664,7 +1022,7 @@ def show_build_receipt(request_id, timestamp):
         )
     except Exception as e:
         flash(f'Error loading build receipt: {str(e)}', 'error')
-        return redirect(url_for('configs'))
+        return redirect(url_for('list_configs'))
 
 @app.route('/admin/users')
 @role_required(ROLE_ADMIN)
@@ -678,36 +1036,56 @@ def admin_settings():
     """Display the admin settings page with environment variables"""
     # Read env vars from .env file
     env_vars = read_env_file()
-    return render_template('admin_settings.html', env_vars=env_vars)
+    # Filter out sensitive keys before sending to template
+    filtered_env_vars = {k: v for k, v in env_vars.items() if k != 'FLASK_SECRET_KEY'}
+    return render_template('admin_settings.html', env_vars=filtered_env_vars)
 
 @app.route('/admin/save_settings', methods=['POST'])
 @role_required(ROLE_ADMIN)
 def admin_save_settings():
-    """Save the environment variables to the .env file"""
+    """Save the environment variables to the .env file, excluding FLASK_SECRET_KEY"""
     try:
         # Get all form fields
         form_data = request.form.to_dict()
-        
-        # Read current env file
+
+        # Read current env file to preserve existing values, especially FLASK_SECRET_KEY
         existing_env_vars = read_env_file()
-        
-        # Update with form data
+
+        # Update existing vars with form data, EXCLUDING FLASK_SECRET_KEY
         for key, value in form_data.items():
-            # Don't save empty values
-            if value.strip():
+            if key == 'FLASK_SECRET_KEY':
+                continue # Explicitly skip the secret key
+
+            # Handle checkboxes explicitly
+            if key in ['VSPHERE_ALLOW_UNVERIFIED_SSL', 'NETBOX_ALLOW_UNVERIFIED_SSL']:
+                 # Checkboxes send value only when checked, handle absence
+                 existing_env_vars[key] = 'true' if key in form_data else 'false'
+            # Handle other text fields
+            elif value.strip():
                 existing_env_vars[key] = value.strip()
-        
-        # Write back to .env file
-        write_env_file(existing_env_vars)
-        
-        # Refresh environment variables in the current process
-        for key, value in existing_env_vars.items():
-            os.environ[key] = value
-            
-        flash('Settings saved successfully', 'success')
+            elif key in existing_env_vars: # Remove if value is cleared in form
+                del existing_env_vars[key]
+
+        # Ensure boolean flags are explicitly set if not present in form_data (unchecked checkboxes)
+        if 'VSPHERE_ALLOW_UNVERIFIED_SSL' not in form_data:
+             existing_env_vars['VSPHERE_ALLOW_UNVERIFIED_SSL'] = 'false'
+        if 'NETBOX_ALLOW_UNVERIFIED_SSL' not in form_data:
+             existing_env_vars['NETBOX_ALLOW_UNVERIFIED_SSL'] = 'false'
+
+
+        # Write back to .env file (write_env_file handles the actual writing)
+        if write_env_file(existing_env_vars):
+             # Refresh environment variables in the current process (excluding secret key)
+             for key, value in existing_env_vars.items():
+                 if key != 'FLASK_SECRET_KEY':
+                     os.environ[key] = value
+             flash('Settings saved successfully', 'success')
+        else:
+             flash('Error writing settings to .env file.', 'error')
+
     except Exception as e:
         flash(f'Error saving settings: {str(e)}', 'error')
-    
+
     return redirect(url_for('admin_settings'))
 
 @app.route('/admin/test_connection/<service>', methods=['POST'])
@@ -727,10 +1105,20 @@ def admin_test_connection(service):
             if not vsphere_server or not vsphere_user or not vsphere_password:
                 message = "vSphere connection information is incomplete"
             else:
-                # For now, just check if the variables are set
-                # In a real implementation, you would use a vSphere client library
-                message = f"vSphere connection variables are set for server: {vsphere_server}"
-                result = True
+                # Attempt to connect using the existing function
+                logger.info(f"Attempting test connection to vSphere server: {vsphere_server}")
+                service_instance = connect_to_vsphere()
+                if service_instance:
+                    # Connection successful, disconnect immediately
+                    connect.Disconnect(service_instance)
+                    logger.info("vSphere test connection successful.")
+                    message = f"Successfully connected to vSphere server: {vsphere_server}"
+                    result = True
+                else:
+                    # connect_to_vsphere logs the specific error
+                    logger.error("vSphere test connection failed.")
+                    message = f"Failed to connect to vSphere server: {vsphere_server}. Check credentials and network connectivity. See logs for details."
+                    result = False
                 
         elif service == 'atlantis':
             # Test Atlantis connection
@@ -765,18 +1153,30 @@ def admin_test_connection(service):
             else:
                 # Try to make a simple API request to NetBox
                 try:
-                    headers = {
-                        'Authorization': f'Token {netbox_token}',
-                        'Accept': 'application/json'
-                    }
-                    response = requests.get(f"{netbox_url}/status/", headers=headers, timeout=5)
-                    if response.status_code == 200:
-                        message = "Successfully connected to NetBox API"
-                        result = True
-                    else:
-                        message = f"NetBox API returned status code: {response.status_code}"
-                except requests.exceptions.RequestException as e:
+                    # Check if SSL verification should be disabled
+                    netbox_allow_unverified = os.environ.get('NETBOX_ALLOW_UNVERIFIED_SSL', 'false').lower() == 'true'
+                    
+                    if netbox_allow_unverified:
+                        logger.warning(f"Disabling SSL verification for Netbox test connection to {netbox_url}")
+                        # Suppress InsecureRequestWarning
+                        import urllib3
+                        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+                    # Attempt to connect using pynetbox and fetch site count as a test
+                    nb_test = pynetbox.api(netbox_url, token=netbox_token)
+                    if netbox_allow_unverified:
+                        nb_test.http_session.verify = False
+                        
+                    # This call will raise an exception if connection fails
+                    site_count = nb_test.dcim.sites.count()
+                    
+                    # If we reach here, connection was successful
+                    message = f"Successfully connected to NetBox API (Found {site_count} sites)"
+                    result = True
+                    
+                except Exception as e: # Catch pynetbox/requests exceptions
                     message = f"Error connecting to NetBox: {str(e)}"
+                    result = False
         else:
             message = f"Unknown service: {service}"
             
@@ -868,21 +1268,8 @@ def generate_atlantis_apply_payload(config_data, tf_directory, tf_files, plan_id
     tf_dir_name = os.path.basename(tf_directory)
     
     # Create a dictionary with all the necessary fields
+    # Minimal payload attempt for local directory apply
     payload_dict = {
-        'repo': {
-            'owner': 'fake',
-            'name': 'terraform-repo',
-            'clone_url': 'https://github.com/fake/terraform-repo.git'
-        },
-        'pull_request': {
-            'num': 1,
-            'branch': 'main',
-            'author': config_data['build_owner']
-        },
-        'head_commit': 'abcd1234',
-        'pull_num': 1,
-        'pull_author': config_data['build_owner'],
-        'repo_rel_dir': tf_dir_name,
         'workspace': config_data['environment'],
         'project_name': config_data['server_name'],
         'plan_id': plan_id,
@@ -890,7 +1277,9 @@ def generate_atlantis_apply_payload(config_data, tf_directory, tf_files, plan_id
         'user': config_data['build_owner'],
         'verbose': True,
         'cmd': 'apply',
-        'terraform_files': tf_files
+        'terraform_files': tf_files,
+        # Adding repo_rel_dir as it might still be needed to indicate the source directory
+        'repo_rel_dir': tf_dir_name
     }
     
     # Convert to JSON string with proper formatting to ensure all commas are present
@@ -1415,5 +1804,69 @@ output "vm_ids" {{
     
     return tf_config
 
+# --- API Endpoints ---
+
+@app.route('/api/vsphere-inventory')
+@login_required
+def api_get_vsphere_inventory():
+    """API endpoint to get vSphere inventory (always from cache)."""
+    # force_refresh = request.args.get('refresh', 'false').lower() == 'true' # Refresh is handled by background job
+    inventory = get_vsphere_inventory() # Always gets from cache
+    if inventory and any(inventory.values()): # Check if inventory is not None and not empty
+        return jsonify(inventory)
+    else:
+        # Return 404 if cache is empty or not populated yet
+        return jsonify({"error": "vSphere inventory not available in cache. Please wait for background sync."}), 404
+
+@app.route('/api/netbox-ip-ranges')
+@login_required
+def api_get_netbox_ip_ranges():
+    """API endpoint to get Netbox IP ranges."""
+    force_refresh = request.args.get('refresh', 'false').lower() == 'true'
+    data = get_netbox_ip_ranges(force_refresh=force_refresh)
+    if data:
+        return jsonify(data)
+    else:
+        # Determine if connection details are missing or if fetch failed
+        url = os.environ.get('NETBOX_URL')
+        token = os.environ.get('NETBOX_TOKEN')
+        if not url or not token:
+            return jsonify({"error": "Netbox connection details not configured in settings."}), 503 # Service Unavailable
+        else:
+            return jsonify({"error": "Failed to fetch Netbox IP ranges. Check logs for details."}), 500 # Internal Server Error
+
+# --- End API Endpoints ---
+
+# Initialize Scheduler
+scheduler.init_app(app)
+
+# Schedule the background task
+# Run immediately once on startup, then every hour
+@scheduler.task('interval', id='vsphere_sync_job', hours=1, misfire_grace_time=900)
+def scheduled_vsphere_sync():
+    """Wrapper function for the scheduled task."""
+    background_vsphere_sync()
+
+# Start the scheduler
+scheduler.start()
+
+# Trigger initial sync shortly after startup (optional, but good for immediate data)
+# Using a separate thread to avoid blocking startup if initial sync is long
+import threading
+import time # Import time for sleep
+def initial_sync():
+    # Add a small delay to allow the app to fully start before syncing
+    time.sleep(5)
+    with app.app_context():
+        logger.info("Triggering initial vSphere sync...")
+        background_vsphere_sync()
+threading.Thread(target=initial_sync, daemon=True).start() # Use daemon thread
+
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5150)
+    # Use host='0.0.0.0' to be accessible externally if needed
+    # debug=True should be False in production
+    # use_reloader=False is important when using APScheduler with Flask's dev server
+    # Set debug based on environment variable, default to False
+    app_debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    app.run(debug=app_debug, host='0.0.0.0', port=5150, use_reloader=False)

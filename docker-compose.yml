@@ -23,13 +23,18 @@ services:
       - VSPHERE_USER=${VSPHERE_USER:-vsphere-username}
       - VSPHERE_PASSWORD=${VSPHERE_PASSWORD:-vsphere-password}
       - VSPHERE_SERVER=${VSPHERE_SERVER:-vsphere-server}
+      - VSPHERE_ALLOW_UNVERIFIED_SSL=true # Allow unverified SSL for vSphere
       # NetBox integration
       - NETBOX_TOKEN=${NETBOX_TOKEN:-netbox-api-token}
       - NETBOX_URL=${NETBOX_URL:-https://netbox.example.com/api}
+      - NETBOX_ALLOW_UNVERIFIED_SSL=true # Allow unverified SSL for Netbox
     depends_on:
       - atlantis
+      - redis # Add redis dependency
+    user: root # Add this line
     networks:
       - app-network
+    command: ["gunicorn", "-w", "1", "-b", "0.0.0.0:5150", "--timeout", "600", "app:app"] # Increase timeout to 600s
     restart: unless-stopped
 
   atlantis:
@@ -84,6 +89,18 @@ services:
       - app-network
     restart: unless-stopped
 
+  redis:
+    image: redis:alpine
+    container_name: ssb-redis # Optional: give it a specific container name
+    ports:
+      - "6379:6379" # Expose Redis port if needed externally
+    networks:
+      - app-network
+    restart: unless-stopped
+    # Add a volume for persistence if needed:
+    # volumes:
+    #   - redis-data:/data
+
 networks:
   app-network:
     driver: bridge
@@ -92,3 +109,4 @@ volumes:
   configs:
   terraform:
   atlantis-data:
+  # redis-data: # Define the volume if used above

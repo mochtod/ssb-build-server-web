@@ -36,6 +36,66 @@
                     </div>
 
                     <div class="form-section">
+                        <h3>vSphere Location</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vsphere_datacenter">Datacenter:</label>
+                                <select id="vsphere_datacenter" name="vsphere_datacenter" required>
+                                    <option value="">Select Datacenter...</option>
+                                    {% if vsphere_data.datacenters %}
+                                        {% for dc in vsphere_data.datacenters %}
+                                        <option value="{{ dc }}">{{ dc }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="" disabled>Could not load datacenters</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="vsphere_resource_pool">Resource Pool/Cluster:</label>
+                                <select id="vsphere_resource_pool" name="vsphere_resource_pool" required>
+                                    <option value="">Select Resource Pool...</option>
+                                    {% if vsphere_data.resource_pools %}
+                                        {% for rp in vsphere_data.resource_pools %}
+                                        <option value="{{ rp }}">{{ rp }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="" disabled>Could not load resource pools</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vsphere_datastore">Datastore:</label>
+                                <select id="vsphere_datastore" name="vsphere_datastore" required>
+                                    <option value="">Select Datastore...</option>
+                                    {% if vsphere_data.datastores %}
+                                        {% for ds in vsphere_data.datastores %}
+                                        <option value="{{ ds }}">{{ ds }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="" disabled>Could not load datastores</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="vsphere_template">VM Template:</label>
+                                <select id="vsphere_template" name="vsphere_template" required>
+                                    <option value="">Select Template...</option>
+                                    {% if vsphere_data.templates %}
+                                        {% for tmpl in vsphere_data.templates %}
+                                        <option value="{{ tmpl }}">{{ tmpl }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="" disabled>Could not load templates</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
                         <h3>VM Specifications</h3>
                         <div class="form-row">
                             <div class="form-group">
@@ -85,6 +145,27 @@
                         <div id="additional_disks">
                             <h4>Additional Disks <button type="button" id="add_disk" class="btn-small">Add Disk</button></h4>
                             <div class="disk-list"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Network Configuration (IP via Netbox)</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="netbox_ip_range">IP Range:</label>
+                                <select id="netbox_ip_range" name="netbox_ip_range" required>
+                                    <option value="">Select IP Range...</option>
+                                    {% if netbox_ranges %}
+                                        {% for range in netbox_ranges %}
+                                        <option value="{{ range }}">{{ range }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="" disabled>Could not load IP ranges</option>
+                                    {% endif %}
+                                </select>
+                                <small>The next available IP will be fetched from this range.</small>
+                            </div>
+                            <!-- Add network selection if needed, currently using environment default -->
                         </div>
                     </div>
 
