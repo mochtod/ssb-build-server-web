@@ -182,7 +182,8 @@ def get_vsphere_inventory_data(si):
         'datacenters': [],
         'resource_pools': [],
         'datastores': [],
-        'templates': []
+        'templates': [],
+        'networks': []
     }
 
     try:
@@ -249,12 +250,23 @@ def get_vsphere_inventory_data(si):
         else:
              logger.info("No raw datastore objects received or fetch failed.") # MODIFIED LOG
         inventory['datastores'] = sorted(datastore_names)
-        logger.info(f"Successfully processed {len(inventory['datastores'])} datastore names.")
-
-        # Get VM Templates
+        logger.info(f"Successfully processed {len(inventory['datastores'])} datastore names.")        # Get VM Templates
         vms = get_vsphere_objects(si, [vim.VirtualMachine])
         inventory['templates'] = sorted([vm.name for vm in vms if vm.config.template])
         logger.info(f"Successfully fetched {len(inventory['templates'])} VM templates.") # ADDED LOG
+
+        # Get Networks
+        try:
+            networks = get_vsphere_objects(si, [vim.Network])
+            inventory['networks'] = sorted([network.name for network in networks])
+            logger.info(f"Successfully fetched {len(inventory['networks'])} networks.")
+        except Exception as net_err:
+            logger.error(f"Error fetching networks: {net_err}", exc_info=True)
+            # Add fallback networks from environment variables
+            prod_network = os.environ.get('NETWORK_ID_PROD', 'Production Network')
+            dev_network = os.environ.get('NETWORK_ID_DEV', 'Development Network')
+            inventory['networks'] = [prod_network, dev_network] 
+            logger.info(f"Using fallback networks from environment variables.")
 
         return inventory
     except Exception as e:
@@ -277,12 +289,23 @@ def background_vsphere_sync():
             if not service_instance:
                 logger.error("Background task: Failed to connect to vSphere. Aborting sync.")
                 return # Connection failed
-
+            # Assign the result to inventory_data
             inventory_data = get_vsphere_inventory_data(service_instance) # Pass si here
             cache_key = 'vsphere_inventory'
 
             if inventory_data:
-                set_cache(cache_key, inventory_data, ttl=3600 * 2) # Cache for 2 hours
+                # Try to import the new cache configuration
+                try:
+                    from cache_config import CACHE_TTL
+                    # Use resource-specific TTL for better performance
+                    ttl = CACHE_TTL.get('vsphere_inventory', 7200)  # Default to 2 hours if not configured
+                    logger.info(f"Using configured TTL of {ttl} seconds for vSphere inventory")
+                except ImportError:
+                    # Fallback to original TTL if import fails
+                    ttl = 3600 * 2  # 2 hours
+                    logger.info(f"Using default TTL of {ttl} seconds for vSphere inventory")
+                
+                set_cache(cache_key, inventory_data, ttl=ttl)
                 logger.info("Background task: Successfully fetched and cached vSphere inventory.")
             else:
                 # get_vsphere_inventory_data logs errors internally now
@@ -305,7 +328,7 @@ def background_vsphere_sync():
                     pass # Disconnect is handled within get_vsphere_inventory_data's finally block
                 except Exception as disconnect_err:
                     logger.error(f"Background task: Error during final disconnect attempt: {disconnect_err}")
-            logger.info("Background task: vSphere inventory sync finished.") # Modified log
+            logger.info("Background task: vSphere inventory sync finished.")
 
 def get_vsphere_inventory():
     """Gets vSphere inventory ONLY from cache."""
@@ -321,7 +344,8 @@ def get_vsphere_inventory():
             'datacenters': [],
             'resource_pools': [],
             'datastores': [],
-            'templates': []
+            'templates': [],
+            'networks': []
         }
 
 # --- End vSphere Interaction ---
@@ -359,15 +383,30 @@ def connect_to_netbox():
         return None
 
 def get_netbox_ip_ranges_data(nb):
-    """Fetches IP Prefixes (ranges) from Netbox."""
+    """Fetches IP Prefixes (ranges) and their descriptions from Netbox."""
     if not nb:
         return None
     try:
         # Fetch prefixes - adjust filters as needed (e.g., by status, role, tag)
         prefixes = nb.ipam.prefixes.all()
-        # We need the prefix string (e.g., "192.168.1.0/24")
-        ip_ranges = sorted([p.prefix for p in prefixes])
-        return ip_ranges
+        # Extract prefix string and description
+        ip_ranges_data = []
+        for p in prefixes:
+            try:
+                prefix_str = p.prefix
+                description = p.description or "No description"  # Use default if description is empty
+                ip_ranges_data.append({
+                    'prefix': prefix_str,
+                    'name': description
+                })
+            except AttributeError:
+                logger.warning(f"Prefix object missing expected attributes: {p}")
+            except Exception as e:
+                logger.error(f"Unexpected error processing prefix {p}: {e}", exc_info=True)
+                
+        # Sort by name (description)
+        ip_ranges_data.sort(key=lambda x: x.get('name', '').lower())
+        return ip_ranges_data
     except Exception as e:
         logger.error(f"Error fetching IP ranges from Netbox: {e}")
         return None
@@ -386,12 +425,12 @@ def get_netbox_ip_ranges(force_refresh=False):
     logger.info("Fetching fresh Netbox IP ranges...")
     nb_api = connect_to_netbox()
     if not nb_api:
-        return None # Connection failed
+        return None  # Connection failed
 
     ip_ranges_data = get_netbox_ip_ranges_data(nb_api)
 
     if ip_ranges_data:
-        set_cache(cache_key, ip_ranges_data, ttl=3600) # Cache for 1 hour
+        set_cache(cache_key, ip_ranges_data, ttl=3600)  # Cache for 1 hour
         logger.info("Successfully fetched and cached Netbox IP ranges.")
         return ip_ranges_data
     else:
@@ -595,19 +634,18 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    # Attempt to get vSphere inventory for dropdowns
-    # Note: This is a simple approach. For better UX with long loads,
-    # consider loading the page first and fetching data via JavaScript/API.
+    # Fetch vSphere inventory from cache
     vsphere_data = get_vsphere_inventory()
-    netbox_ranges = get_netbox_ip_ranges()
-
+    # Fetch Netbox IP ranges from cache (or trigger fetch if needed)
+    netbox_ranges = get_netbox_ip_ranges() # Use existing function
+    
     return render_template('index.html',
                            server_prefixes=SERVER_PREFIXES,
                            environments=ENVIRONMENTS,
                            user_role=session.get('role', ''),
                            user_name=session.get('name', ''),
-                           vsphere_data=vsphere_data or {}, # Pass empty dict if fetch fails
-                           netbox_ranges=netbox_ranges or [] # Pass empty list if fetch fails
+                           vsphere_data=vsphere_data, # Pass fetched vSphere data
+                           netbox_ranges=netbox_ranges if netbox_ranges else [] # Pass fetched Netbox ranges
                           )
 
 @app.route('/submit', methods=['POST'])
@@ -1438,138 +1476,6 @@ def prepare_terraform_files(tf_directory, config_data):
         for key, value in existing_vars.items():
             f.write(f"{key} = {value}\n")
 
-def apply_atlantis_plan(config_data, tf_directory):
-    """Apply a Terraform plan in Atlantis"""
-    try:
-        plan_id = config_data.get('plan_id')
-        
-        if not plan_id:
-            error_message = 'No plan ID found in configuration'
-            logger.error(error_message)
-            return {
-                'status': 'error',
-                'message': error_message
-            }
-        
-        # Get all the Terraform files
-        tf_files = {}
-        for filename in os.listdir(tf_directory):
-            if filename.endswith('.tf') or filename.endswith('.tfvars') or filename.endswith('.py'):
-                file_path = os.path.join(tf_directory, filename)
-                with open(file_path, 'r') as f:
-                    tf_files[filename] = f.read()
-        
-        try:
-            # Try to call the Atlantis API
-            # Generate a JSON payload for apply operation
-            payload_string = generate_atlantis_apply_payload(config_data, tf_directory, tf_files, plan_id)
-            
-            # Log the first part of the payload for debugging
-            logger.info(f"Generated Atlantis apply payload (first 100 chars): {payload_string[:100]}...")
-            
-            # Call Atlantis API to apply
-            headers = {
-                'Content-Type': 'application/json',
-                'X-Atlantis-Token': ATLANTIS_TOKEN
-            }
-            
-            logger.info(f"Sending apply request to Atlantis for {config_data['server_name']} with plan ID: {plan_id}")
-            response = requests.post(f"{ATLANTIS_URL}/api/apply", data=payload_string, headers=headers)
-            
-            if response.status_code != 200:
-                # If API call fails, log the error
-                error_message = f"Failed to trigger Atlantis apply: {response.text}"
-                logger.error(error_message)
-                logger.warning("Using local apply simulation due to Atlantis API issue")
-                # But continue with a simulated apply ID for better UX
-                simulated = True
-            else:
-                # API call succeeded
-                apply_response = response.json()
-                apply_id = apply_response.get('apply_id')
-                simulated = False
-                
-                if not apply_id:
-                    error_message = "No apply ID returned from Atlantis"
-                    logger.error(error_message)
-                    logger.warning("Using local apply simulation due to missing apply_id")
-                    simulated = True
-                else:
-                    logger.info(f"Successfully initiated Atlantis apply with ID: {apply_id}")
-        except Exception as api_error:
-            # If any exception occurs during API call, log it
-            logger.exception(f"Error calling Atlantis API: {str(api_error)}")
-            logger.warning("Using local apply simulation due to API error")
-            simulated = True
-        
-        # If we need to simulate an apply due to API issues
-        if simulated:
-            # Generate a simulated apply ID
-            apply_id = f"sim-{uuid.uuid4().hex[:8]}"
-            logger.info(f"Using simulated apply ID: {apply_id}")
-            
-            # When in simulation mode, attempt direct VM provisioning if environment vars are set
-            vsphere_server = os.environ.get('VSPHERE_SERVER')
-            vsphere_user = os.environ.get('VSPHERE_USER')
-            vsphere_password = os.environ.get('VSPHERE_PASSWORD')
-            resource_pool_id = os.environ.get('RESOURCE_POOL_ID' if config_data['environment'] == 'production' else 'DEV_RESOURCE_POOL_ID')
-            datastore_id = os.environ.get('DATASTORE_ID')
-            template_uuid = os.environ.get('TEMPLATE_UUID')
-            network_id = os.environ.get('NETWORK_ID_PROD' if config_data['environment'] == 'production' else 'NETWORK_ID_DEV')
-            
-            # Check if all required vSphere connection details are available
-            if all([vsphere_server, vsphere_user, vsphere_password, resource_pool_id, datastore_id, template_uuid, network_id]):
-                logger.info(f"All vSphere connection details are available for direct VM provisioning")
-                logger.info(f"Would provision VM using the following parameters:")
-                logger.info(f"Server: {vsphere_server}")
-                logger.info(f"Resource Pool: {resource_pool_id}")
-                logger.info(f"Datastore: {datastore_id}")
-                logger.info(f"Template: {template_uuid}")
-                logger.info(f"Network: {network_id}")
-                # In a real implementation, this is where you would connect to vSphere directly
-            else:
-                logger.warning(f"Missing vSphere connection details for direct VM provisioning")
-                logger.warning(f"VM provisioning will be simulated instead")
-        
-        # Generate a apply URL regardless of whether it's real or simulated
-        build_url = f"{ATLANTIS_URL}/apply/{apply_id}"
-        
-        # Generate build receipt
-        text_receipt = f"""
-VM BUILD RECEIPT
----------------
-Request ID: {config_data['request_id']}
-Server Name: {config_data['server_name']}
-Quantity: {config_data['quantity']}
-Apply ID: {apply_id}
-Workspace: {config_data['environment']}
-Approved By: {config_data.get('approved_by', 'Unknown')}
-
-NEXT STEPS:
-1. Monitor the Terraform apply at {build_url}
-2. Wait for deployment to complete
-3. VMs will be automatically registered with Ansible
-{"(Simulated apply due to Atlantis API issues)" if simulated else ""}
-        """
-        
-        return {
-            'status': 'success',
-            'build_url': build_url,
-            'build_receipt': text_receipt,
-            'details': {
-                'apply_id': apply_id,
-                'workspace': config_data['environment'],
-                'instructions': "Your Atlantis apply has been initiated. Monitor the build progress at the URL above."
-            }
-        }
-        
-    except Exception as e:
-        logger.exception(f"Error applying Terraform plan: {str(e)}")
-        return {
-            'status': 'error',
-            'message': f"Error applying Terraform plan: {str(e)}"
-        }
-
 def generate_variables_file(variables_file, config):
     """Generate Terraform variables file based on user input"""
     # Extract configuration values
@@ -1835,7 +1741,251 @@ def api_get_netbox_ip_ranges():
         else:
             return jsonify({"error": "Failed to fetch Netbox IP ranges. Check logs for details."}), 500 # Internal Server Error
 
-# --- End API Endpoints ---
+# --- API Endpoints for vSphere Resources ---
+
+@app.route('/api/vsphere/datacenter/<datacenter>/pools')
+@login_required
+def api_get_resource_pools_for_datacenter(datacenter):
+    """API endpoint to get resource pools for a specific datacenter."""
+    try:
+        # Get cached vSphere inventory
+        vsphere_data = get_vsphere_inventory()
+        
+        # Check if inventory data exists and has resource pools
+        if not vsphere_data or not vsphere_data.get('resource_pools'):
+            logger.warning(f"No resource pools found in vSphere inventory data for datacenter: {datacenter}")
+            return jsonify([])
+        
+        # Try to get from datacenter-specific cache first
+        cache_key = f'vsphere_pools_{datacenter}'
+        cached_pools = get_cache(cache_key)
+        
+        if cached_pools:
+            logger.debug(f"Using cached resource pools for datacenter: {datacenter}")
+            return jsonify(cached_pools)
+            
+        logger.debug(f"Filtering resource pools for datacenter: {datacenter}")
+        logger.debug(f"Available resource pools: {vsphere_data.get('resource_pools')}")
+        
+        # Store original datacenter name for logging
+        original_dc = datacenter
+        
+        # Normalize datacenter name for more flexible matching
+        datacenter_normalized = datacenter.lower().replace('-', '').replace('_', '').replace(' ', '')
+        
+        # Filter resource pools by datacenter
+        filtered_pools = []
+        logger.debug(f"Using normalized datacenter name for matching: {datacenter_normalized}")
+        
+        for pool in vsphere_data.get('resource_pools', []):
+            # More flexible filtering logic to handle different formats
+            pool_name = pool
+            belongs_to_datacenter = False
+            display_name = pool_name  # Default display name
+            
+            # Check for exact match (for standalone cluster names)
+            if pool == datacenter:
+                belongs_to_datacenter = True
+                logger.debug(f"Pool '{pool}' matched exact datacenter name '{datacenter}'")
+            
+            # Check for path format (DatacenterName/ClusterName or DatacenterName/path/to/cluster)
+            elif '/' in pool:
+                parts = pool.split('/')
+                if parts[0] == datacenter:
+                    belongs_to_datacenter = True
+                    # Display just the cluster part without datacenter prefix
+                    if len(parts) > 1:
+                        display_name = '/'.join(parts[1:])
+                    logger.debug(f"Pool '{pool}' matched path-based datacenter '{datacenter}'")
+            
+            # Check for partial match in name (for datacenters and pools with similar naming patterns)
+            # For example, if datacenter is "EBDC NONPROD" and pool is "np-cl60-lin" 
+            # or if datacenter contains "np" and pool name contains "np"
+            else:
+                normalized_pool = pool.lower().replace('-', '').replace('_', '').replace(' ', '')
+                
+                # Common datacenter prefix/suffix checks
+                if "np" in datacenter_normalized and "np" in normalized_pool:
+                    belongs_to_datacenter = True
+                    logger.debug(f"Pool '{pool}' matched 'np' in datacenter '{datacenter}'")
+                elif "prod" in datacenter_normalized and "prod" in normalized_pool:
+                    belongs_to_datacenter = True
+                    logger.debug(f"Pool '{pool}' matched 'prod' in datacenter '{datacenter}'")
+                # Partial name match (if datacenter name part appears in the pool name)
+                elif any(part.lower() in normalized_pool for part in datacenter.lower().split()):
+                    belongs_to_datacenter = True
+                    logger.debug(f"Pool '{pool}' matched partial datacenter name '{datacenter}'")
+            
+            # If no specific datacenter is found, show all pools
+            if datacenter.lower() == 'all' or datacenter.lower() == 'any':
+                belongs_to_datacenter = True
+                
+            # Add pool with proper structure if it belongs to the datacenter
+            if belongs_to_datacenter:
+                filtered_pools.append({
+                    "id": pool,
+                    "name": display_name
+                })
+          # Cache the results for this datacenter to avoid repeated filtering
+        if filtered_pools:
+            set_cache(cache_key, filtered_pools, ttl=3600)  # Cache for 1 hour
+            
+        # If still no pools found, add a fallback for EBDC NONPROD datacenters to show all pools with "np" in them
+        if not filtered_pools and ("ebdc" in datacenter.lower() and "nonprod" in datacenter.lower()):
+            logger.warning(f"No direct matches found for datacenter '{datacenter}'. Adding NP pools as fallback.")
+            for pool in vsphere_data.get('resource_pools', []):
+                if "np" in pool.lower():
+                    filtered_pools.append({
+                        "id": pool,
+                        "name": pool
+                    })
+        
+        # If we still have no pools, return at least some pools for a better UX
+        if not filtered_pools:
+            logger.warning(f"No resource pools matched for datacenter '{datacenter}'. Using fallback pools.")
+            # Get up to 10 pools as fallback
+            fallback_pools = []
+            for pool in vsphere_data.get('resource_pools', [])[:10]:  # Limit to 10 pools
+                fallback_pools.append({
+                    "id": pool,
+                    "name": pool
+                })
+            # Cache these fallback pools too
+            set_cache(cache_key, fallback_pools, ttl=1800)  # Cache for 30 minutes
+            filtered_pools = fallback_pools
+            
+        logger.debug(f"Filtered resource pools for datacenter {datacenter}: {filtered_pools}")
+        return jsonify(filtered_pools)
+    except Exception as e:
+        logger.error(f"Error fetching resource pools for datacenter {datacenter}: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/vsphere/datacenter/<datacenter>/pool/<path:resource_pool>/datastores')
+@login_required
+def api_get_datastores_for_resource_pool(datacenter, resource_pool):
+    """API endpoint to get datastores for a specific datacenter and resource pool."""
+    try:
+        # Get cached vSphere inventory
+        vsphere_data = get_vsphere_inventory()
+        
+        # Check if inventory data exists and has datastores
+        if not vsphere_data or not vsphere_data.get('datastores'):
+            logger.warning(f"No datastores found in vSphere inventory data for datacenter: {datacenter}, resource_pool: {resource_pool}")
+            return jsonify([])
+            
+        logger.debug(f"Fetching datastores for datacenter: {datacenter}, resource_pool: {resource_pool}")
+        logger.debug(f"Available datastores: {vsphere_data.get('datastores')}")
+        
+        # In a production environment, this would use your hierarchical loader to get only datastores 
+        # in the specific cluster/resource pool
+        # Here we're returning all datastores with proper object structure
+        filtered_datastores = []
+        for ds in vsphere_data.get('datastores', []):
+            # Filter out local datastores (but ensure we have at least some datastores to show)
+            if not ("_local" in ds.lower() and len(vsphere_data.get('datastores')) > 5):
+                filtered_datastores.append({
+                    "id": ds,
+                    "name": ds
+                })
+        
+        logger.debug(f"Returning {len(filtered_datastores)} datastores for resource pool {resource_pool}")
+        return jsonify(filtered_datastores)
+    except Exception as e:
+        logger.error(f"Error fetching datastores for resource pool {resource_pool}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/vsphere/datacenter/<datacenter>/pool/<path:resource_pool>/templates')
+@login_required
+def api_get_templates_for_resource_pool(datacenter, resource_pool):
+    """API endpoint to get VM templates for a specific datacenter and resource pool."""
+    try:
+        # Get cached vSphere inventory
+        vsphere_data = get_vsphere_inventory()
+        
+        # Check if inventory data exists and has templates
+        if not vsphere_data or not vsphere_data.get('templates'):
+            logger.warning(f"No templates found in vSphere inventory data for resource pool: {resource_pool}")
+            return jsonify([])
+
+        logger.debug(f"Fetching templates for datacenter: {datacenter}, resource_pool: {resource_pool}")
+        logger.debug(f"Available templates: {vsphere_data.get('templates')}")
+
+        # In a production environment, this would use your hierarchical loader to get only templates
+        # in the specific cluster/resource pool
+        # Here we're returning all templates with proper structure
+        filtered_templates = []
+        templates_data = vsphere_data.get('templates', [])
+        
+        # Handle case where templates might be a list of strings or objects
+        for template in templates_data:
+            if isinstance(template, dict) and 'name' in template:
+                # If it's already a dict with name
+                filtered_templates.append({
+                    "id": template.get('id', template['name']),
+                    "name": template['name']
+                })
+            else:
+                # Treat as a string template name
+                filtered_templates.append({
+                    "id": template,
+                    "name": template
+                })
+        
+        logger.debug(f"Returning {len(filtered_templates)} templates for resource pool {resource_pool}")
+        return jsonify(filtered_templates)
+    except Exception as e:
+        logger.error(f"Error fetching templates for resource pool {resource_pool}: {e}", exc_info=True)
+        return jsonify({"error": f"Failed to fetch templates: {str(e)}"}), 500
+
+@app.route('/api/vsphere/datacenter/<datacenter>/pool/<path:resource_pool>/networks')
+@login_required
+def api_get_networks_for_resource_pool(datacenter, resource_pool):
+    """API endpoint to get networks for a specific datacenter and resource pool."""
+    try:
+        # Get cached vSphere inventory
+        vsphere_data = get_vsphere_inventory()
+          # Check if inventory data exists and has networks
+        if not vsphere_data or not vsphere_data.get('networks', []):
+            logger.warning(f"No networks found in vSphere inventory data for datacenter: {datacenter}, resource_pool: {resource_pool}")
+            # If networks key doesn't exist yet, use environment variables as fallback
+            # Determine environment - use "development" as default
+            environment = "development"
+            if "prod" in resource_pool.lower():
+                environment = "production"
+                
+            if environment == "production":
+                network_id = os.environ.get('NETWORK_ID_PROD', 'network-id-placeholder')
+                network_name = "Production Network"
+            else:
+                network_id = os.environ.get('NETWORK_ID_DEV', 'network-id-placeholder')
+                network_name = "Development Network"
+            
+            # Return at least one network from environment variables
+            return jsonify([{
+                "id": network_id,
+                "name": network_name
+            }])
+            
+        logger.debug(f"Fetching networks for datacenter: {datacenter}, resource_pool: {resource_pool}")
+        logger.debug(f"Available networks: {vsphere_data.get('networks', [])}")
+        
+        # In a production environment, this would use your hierarchical loader to get only networks
+        # available to the specific cluster/resource pool
+        filtered_networks = []
+        for network in vsphere_data.get('networks', []):
+            # Add each network with proper structure
+            filtered_networks.append({
+                "id": network,
+                "name": network
+            })
+        
+        logger.debug(f"Returning {len(filtered_networks)} networks for resource pool {resource_pool}")
+        return jsonify(filtered_networks)
+    except Exception as e:
+        logger.error(f"Error fetching networks for resource pool {resource_pool}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# --- End API Endpoints for vSphere Resources ---
 
 # Initialize Scheduler
 scheduler.init_app(app)

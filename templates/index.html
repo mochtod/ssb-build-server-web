@@ -33,9 +33,7 @@
                             </div>
                         </div>
                         <p class="preview">Preview: <span id="name_preview">lin2xx-app-10001</span></p>
-                    </div>
-
-                    <div class="form-section">
+                    </div>                    <div class="form-section">
                         <h3>vSphere Location</h3>
                         <div class="form-row">
                             <div class="form-group">
@@ -50,47 +48,38 @@
                                         <option value="" disabled>Could not load datacenters</option>
                                     {% endif %}
                                 </select>
+                                <small>First select a datacenter to see available resource pools</small>
                             </div>
                             <div class="form-group">
                                 <label for="vsphere_resource_pool">Resource Pool/Cluster:</label>
-                                <select id="vsphere_resource_pool" name="vsphere_resource_pool" required>
+                                <select id="vsphere_resource_pool" name="vsphere_resource_pool" required disabled>
                                     <option value="">Select Resource Pool...</option>
-                                    {% if vsphere_data.resource_pools %}
-                                        {% for rp in vsphere_data.resource_pools %}
-                                        <option value="{{ rp }}">{{ rp }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="" disabled>Could not load resource pools</option>
-                                    {% endif %}
                                 </select>
+                                <small>Available resource pools will load based on datacenter selection</small>
+                            </div>
+                        </div>                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vsphere_datastore">Datastore:</label>
+                                <select id="vsphere_datastore" name="vsphere_datastore" required disabled>
+                                    <option value="">Select Datastore...</option>
+                                </select>
+                                <small>Available datastores will load based on resource pool selection</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="vsphere_template">VM Template:</label>
+                                <select id="vsphere_template" name="vsphere_template" required disabled>
+                                    <option value="">Select Template...</option>
+                                </select>
+                                <small>Available templates will load based on resource pool selection</small>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="vsphere_datastore">Datastore:</label>
-                                <select id="vsphere_datastore" name="vsphere_datastore" required>
-                                    <option value="">Select Datastore...</option>
-                                    {% if vsphere_data.datastores %}
-                                        {% for ds in vsphere_data.datastores %}
-                                        <option value="{{ ds }}">{{ ds }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="" disabled>Could not load datastores</option>
-                                    {% endif %}
+                                <label for="vsphere_network">Network:</label>
+                                <select id="vsphere_network" name="vsphere_network" required disabled>
+                                    <option value="">Select Network...</option>
                                 </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="vsphere_template">VM Template:</label>
-                                <select id="vsphere_template" name="vsphere_template" required>
-                                    <option value="">Select Template...</option>
-                                    {% if vsphere_data.templates %}
-                                        {% for tmpl in vsphere_data.templates %}
-                                        <option value="{{ tmpl }}">{{ tmpl }}</option>
-                                        {% endfor %}
-                                    {% else %}
-                                        <option value="" disabled>Could not load templates</option>
-                                    {% endif %}
-                                </select>
+                                <small>Available networks will load based on resource pool selection</small>
                             </div>
                         </div>
                     </div>
@@ -151,13 +140,12 @@
                     <div class="form-section">
                         <h3>Network Configuration (IP via Netbox)</h3>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label for="netbox_ip_range">IP Range:</label>
-                                <select id="netbox_ip_range" name="netbox_ip_range" required>
+                            <div class="form-group">                                <label for="netbox_ip_range">IP Range:</label>
+                                <select id="netbox_ip_range" name="netbox_ip_range" class="searchable-select" required>
                                     <option value="">Select IP Range...</option>
                                     {% if netbox_ranges %}
                                         {% for range in netbox_ranges %}
-                                        <option value="{{ range }}">{{ range }}</option>
+                                        <option value="{{ range.prefix }}">{{ range.name }} ({{ range.prefix }})</option>
                                         {% endfor %}
                                     {% else %}
                                         <option value="" disabled>Could not load IP ranges</option>
