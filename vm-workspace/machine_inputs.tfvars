@@ -1,24 +1,30 @@
-# Layman's form for machine.tf inputs
+# Generated Terraform configuration for lin2dv2-ssb
+# Request ID: 8d7047e0
+# Timestamp: 20250416175136
 
-name             = "rhel9-vm"
+# Base name for the virtual machines
+name             = "lin2dv2-ssb"
+# Resource identifiers
 resource_pool_id = "<resource_pool_id>"
 datastore_id     = "<datastore_id>"
+network_id       = "<network_id>"
+template_uuid    = "<template_uuid>"
+
+# VM specifications
 num_cpus         = 2
 memory           = 4096
 guest_id         = "rhel9_64Guest"
-network_id       = "<network_id>"
 adapter_type     = "vmxnet3"
-disk_size        = 20
-template_uuid    = "<template_uuid>"
-ipv4_address     = "192.168.1.100"
+disk_size        = 50
+
+# Network configuration
+ipv4_address     = "<ipv4_address>"
 ipv4_netmask     = 24
-ipv4_gateway     = "192.168.1.1"
+ipv4_gateway     = "<ipv4_gateway>"
 dns_servers      = ["8.8.8.8", "8.8.4.4"]
 time_zone        = "UTC"
-quantity         = 1  # Number of machines to create
-start_number     = 1  # Starting number for machine names
-end_number       = 100  # Ending number for machine names
-additional_disks = [
-  { size = 50, type = "thin" },
-  { size = 100, type = "thick" }
-]
+
+# Multiple machine configuration
+quantity         = 3  # Change this to create multiple identical VMs
+start_number     = last number plus one # ai add this. funciton all machiens have unique nubmers # Starting number for machine names (lin2dv2-ssb-10001, lin2dv2-ssb-10002, etc.)
+additional_disks = []  # Add additional disks if needed: [{size = 50, type = "thin"}]

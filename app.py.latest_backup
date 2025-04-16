@@ -20,7 +20,7 @@ from pyVim import connect
 from pyVmomi import vim, vmodl # Import pyvmomi modules
 import pynetbox # Import pynetbox library
 from flask_apscheduler import APScheduler # Import APScheduler
-from apply_atlantis_plan import apply_atlantis_plan # Import the function for Atlantis plan application
+from atlantis_apply import apply_atlantis_plan # Import the function for Atlantis plan application
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
@@ -1739,14 +1739,15 @@ def run_atlantis_plan(config_data, tf_directory):
                     'status': 'error',
                     'message': f"Failed to generate Atlantis payload: {str(payload_err)}"
                 }
-              # Call Atlantis API to plan
+            
+            # Call Atlantis API to plan
             headers = {
                 'Content-Type': 'application/json',
                 'X-Atlantis-Token': ATLANTIS_TOKEN
             }
             
             logger.info(f"Sending real plan request to Atlantis for {config_data['server_name']}")
-            try:
+              try:
                 response = requests.post(
                     f"{ATLANTIS_URL}/api/plan", 
                     data=payload_string, 

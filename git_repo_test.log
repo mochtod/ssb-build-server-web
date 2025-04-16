@@ -1,0 +1,26 @@
+2025-04-16 15:20:47,119 - INFO - Testing fake Git repository creation...
+2025-04-16 15:20:47,121 - INFO - Created temporary test directory: C:\Users\mochtod\AppData\Local\Temp\tmpxx87x15b
+2025-04-16 15:20:47,122 - INFO - Created fake .git directory at C:\Users\mochtod\AppData\Local\Temp\tmpxx87x15b\.git
+2025-04-16 15:20:47,144 - INFO - Created fake .git/refs/heads directory structure
+2025-04-16 15:20:47,144 - INFO - Created fake branch reference at C:\Users\mochtod\AppData\Local\Temp\tmpxx87x15b\.git\refs\heads\main
+2025-04-16 15:20:47,144 - INFO - Created fake .git/config file at C:\Users\mochtod\AppData\Local\Temp\tmpxx87x15b\.git\config
+2025-04-16 15:20:47,155 - INFO - Created fake .git/HEAD file at C:\Users\mochtod\AppData\Local\Temp\tmpxx87x15b\.git\HEAD
+2025-04-16 15:20:47,165 - INFO - HEAD file content (hex): 7265663a20726566732f68656164732f6d61696e0d0a
+2025-04-16 15:20:47,165 - INFO - SUCCESS: HEAD file correctly ends with proper newline character (0x0A)
+2025-04-16 15:20:47,165 - INFO - Testing directory reuse scenario...
+2025-04-16 15:20:47,166 - INFO - Detected existing .git directory at C:\Users\mochtod\AppData\Local\Temp\tmpxx87x15b\.git
+2025-04-16 15:20:47,168 - INFO - Cleaned up temporary test directory: C:\Users\mochtod\AppData\Local\Temp\tmpxx87x15b
+2025-04-16 15:20:47,190 - INFO - Test completed successfully
+2025-04-16 15:33:11,195 - INFO - Testing fake Git repository creation...
+2025-04-16 15:33:11,197 - INFO - Created temporary test directory: C:\Users\mochtod\AppData\Local\Temp\tmpyd3x60mi
+2025-04-16 15:33:11,197 - INFO - Created fake .git directory at C:\Users\mochtod\AppData\Local\Temp\tmpyd3x60mi\.git
+2025-04-16 15:33:11,198 - INFO - Created fake .git/refs/heads directory structure
+2025-04-16 15:33:11,199 - INFO - Created fake branch reference at C:\Users\mochtod\AppData\Local\Temp\tmpyd3x60mi\.git\refs\heads\main
+2025-04-16 15:33:11,200 - INFO - Created fake .git/config file at C:\Users\mochtod\AppData\Local\Temp\tmpyd3x60mi\.git\config
+2025-04-16 15:33:11,200 - INFO - Created fake .git/HEAD file at C:\Users\mochtod\AppData\Local\Temp\tmpyd3x60mi\.git\HEAD
+2025-04-16 15:33:11,211 - INFO - HEAD file content (hex): 7265663a20726566732f68656164732f6d61696e0d0a
+2025-04-16 15:33:11,212 - INFO - SUCCESS: HEAD file correctly ends with proper newline character (0x0A)
+2025-04-16 15:33:11,212 - INFO - Testing directory reuse scenario...
+2025-04-16 15:33:11,212 - INFO - Detected existing .git directory at C:\Users\mochtod\AppData\Local\Temp\tmpyd3x60mi\.git
+2025-04-16 15:33:11,215 - INFO - Cleaned up temporary test directory: C:\Users\mochtod\AppData\Local\Temp\tmpyd3x60mi
+2025-04-16 15:33:11,255 - INFO - Test completed successfully
