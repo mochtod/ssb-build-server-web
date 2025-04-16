@@ -284,51 +284,16 @@ def background_vsphere_sync():
     with app.app_context(): # Ensure task runs within app context if needed
         logger.info("Background task: Starting vSphere inventory sync...") # Modified log
         service_instance = None # Initialize service_instance
-        sync_status = {
-            'status': 'in_progress',
-            'step': 'connecting',
-            'message': 'Connecting to vSphere server...',
-            'progress': 10
-        }
-        # Store sync status in cache to make it available for API endpoint
-        set_cache('vsphere_sync_status', sync_status, ttl=300)
-        
         try: # Add outer try block
             service_instance = connect_to_vsphere()
             if not service_instance:
                 logger.error("Background task: Failed to connect to vSphere. Aborting sync.")
-                sync_status = {
-                    'status': 'error',
-                    'step': 'connecting',
-                    'message': 'Failed to connect to vSphere server',
-                    'progress': 0
-                }
-                set_cache('vsphere_sync_status', sync_status, ttl=300)
                 return # Connection failed
-            
-            # Update sync status - connected successfully
-            sync_status = {
-                'status': 'in_progress',
-                'step': 'fetching',
-                'message': 'Connected to vSphere, fetching inventory data...',
-                'progress': 30
-            }
-            set_cache('vsphere_sync_status', sync_status, ttl=300)
-            
             # Assign the result to inventory_data
             inventory_data = get_vsphere_inventory_data(service_instance) # Pass si here
             cache_key = 'vsphere_inventory'
 
             if inventory_data:
-                # Update sync status - processing data
-                sync_status = {
-                    'status': 'in_progress',
-                    'step': 'processing',
-                    'message': 'Processing vSphere inventory data...',
-                    'progress': 70
-                }
-                set_cache('vsphere_sync_status', sync_status, ttl=300)
-                
                 # Try to import the new cache configuration
                 try:
                     from cache_config import CACHE_TTL
@@ -342,43 +307,14 @@ def background_vsphere_sync():
                 
                 set_cache(cache_key, inventory_data, ttl=ttl)
                 logger.info("Background task: Successfully fetched and cached vSphere inventory.")
-                
-                # Update sync status - completed successfully
-                sync_status = {
-                    'status': 'success',
-                    'step': 'completed',
-                    'message': f"Successfully fetched {len(inventory_data.get('datacenters', []))} datacenters, " +
-                              f"{len(inventory_data.get('resource_pools', []))} resource pools, and " +
-                              f"{len(inventory_data.get('templates', []))} templates",
-                    'progress': 100
-                }
-                set_cache('vsphere_sync_status', sync_status, ttl=300)
             else:
                 # get_vsphere_inventory_data logs errors internally now
                 logger.error("Background task: Failed to fetch vSphere inventory data (check previous logs).")
-                
-                # Update sync status - failed to fetch data
-                sync_status = {
-                    'status': 'error',
-                    'step': 'fetching',
-                    'message': 'Failed to fetch vSphere inventory data',
-                    'progress': 0
-                }
-                set_cache('vsphere_sync_status', sync_status, ttl=300)
 
         except Exception as e: # Catch any unexpected errors during the process
             logger.error(f"Background task: Unhandled exception during vSphere sync: {e}", exc_info=True)
             # Optionally log the full traceback
             # logger.error(f"Traceback: {traceback.format_exc()}")
-            
-            # Update sync status - unexpected error
-            sync_status = {
-                'status': 'error',
-                'step': 'unknown',
-                'message': f'Unexpected error during vSphere sync: {str(e)}',
-                'progress': 0
-            }
-            set_cache('vsphere_sync_status', sync_status, ttl=300)
 
         finally:
             # Ensure disconnection even if errors occur after connection
@@ -1594,6 +1530,129 @@ Atlantis Plan URL: {plan_url}
             'message': f"Error running Terraform plan: {str(e)}"
         }
 
+def apply_atlantis_plan(config_data, tf_directory):
+    """Run a Terraform apply in Atlantis using the approved plan"""
+    try:
+        # Read all Terraform files in the directory
+        tf_files = {}
+        for filename in os.listdir(tf_directory):
+            if filename.endswith('.tf') or filename.endswith('.tfvars') or filename.endswith('.py'):
+                file_path = os.path.join(tf_directory, filename)
+                with open(file_path, 'r') as f:
+                    tf_files[filename] = f.read()
+        
+        # Get the plan ID from the config
+        plan_id = config_data.get('plan_id')
+        if not plan_id:
+            logger.error("No plan ID found in configuration")
+            return {
+                'status': 'error',
+                'message': "No plan ID found in configuration"
+            }
+        
+        try:
+            # Generate a JSON payload for apply operation
+            payload_dict = {
+                'repo': {
+                    'owner': 'fake',
+                    'name': 'terraform-repo',
+                    'clone_url': 'https://github.com/fake/terraform-repo.git'
+                },
+                'pull_request': {
+                    'num': 1,
+                    'branch': 'main',
+                    'author': config_data.get('build_owner', 'Admin User')
+                },
+                'head_commit': 'abcd1234',
+                'pull_num': 1,
+                'pull_author': config_data.get('build_owner', 'Admin User'),
+                'repo_rel_dir': os.path.basename(os.path.normpath(tf_directory)),
+                'workspace': config_data.get('environment', 'development'),
+                'project_name': config_data.get('server_name', 'unknown'),
+                'plan_id': plan_id,
+                'comment': f"Applying approved VM config: {config_data.get('server_name', 'unknown')}",
+                'user': config_data.get('build_owner', 'Admin User'),
+                'verbose': True,
+                'cmd': 'apply',           # Critical: ensure command is explicitly set to 'apply'
+                'dir': '.',               # Critical: add the 'dir' field that's required
+                'terraform_files': tf_files,
+                'environment': config_data.get('environment', 'development')  # Critical: environment field must be present
+            }
+            
+            # Convert to JSON string
+            payload_string = json.dumps(payload_dict, ensure_ascii=False)
+            
+            # Call Atlantis API to apply
+            headers = {
+                'Content-Type': 'application/json',
+                'X-Atlantis-Token': ATLANTIS_TOKEN
+            }
+            
+            logger.info(f"Sending apply request to Atlantis for {config_data.get('server_name', 'unknown')}")
+            response = requests.post(f"{ATLANTIS_URL}/api/apply", data=payload_string, headers=headers)
+            
+            if response.status_code != 200:
+                # If API call fails, log the error
+                error_message = f"Failed to trigger Atlantis apply: {response.text}"
+                logger.error(error_message)
+                return {
+                    'status': 'error',
+                    'message': error_message
+                }
+            
+            # API call succeeded
+            apply_response = response.json()
+            apply_id = apply_response.get('id', '')
+            
+            if not apply_id:
+                error_message = "No apply ID returned from Atlantis"
+                logger.error(error_message)
+                return {
+                    'status': 'error',
+                    'message': error_message
+                }
+            
+            logger.info(f"Successfully initiated Atlantis apply with ID: {apply_id}")
+            
+            # Generate apply URL
+            apply_url = f"{ATLANTIS_URL}/apply/{apply_id}"
+            
+            # Generate a receipt
+            build_receipt = f"""
+Terraform Apply Initiated:
+-------------------------
+Apply ID: {apply_id}
+Environment: {config_data.get('environment', 'development')}
+Server: {config_data.get('server_name', 'unknown')}
+Resources: {config_data.get('quantity', 1)} virtual machines
+Initiated by: {config_data.get('build_owner', 'Admin User')}
+Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Atlantis Apply URL: {apply_url}
+            """
+            
+            return {
+                'status': 'success',
+                'build_url': apply_url,
+                'build_receipt': build_receipt,
+                'apply_id': apply_id
+            }
+            
+        except Exception as api_error:
+            # If any exception occurs during API call, log it
+            logger.exception(f"Error calling Atlantis API: {str(api_error)}")
+            return {
+                'status': 'error',
+                'message': f"Error calling Atlantis API: {str(api_error)}"
+            }
+            
+    except Exception as e:
+        logger.exception(f"Error applying Terraform plan: {str(e)}")
+        return {
+            'status': 'error',
+            'message': f"Error applying Terraform plan: {str(e)}"
+        }
+
 def prepare_terraform_files(tf_directory, config_data):
     """Prepare all necessary Terraform files for a plan"""
     # Copy necessary files from vm-workspace if they don't exist
@@ -1938,8 +1997,8 @@ def api_get_resource_pools_for_datacenter(datacenter):
         datacenter_normalized = datacenter.lower().replace('-', '').replace('_', '').replace(' ', '')
         
         # Filter resource pools by datacenter
-        filtered_pools = []
-        logger.debug(f"Using normalized datacenter name for matching: {datacenter_normalized}")
+        filtered_pools = []        logger.debug(f"Using normalized datacenter name for matching: {datacenter_normalized}")
+        
         for pool in vsphere_data.get('resource_pools', []):
             # More flexible filtering logic to handle different formats
             pool_name = pool
@@ -2150,64 +2209,6 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
 
 # --- End API Endpoints for vSphere Resources ---
 
-# Add a status endpoint for vSphere sync
-@app.route('/api/vsphere-sync-status')
-@login_required
-def api_get_vsphere_sync_status():
-    """API endpoint to get the current status of vSphere synchronization."""
-    try:
-        # Try to get detailed sync status from cache first
-        sync_status = get_cache('vsphere_sync_status')
-        
-        # Check vsphere inventory data
-        vsphere_data = get_vsphere_inventory()
-        has_data = vsphere_data and len(vsphere_data.get('datacenters', [])) > 0
-        
-        # Initialize default result
-        result = {
-            "status": "in_progress",
-            "message": "vSphere data synchronization in progress...",
-            "completed": False,
-            "has_data": has_data,
-            "progress": 50  # Default progress value
-        }
-        
-        # If we have detailed sync status, use it
-        if sync_status:
-            # Update with available status info
-            result["status"] = sync_status.get('status', result["status"])
-            result["message"] = sync_status.get('message', result["message"])
-            result["progress"] = sync_status.get('progress', result["progress"])
-            
-            # Determine if completed based on status
-            if sync_status.get('status') in ['success', 'error']:
-                result["completed"] = True
-        else:
-            # Fallback logic if no sync status is available
-            if has_data:
-                # We have data, so sync must have completed successfully at some point
-                result["status"] = "success"
-                result["message"] = f"vSphere data loaded successfully with {len(vsphere_data.get('datacenters'))} datacenters"
-                result["completed"] = True
-                result["progress"] = 100
-            elif get_cache('vsphere_inventory') is not None:
-                # We tried to sync but didn't get any datacenters - likely an error
-                result["status"] = "error"
-                result["message"] = "Failed to load vSphere data. Check logs for errors."
-                result["completed"] = True
-                result["progress"] = 0
-            
-        return jsonify(result)
-    except Exception as e:
-        logger.error(f"Error checking vSphere sync status: {e}")
-        return jsonify({
-            "status": "error",
-            "message": f"Error checking status: {str(e)}",
-            "completed": False,
-            "has_data": False,
-            "progress": 0
-        }), 500
-
 # Initialize Scheduler
 scheduler.init_app(app)
 
@@ -2238,6 +2239,7 @@ if __name__ == '__main__':
     # Use host='0.0.0.0' to be accessible externally if needed
     # debug=True should be False in production
     # use_reloader=False is important when using APScheduler with Flask's dev server
-    # Set debug based on environment variable, default to False    
+    # Set debug based on environment variable, default to False
     app_debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
     app.run(debug=app_debug, host='0.0.0.0', port=5150, use_reloader=False)
+```

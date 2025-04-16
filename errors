@@ -1,0 +1,838 @@
+Attaching to ssb-redis, ssb-build-server-web-1_atlantis_1, ssb-build-server-web-1_web_1
+[36matlantis_1  |[0m No files found in /docker-entrypoint.d/, skipping
+[36matlantis_1  |[0m {"level":"warn","ts":"2025-04-16T16:15:34.187Z","caller":"cmd/server.go:1173","msg":"no GitHub webhook secret set. This could allow attackers to spoof requests from GitHub","json":{},"stacktrace":"github.com/runatlantis/atlantis/cmd.(*ServerCmd).securityWarnings\n\tgithub.com/runatlantis/atlantis/cmd/server.go:1173\ngithub.com/runatlantis/atlantis/cmd.(*ServerCmd).run\n\tgithub.com/runatlantis/atlantis/cmd/server.go:862\ngithub.com/runatlantis/atlantis/cmd.(*ServerCmd).Init.func2\n\tgithub.com/runatlantis/atlantis/cmd/server.go:754\ngithub.com/runatlantis/atlantis/cmd.(*ServerCmd).Init.(*ServerCmd).withErrPrint.func5\n\tgithub.com/runatlantis/atlantis/cmd/server.go:1220\ngithub.com/spf13/cobra.(*Command).execute\n\tgithub.com/spf13/cobra@v1.8.1/command.go:985\ngithub.com/spf13/cobra.(*Command).ExecuteC\n\tgithub.com/spf13/cobra@v1.8.1/command.go:1117\ngithub.com/spf13/cobra.(*Command).Execute\n\tgithub.com/spf13/cobra@v1.8.1/command.go:1041\ngithub.com/runatlantis/atlantis/cmd.Execute\n\tgithub.com/runatlantis/atlantis/cmd/root.go:30\nmain.main\n\tgithub.com/runatlantis/atlantis/main.go:66\nruntime.main\n\truntime/proc.go:283"}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:15:34.198Z","caller":"server/server.go:340","msg":"Supported VCS Hosts: Github","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:15:34.281Z","caller":"server/server.go:501","msg":"Utilizing BoltDB","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:15:34.287Z","caller":"server/server.go:510","msg":"Repo Locking is disabled","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:15:34.287Z","caller":"policy/conftest_client.go:168","msg":"failed to get default conftest version. Will attempt request scoped lazy loads DEFAULT_CONFTEST_VERSION not set","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:15:34.288Z","caller":"server/server.go:1096","msg":"Atlantis started - listening on port 4141","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:15:34.289Z","caller":"scheduled/executor_service.go:51","msg":"Scheduled Executor Service started","json":{}}
+[32mssb-redis   |[0m 1:C 16 Apr 2025 16:15:33.997 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+[32mssb-redis   |[0m 1:C 16 Apr 2025 16:15:33.997 * Redis version=7.4.2, bits=64, commit=00000000, modified=0, pid=1, just started
+[32mssb-redis   |[0m 1:C 16 Apr 2025 16:15:33.997 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:33.998 * monotonic clock: POSIX clock_gettime
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.000 * Running mode=standalone, port=6379.
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.002 * Server initialized
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.002 * Loading RDB produced by version 7.4.2
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.003 * RDB age 27 seconds
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.003 * RDB memory usage when created 0.90 Mb
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.003 * Done loading RDB, keys loaded: 0, keys expired: 0.
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.004 * DB loaded from disk: 0.001 seconds
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:15:34.010 * Ready to accept connections tcp
+[33mweb_1       |[0m [2025-04-16 16:15:34 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[33mweb_1       |[0m [2025-04-16 16:15:34 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[33mweb_1       |[0m [2025-04-16 16:15:34 +0000] [1] [INFO] Using worker: sync
+[33mweb_1       |[0m [2025-04-16 16:15:34 +0000] [7] [INFO] Booting worker with pid: 7
+[33mweb_1       |[0m [2025-04-16 16:15:35 +0000] [7] [ERROR] Exception in worker process
+[33mweb_1       |[0m Traceback (most recent call last):
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[33mweb_1       |[0m     worker.init_process()
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[33mweb_1       |[0m     self.load_wsgi()
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[33mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[33mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[33mweb_1       |[0m     self.callable = self.load()
+[33mweb_1       |[0m                     ^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[33mweb_1       |[0m     return self.load_wsgiapp()
+[33mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[33mweb_1       |[0m     return util.import_app(self.app_uri)
+[33mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[33mweb_1       |[0m     mod = importlib.import_module(module)
+[33mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[33mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[33mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[33mweb_1       |[0m   File "/app/app.py", line 2243
+[33mweb_1       |[0m     ```
+[33mweb_1       |[0m     ^
+[33mweb_1       |[0m SyntaxError: invalid syntax
+[33mweb_1       |[0m [2025-04-16 16:15:35 +0000] [7] [INFO] Worker exiting (pid: 7)
+[33mweb_1       |[0m [2025-04-16 16:15:35 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[33mweb_1       |[0m [2025-04-16 16:15:35 +0000] [1] [ERROR] Shutting down: Master
+[33mweb_1       |[0m [2025-04-16 16:15:35 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [1] [INFO] Using worker: sync
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [7] [INFO] Booting worker with pid: 7
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [7] [ERROR] Exception in worker process
+[35mweb_1       |[0m Traceback (most recent call last):
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[35mweb_1       |[0m     worker.init_process()
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[35mweb_1       |[0m     self.load_wsgi()
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[35mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[35mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[35mweb_1       |[0m     self.callable = self.load()
+[35mweb_1       |[0m                     ^^^^^^^^^^^
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[35mweb_1       |[0m     return self.load_wsgiapp()
+[35mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[35mweb_1       |[0m     return util.import_app(self.app_uri)
+[35mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[35mweb_1       |[0m     mod = importlib.import_module(module)
+[35mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[35mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[35mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[35mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[35mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[35mweb_1       |[0m   File "/app/app.py", line 2243
+[35mweb_1       |[0m     ```
+[35mweb_1       |[0m     ^
+[35mweb_1       |[0m SyntaxError: invalid syntax
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [7] [INFO] Worker exiting (pid: 7)
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [1] [ERROR] Shutting down: Master
+[35mweb_1       |[0m [2025-04-16 16:15:36 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[33mssb-build-server-web-1_web_1 exited with code 3
+[0m[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [1] [INFO] Using worker: sync
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [6] [INFO] Booting worker with pid: 6
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [6] [ERROR] Exception in worker process
+[34mweb_1       |[0m Traceback (most recent call last):
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[34mweb_1       |[0m     worker.init_process()
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[34mweb_1       |[0m     self.load_wsgi()
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[34mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[34mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[34mweb_1       |[0m     self.callable = self.load()
+[34mweb_1       |[0m                     ^^^^^^^^^^^
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[34mweb_1       |[0m     return self.load_wsgiapp()
+[34mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[34mweb_1       |[0m     return util.import_app(self.app_uri)
+[34mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[34mweb_1       |[0m     mod = importlib.import_module(module)
+[34mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[34mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[34mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[34mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[34mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[34mweb_1       |[0m   File "/app/app.py", line 2243
+[34mweb_1       |[0m     ```
+[34mweb_1       |[0m     ^
+[34mweb_1       |[0m SyntaxError: invalid syntax
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [6] [INFO] Worker exiting (pid: 6)
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [1] [ERROR] Worker (pid:6) exited with code 3
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [1] [ERROR] Shutting down: Master
+[34mweb_1       |[0m [2025-04-16 16:15:37 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[35mssb-build-server-web-1_web_1 exited with code 3
+[0m[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [1] [INFO] Using worker: sync
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [7] [INFO] Booting worker with pid: 7
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [7] [ERROR] Exception in worker process
+[36;1mweb_1       |[0m Traceback (most recent call last):
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[36;1mweb_1       |[0m     worker.init_process()
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[36;1mweb_1       |[0m     self.load_wsgi()
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[36;1mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[36;1mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[36;1mweb_1       |[0m     self.callable = self.load()
+[36;1mweb_1       |[0m                     ^^^^^^^^^^^
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[36;1mweb_1       |[0m     return self.load_wsgiapp()
+[36;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[36;1mweb_1       |[0m     return util.import_app(self.app_uri)
+[36;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[36;1mweb_1       |[0m     mod = importlib.import_module(module)
+[36;1mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[36;1mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[36;1mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[36;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[36;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[36;1mweb_1       |[0m   File "/app/app.py", line 2243
+[36;1mweb_1       |[0m     ```
+[36;1mweb_1       |[0m     ^
+[36;1mweb_1       |[0m SyntaxError: invalid syntax
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [7] [INFO] Worker exiting (pid: 7)
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [1] [ERROR] Shutting down: Master
+[36;1mweb_1       |[0m [2025-04-16 16:15:38 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[34mssb-build-server-web-1_web_1 exited with code 3
+[0m[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [1] [INFO] Using worker: sync
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [8] [INFO] Booting worker with pid: 8
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [8] [ERROR] Exception in worker process
+[33;1mweb_1       |[0m Traceback (most recent call last):
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[33;1mweb_1       |[0m     worker.init_process()
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[33;1mweb_1       |[0m     self.load_wsgi()
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[33;1mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[33;1mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[33;1mweb_1       |[0m     self.callable = self.load()
+[33;1mweb_1       |[0m                     ^^^^^^^^^^^
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[33;1mweb_1       |[0m     return self.load_wsgiapp()
+[33;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[33;1mweb_1       |[0m     return util.import_app(self.app_uri)
+[33;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[33;1mweb_1       |[0m     mod = importlib.import_module(module)
+[33;1mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33;1mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[33;1mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[33;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[33;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[33;1mweb_1       |[0m   File "/app/app.py", line 2243
+[33;1mweb_1       |[0m     ```
+[33;1mweb_1       |[0m     ^
+[33;1mweb_1       |[0m SyntaxError: invalid syntax
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [8] [INFO] Worker exiting (pid: 8)
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [1] [ERROR] Worker (pid:8) exited with code 3
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [1] [ERROR] Shutting down: Master
+[33;1mweb_1       |[0m [2025-04-16 16:15:40 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[36;1mssb-build-server-web-1_web_1 exited with code 3
+[0m[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [1] [INFO] Using worker: sync
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [7] [INFO] Booting worker with pid: 7
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [7] [ERROR] Exception in worker process
+[32;1mweb_1       |[0m Traceback (most recent call last):
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[32;1mweb_1       |[0m     worker.init_process()
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[32;1mweb_1       |[0m     self.load_wsgi()
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[32;1mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[32;1mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[32;1mweb_1       |[0m     self.callable = self.load()
+[32;1mweb_1       |[0m                     ^^^^^^^^^^^
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[32;1mweb_1       |[0m     return self.load_wsgiapp()
+[32;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[32;1mweb_1       |[0m     return util.import_app(self.app_uri)
+[32;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[32;1mweb_1       |[0m     mod = importlib.import_module(module)
+[32;1mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[32;1mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[32;1mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[32;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[32;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[32;1mweb_1       |[0m   File "/app/app.py", line 2243
+[32;1mweb_1       |[0m     ```
+[32;1mweb_1       |[0m     ^
+[32;1mweb_1       |[0m SyntaxError: invalid syntax
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [7] [INFO] Worker exiting (pid: 7)
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [1] [ERROR] Shutting down: Master
+[32;1mweb_1       |[0m [2025-04-16 16:15:42 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[33;1mssb-build-server-web-1_web_1 exited with code 3
+[0m[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [1] [INFO] Using worker: sync
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [7] [INFO] Booting worker with pid: 7
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [7] [ERROR] Exception in worker process
+[35;1mweb_1       |[0m Traceback (most recent call last):
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[35;1mweb_1       |[0m     worker.init_process()
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[35;1mweb_1       |[0m     self.load_wsgi()
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[35;1mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[35;1mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[35;1mweb_1       |[0m     self.callable = self.load()
+[35;1mweb_1       |[0m                     ^^^^^^^^^^^
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[35;1mweb_1       |[0m     return self.load_wsgiapp()
+[35;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[35;1mweb_1       |[0m     return util.import_app(self.app_uri)
+[35;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[35;1mweb_1       |[0m     mod = importlib.import_module(module)
+[35;1mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[35;1mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[35;1mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[35;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[35;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[35;1mweb_1       |[0m   File "/app/app.py", line 2243
+[35;1mweb_1       |[0m     ```
+[35;1mweb_1       |[0m     ^
+[35;1mweb_1       |[0m SyntaxError: invalid syntax
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [7] [INFO] Worker exiting (pid: 7)
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [1] [ERROR] Shutting down: Master
+[35;1mweb_1       |[0m [2025-04-16 16:15:46 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[32;1mssb-build-server-web-1_web_1 exited with code 3
+[0m[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [1] [INFO] Using worker: sync
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [7] [INFO] Booting worker with pid: 7
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [7] [ERROR] Exception in worker process
+[34;1mweb_1       |[0m Traceback (most recent call last):
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[34;1mweb_1       |[0m     worker.init_process()
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[34;1mweb_1       |[0m     self.load_wsgi()
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[34;1mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[34;1mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[34;1mweb_1       |[0m     self.callable = self.load()
+[34;1mweb_1       |[0m                     ^^^^^^^^^^^
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[34;1mweb_1       |[0m     return self.load_wsgiapp()
+[34;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[34;1mweb_1       |[0m     return util.import_app(self.app_uri)
+[34;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[34;1mweb_1       |[0m     mod = importlib.import_module(module)
+[34;1mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[34;1mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[34;1mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[34;1mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[34;1mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[34;1mweb_1       |[0m   File "/app/app.py", line 2243
+[34;1mweb_1       |[0m     ```
+[34;1mweb_1       |[0m     ^
+[34;1mweb_1       |[0m SyntaxError: invalid syntax
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [7] [INFO] Worker exiting (pid: 7)
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [1] [ERROR] Shutting down: Master
+[34;1mweb_1       |[0m [2025-04-16 16:15:53 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[35;1mssb-build-server-web-1_web_1 exited with code 3
+[0m[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [1] [INFO] Using worker: sync
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [7] [INFO] Booting worker with pid: 7
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [7] [ERROR] Exception in worker process
+[36mweb_1       |[0m Traceback (most recent call last):
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[36mweb_1       |[0m     worker.init_process()
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[36mweb_1       |[0m     self.load_wsgi()
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[36mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[36mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[36mweb_1       |[0m     self.callable = self.load()
+[36mweb_1       |[0m                     ^^^^^^^^^^^
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[36mweb_1       |[0m     return self.load_wsgiapp()
+[36mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[36mweb_1       |[0m     return util.import_app(self.app_uri)
+[36mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[36mweb_1       |[0m     mod = importlib.import_module(module)
+[36mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[36mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[36mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[36mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[36mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[36mweb_1       |[0m   File "/app/app.py", line 2243
+[36mweb_1       |[0m     ```
+[36mweb_1       |[0m     ^
+[36mweb_1       |[0m SyntaxError: invalid syntax
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [7] [INFO] Worker exiting (pid: 7)
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [1] [ERROR] Shutting down: Master
+[36mweb_1       |[0m [2025-04-16 16:16:06 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[34;1mssb-build-server-web-1_web_1 exited with code 3
+[0m[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [1] [INFO] Using worker: sync
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [7] [INFO] Booting worker with pid: 7
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [7] [ERROR] Exception in worker process
+[33mweb_1       |[0m Traceback (most recent call last):
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/arbiter.py", line 609, in spawn_worker
+[33mweb_1       |[0m     worker.init_process()
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 134, in init_process
+[33mweb_1       |[0m     self.load_wsgi()
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/workers/base.py", line 146, in load_wsgi
+[33mweb_1       |[0m     self.wsgi = self.app.wsgi()
+[33mweb_1       |[0m                 ^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/base.py", line 67, in wsgi
+[33mweb_1       |[0m     self.callable = self.load()
+[33mweb_1       |[0m                     ^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 58, in load
+[33mweb_1       |[0m     return self.load_wsgiapp()
+[33mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/app/wsgiapp.py", line 48, in load_wsgiapp
+[33mweb_1       |[0m     return util.import_app(self.app_uri)
+[33mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/site-packages/gunicorn/util.py", line 371, in import_app
+[33mweb_1       |[0m     mod = importlib.import_module(module)
+[33mweb_1       |[0m           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "/usr/local/lib/python3.11/importlib/__init__.py", line 126, in import_module
+[33mweb_1       |[0m     return _bootstrap._gcd_import(name[level:], package, level)
+[33mweb_1       |[0m            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1074, in get_code
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap_external>", line 1004, in source_to_code
+[33mweb_1       |[0m   File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+[33mweb_1       |[0m   File "/app/app.py", line 2243
+[33mweb_1       |[0m     ```
+[33mweb_1       |[0m     ^
+[33mweb_1       |[0m SyntaxError: invalid syntax
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [7] [INFO] Worker exiting (pid: 7)
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [1] [ERROR] Worker (pid:7) exited with code 3
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [1] [ERROR] Shutting down: Master
+[33mweb_1       |[0m [2025-04-16 16:16:33 +0000] [1] [ERROR] Reason: Worker failed to boot.
+[36mssb-build-server-web-1_web_1 exited with code 3
+[0mGracefully stopping... (press Ctrl+C again to force)
+Attaching to ssb-redis, ssb-build-server-web-1_atlantis_1, ssb-build-server-web-1_web_1
+[36matlantis_1  |[0m No files found in /docker-entrypoint.d/, skipping
+[36matlantis_1  |[0m {"level":"warn","ts":"2025-04-16T16:19:08.131Z","caller":"cmd/server.go:1173","msg":"no GitHub webhook secret set. This could allow attackers to spoof requests from GitHub","json":{},"stacktrace":"github.com/runatlantis/atlantis/cmd.(*ServerCmd).securityWarnings\n\tgithub.com/runatlantis/atlantis/cmd/server.go:1173\ngithub.com/runatlantis/atlantis/cmd.(*ServerCmd).run\n\tgithub.com/runatlantis/atlantis/cmd/server.go:862\ngithub.com/runatlantis/atlantis/cmd.(*ServerCmd).Init.func2\n\tgithub.com/runatlantis/atlantis/cmd/server.go:754\ngithub.com/runatlantis/atlantis/cmd.(*ServerCmd).Init.(*ServerCmd).withErrPrint.func5\n\tgithub.com/runatlantis/atlantis/cmd/server.go:1220\ngithub.com/spf13/cobra.(*Command).execute\n\tgithub.com/spf13/cobra@v1.8.1/command.go:985\ngithub.com/spf13/cobra.(*Command).ExecuteC\n\tgithub.com/spf13/cobra@v1.8.1/command.go:1117\ngithub.com/spf13/cobra.(*Command).Execute\n\tgithub.com/spf13/cobra@v1.8.1/command.go:1041\ngithub.com/runatlantis/atlantis/cmd.Execute\n\tgithub.com/runatlantis/atlantis/cmd/root.go:30\nmain.main\n\tgithub.com/runatlantis/atlantis/main.go:66\nruntime.main\n\truntime/proc.go:283"}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:19:08.135Z","caller":"server/server.go:340","msg":"Supported VCS Hosts: Github","json":{}}
+[32mssb-redis   |[0m 1:C 16 Apr 2025 16:19:07.985 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+[32mssb-redis   |[0m 1:C 16 Apr 2025 16:19:07.985 * Redis version=7.4.2, bits=64, commit=00000000, modified=0, pid=1, just started
+[32mssb-redis   |[0m 1:C 16 Apr 2025 16:19:07.985 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:19:08.194Z","caller":"server/server.go:501","msg":"Utilizing BoltDB","json":{}}
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.985 * monotonic clock: POSIX clock_gettime
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.988 * Running mode=standalone, port=6379.
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.989 * Server initialized
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.990 * Loading RDB produced by version 7.4.2
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.990 * RDB age 146 seconds
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.990 * RDB memory usage when created 0.90 Mb
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.990 * Done loading RDB, keys loaded: 0, keys expired: 0.
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.990 * DB loaded from disk: 0.000 seconds
+[32mssb-redis   |[0m 1:M 16 Apr 2025 16:19:07.990 * Ready to accept connections tcp
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:19:08.198Z","caller":"server/server.go:510","msg":"Repo Locking is disabled","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:19:08.198Z","caller":"policy/conftest_client.go:168","msg":"failed to get default conftest version. Will attempt request scoped lazy loads DEFAULT_CONFTEST_VERSION not set","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:19:08.200Z","caller":"server/server.go:1096","msg":"Atlantis started - listening on port 4141","json":{}}
+[36matlantis_1  |[0m {"level":"info","ts":"2025-04-16T16:19:08.200Z","caller":"scheduled/executor_service.go:51","msg":"Scheduled Executor Service started","json":{}}
+[33mweb_1       |[0m [2025-04-16 16:19:08 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[33mweb_1       |[0m [2025-04-16 16:19:08 +0000] [1] [INFO] Listening at: http://0.0.0.0:5150 (1)
+[33mweb_1       |[0m [2025-04-16 16:19:08 +0000] [1] [INFO] Using worker: sync
+[33mweb_1       |[0m [2025-04-16 16:19:08 +0000] [7] [INFO] Booting worker with pid: 7
+[33mweb_1       |[0m INFO:app:Successfully connected to Redis at redis:6379
+[33mweb_1       |[0m DEBUG:tzlocal:/etc/timezone found, contents:
+[33mweb_1       |[0m  Etc/UTC
+[33mweb_1       |[0m 
+[33mweb_1       |[0m DEBUG:tzlocal:/etc/localtime found
+[33mweb_1       |[0m DEBUG:tzlocal:2 found:
+[33mweb_1       |[0m  {'/etc/timezone': 'Etc/UTC', '/etc/localtime is a symlink to': 'Etc/UTC'}
+[33mweb_1       |[0m INFO:app:Checking USERS_FILE path: /app/users.json
+[33mweb_1       |[0m INFO:apscheduler.scheduler:Adding job tentatively -- it will be properly scheduled when the scheduler starts
+[33mweb_1       |[0m INFO:apscheduler.scheduler:Added job "scheduled_vsphere_sync" to job store "default"
+[33mweb_1       |[0m INFO:apscheduler.scheduler:Scheduler started
+[33mweb_1       |[0m DEBUG:apscheduler.scheduler:Looking for jobs to run
+[33mweb_1       |[0m DEBUG:apscheduler.scheduler:Next wakeup is due at 2025-04-16 17:19:09.455912+00:00 (in 3599.996510 seconds)
+[33mweb_1       |[0m WARNING:app:vSphere inventory not found in cache. Waiting for background sync.
+[33mweb_1       |[0m INFO:app:Fetching fresh Netbox IP ranges...
+[33mweb_1       |[0m WARNING:app:Disabling SSL verification for Netbox connection to https://netbox.chrobinson.com
+[33mweb_1       |[0m DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): netbox.chrobinson.com:443
+[33mweb_1       |[0m INFO:app:Triggering initial vSphere sync...
+[33mweb_1       |[0m INFO:app:Background task: Starting vSphere inventory sync...
+[33mweb_1       |[0m WARNING:app:Attempting to disable SSL verification for vSphere connection.
+[33mweb_1       |[0m DEBUG:urllib3.connectionpool:https://netbox.chrobinson.com:443 "GET /api/dcim/sites/?limit=1&brief=1 HTTP/1.1" 200 271
+[33mweb_1       |[0m INFO:app:Successfully connected to Netbox API at: https://netbox.chrobinson.com
+[33mweb_1       |[0m INFO:app:Successfully connected to vSphere server: virtualcenter.chrobinson.com
+[33mweb_1       |[0m DEBUG:app:Entering get_vsphere_objects for type: [<class 'pyVmomi.VmomiSupport.vim.Datacenter'>]
+[33mweb_1       |[0m DEBUG:app:Attempting si.RetrieveContent()...
+[33mweb_1       |[0m DEBUG:app:si.RetrieveContent() successful.
+[33mweb_1       |[0m INFO:app:Successfully fetched 6 datacenters.
+[33mweb_1       |[0m INFO:app:Attempting to fetch raw cluster objects...
+[33mweb_1       |[0m DEBUG:app:Entering get_vsphere_objects for type: [<class 'pyVmomi.VmomiSupport.vim.ClusterComputeResource'>]
+[33mweb_1       |[0m DEBUG:app:Attempting si.RetrieveContent()...
+[33mweb_1       |[0m DEBUG:app:si.RetrieveContent() successful.
+[33mweb_1       |[0m INFO:app:Received 25 raw cluster objects.
+[33mweb_1       |[0m INFO:app:Starting processing of raw cluster objects...
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #0: 'vim.ClusterComputeResource:domain-c10347033'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #0: np-cl20-kubespray
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #1: 'vim.ClusterComputeResource:domain-c3310244'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #1: DC2-NP11-KUB
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #2: 'vim.ClusterComputeResource:domain-c9891266'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #2: np-cl60-lin
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #3: 'vim.ClusterComputeResource:domain-c6194930'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #3: DC2-EBDC-FWHosts
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #4: 'vim.ClusterComputeResource:domain-c9814669'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #4: np-cl70-win
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #5: 'vim.ClusterComputeResource:domain-c11666645'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #5: dc2-prod20-kubespray
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #6: 'vim.ClusterComputeResource:domain-c7150353'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #6: DC2-PROD20-KUB
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #7: 'vim.ClusterComputeResource:domain-c11682478'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #7: dc2-cl50-mgmt
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #8: 'vim.ClusterComputeResource:domain-c8088291'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #8: dc2-prod-cl70-windows
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #9: 'vim.ClusterComputeResource:domain-c3778922'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #9: DC2-PROD12-VOIP
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #10: 'vim.ClusterComputeResource:domain-c3310246'
+[33mweb_1       |[0m DEBUG:urllib3.connectionpool:https://netbox.chrobinson.com:443 "GET /api/ipam/prefixes/?limit=0 HTTP/1.1" 200 2071787
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #10: DC2-PROD11-KUB
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #11: 'vim.ClusterComputeResource:domain-c9946801'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #11: prod-cl60-lin
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #12: 'vim.ClusterComputeResource:domain-c7334464'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #12: DC2-PROD50-Mgmt
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #13: 'vim.ClusterComputeResource:domain-c8654436'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #13: dc2-prod-cl60-linux
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #14: 'vim.ClusterComputeResource:domain-c11569224'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #14: prod-cl71-win
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #15: 'vim.ClusterComputeResource:domain-c9461462'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #15: dc2-prod-cl71-windows-don't-build-here
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #16: 'vim.ClusterComputeResource:domain-c8107730'
+[33mweb_1       |[0m INFO:app:Successfully fetched and cached Netbox IP ranges.
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #16: dc2-prod-cl31-dmz
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #17: 'vim.ClusterComputeResource:domain-c9946803'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #17: prod-cl70-win
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #18: 'vim.ClusterComputeResource:domain-c11861110'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #18: build
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #19: 'vim.ClusterComputeResource:domain-c11569222'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #19: prod-cl61-lin
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #20: 'vim.ClusterComputeResource:domain-c10686923'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #20: dc2-prod8-edi
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #21: 'vim.ClusterComputeResource:domain-c8016316'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #21: dc2-np-cl40-kub
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #22: 'vim.ClusterComputeResource:domain-c11593742'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #22: dc2-np-cl20-rancher
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #23: 'vim.ClusterComputeResource:domain-c11613603'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #23: dc2-prod-cl20-rancher
+[33mweb_1       |[0m DEBUG:app:Processing cluster object #24: 'vim.ClusterComputeResource:domain-c9338904'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for cluster #24: dc2-prod-cl41-kub
+[33mweb_1       |[0m INFO:app:Finished processing raw cluster objects.
+[33mweb_1       |[0m INFO:app:Successfully processed 25 resource pool/cluster names.
+[33mweb_1       |[0m INFO:app:Attempting to fetch raw datastore objects...
+[33mweb_1       |[0m DEBUG:app:Entering get_vsphere_objects for type: [<class 'pyVmomi.VmomiSupport.vim.Datastore'>]
+[33mweb_1       |[0m DEBUG:app:Attempting si.RetrieveContent()...
+[33mweb_1       |[0m DEBUG:app:si.RetrieveContent() successful.
+[33mweb_1       |[0m INFO:app:Received 332 raw datastore objects.
+[33mweb_1       |[0m INFO:app:Starting processing of raw datastore objects...
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #0: 'vim.Datastore:datastore-9909282'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #0: esx2np3cl60n101_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #1: 'vim.Datastore:datastore-9909281'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #1: esx2np3cl60n105_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #2: 'vim.Datastore:datastore-10347067'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #2: esx2np3cl20n102_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #3: 'vim.Datastore:datastore-9909310'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #3: esx2np3cl60n102_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #4: 'vim.Datastore:datastore-10182920'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #4: esx2np3cl70n113_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #5: 'vim.Datastore:datastore-10405160'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #5: esx2np3cl20n107_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #6: 'vim.Datastore:datastore-9909270'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #6: esx2np3cl60n104_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #7: 'vim.Datastore:datastore-10602156'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #7: esx2np3cl60n103_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #8: 'vim.Datastore:datastore-6229717'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #8: esx2np1sa10_data
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #9: 'vim.Datastore:datastore-10355909'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #9: esx2np3cl20n103_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #10: 'vim.Datastore:datastore-10347077'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #10: esx2np3cl20n100_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #11: 'vim.Datastore:datastore-10101015'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #11: esx2np3cl70n110_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #12: 'vim.Datastore:datastore-9909279'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #12: esx2np3cl60n108_local
+[33mweb_1       |[0m DEBUG:app:Finished name access attempt for datastore object #12.
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #13: 'vim.Datastore:datastore-10101016'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #13: esx2np3cl70n111_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #14: 'vim.Datastore:datastore-9909284'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #14: esx2np3cl60n107_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #15: 'vim.Datastore:datastore-9909288'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #15: esx2np3cl60n109_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #16: 'vim.Datastore:datastore-6229716'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #16: esx2np1sa11_data
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #17: 'vim.Datastore:datastore-10544487'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #17: esx2np3cl20n109_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #18: 'vim.Datastore:datastore-10437190'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #18: esx2np3cl20n108_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #19: 'vim.Datastore:datastore-3757124'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #19: np_cl7_esx_iso
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #20: 'vim.Datastore:datastore-11569237'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #20: esx2np3cl71n100_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #21: 'vim.Datastore:datastore-9909272'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #21: esx2np3cl60n106_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #22: 'vim.Datastore:datastore-10405159'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #22: esx2np3cl20n106_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #23: 'vim.Datastore:datastore-10355907'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #23: esx2np3cl20n104_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #24: 'vim.Datastore:datastore-11569251'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #24: esx2np3cl61n100_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #25: 'vim.Datastore:datastore-10355908'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #25: esx2np3cl20n105_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #26: 'vim.Datastore:datastore-10182919'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #26: esx2np3cl70n112_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #27: 'vim.Datastore:datastore-10347068'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #27: esx2np3cl20n101_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #28: 'vim.Datastore:datastore-6346782'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #28: esx2np3cl11n22_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #29: 'vim.Datastore:datastore-9849329'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #29: esx2np3cl70n101_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #30: 'vim.Datastore:datastore-6224685'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #30: esx2np1sa11_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #31: 'vim.Datastore:datastore-6229729'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #31: esx2np1sa10_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #32: 'vim.Datastore:datastore-9853843'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #32: esx2np3cl70n107_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #33: 'vim.Datastore:datastore-9849333'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #33: esx2np3cl70n102_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #34: 'vim.Datastore:datastore-9849335'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #34: esx2np3cl70n103_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #35: 'vim.Datastore:datastore-6346780'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #35: esx2np3cl11n23_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #36: 'vim.Datastore:datastore-9853845'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #36: esx2np3cl70n108_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #37: 'vim.Datastore:datastore-6346781'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #37: esx2np3cl11n21_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #38: 'vim.Datastore:datastore-9849352'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #38: esx2np3cl70n106_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #39: 'vim.Datastore:datastore-9858404'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #39: esx2np3cl70n105_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #40: 'vim.Datastore:datastore-9849337'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #40: esx2np3cl70n104_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #41: 'vim.Datastore:datastore-9849354'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #41: esx2np3cl70n109_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #42: 'vim.Datastore:datastore-10017565'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #42: np_cl70_pstore1_vol-009
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #43: 'vim.Datastore:datastore-9918499'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #43: np_cl70_pstore1_vol-008
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #44: 'vim.Datastore:datastore-9891254'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #44: np_cl70_pstore1_vol-005
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #45: 'vim.Datastore:datastore-9918498'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #45: np_cl70_pstore1_vol-007
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #46: 'vim.Datastore:datastore-9891252'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #46: np_cl70_pstore1_vol-003
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #47: 'vim.Datastore:datastore-9891255'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #47: np_cl70_pstore1_vol-006
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #48: 'vim.Datastore:datastore-9891251'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #48: np_cl70_pstore1_vol-002
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #49: 'vim.Datastore:datastore-9891253'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #49: np_cl70_pstore1_vol-004
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #50: 'vim.Datastore:datastore-9891250'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #50: np_cl70_pstore1_vol-001
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #51: 'vim.Datastore:datastore-10013013'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #51: np_cl70_pstore1_vol-000
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #52: 'vim.Datastore:datastore-1847487'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #52: dc2-np7-scratch
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #53: 'vim.Datastore:datastore-11849456'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #53: np_cl70_ntap1_vol_208
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #54: 'vim.Datastore:datastore-11849455'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #54: np_cl70_ntap1_vol_207
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #55: 'vim.Datastore:datastore-10017566'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #55: np_cl70_pstore1_vol-010
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #56: 'vim.Datastore:datastore-1474107'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #56: np_cl1_esx_405
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #57: 'vim.Datastore:datastore-11849453'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #57: np_cl70_ntap1_vol_204
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #58: 'vim.Datastore:datastore-11849458'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #58: np_cl70_ntap1_vol_203
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #59: 'vim.Datastore:datastore-11849454'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #59: np_cl70_ntap1_vol_206
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #60: 'vim.Datastore:datastore-5050410'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #60: np-cl1-esx-409
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #61: 'vim.Datastore:datastore-5050411'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #61: np-cl1-esx-410
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #62: 'vim.Datastore:datastore-9841809'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #62: esx2np3cl70n100_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #63: 'vim.Datastore:datastore-1463200'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #63: np_cl1_esx_400
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #64: 'vim.Datastore:datastore-11849457'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #64: np_cl70_ntap1_vol_209
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #65: 'vim.Datastore:datastore-5072587'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #65: np-cl1-esx-411
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #66: 'vim.Datastore:datastore-1463201'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #66: np_cl1_esx_401
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #67: 'vim.Datastore:datastore-1470441'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #67: np_cl1_esx_404
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #68: 'vim.Datastore:datastore-1474108'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #68: np_cl1_esx_406
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #69: 'vim.Datastore:datastore-11849452'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #69: np_cl70_ntap1_vol_210
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #70: 'vim.Datastore:datastore-1466832'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #70: np_cl1_esx_403
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #71: 'vim.Datastore:datastore-1466831'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #71: np_cl1_esx_402
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #72: 'vim.Datastore:datastore-1649375'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #72: np_cl1_esx_407
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #73: 'vim.Datastore:datastore-1649376'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #73: np_cl1_esx_408
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #74: 'vim.Datastore:datastore-11849449'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #74: np_cl70_ntap1_vol_205
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #75: 'vim.Datastore:datastore-11849451'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #75: np_cl70_ntap1_vol_201
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #76: 'vim.Datastore:datastore-11849450'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #76: np_cl70_ntap1_vol_202
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #77: 'vim.Datastore:datastore-4898881'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #77: np_cl11_esxkub_401
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #78: 'vim.Datastore:datastore-3314812'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #78: np_cl11_esxkub_400
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #79: 'vim.Datastore:datastore-9918507'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #79: np_cl11_esxkub_501
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #80: 'vim.Datastore:datastore-4395110'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #80: np_cl11_esxkub_302
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #81: 'vim.Datastore:datastore-3314811'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #81: np_cl11_esxkub_301
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #82: 'vim.Datastore:datastore-9918509'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #82: np_cl11_esxkub_503
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #83: 'vim.Datastore:datastore-9918510'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #83: np_cl11_esxkub_504
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #84: 'vim.Datastore:datastore-3314810'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #84: np_cl11_esxkub_300
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #85: 'vim.Datastore:datastore-6346762'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #85: np_cl11_esxkub_402
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #86: 'vim.Datastore:datastore-9918508'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #86: np_cl11_esxkub_502
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #87: 'vim.Datastore:datastore-2795325'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #87: np_cl7_esx_403
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #88: 'vim.Datastore:datastore-10036503'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #88: np_cl7_esx_409
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #89: 'vim.Datastore:datastore-4693197'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #89: np_cl7_esx_408
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #90: 'vim.Datastore:datastore-1871248'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #90: np_cl7_esx_401
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #91: 'vim.Datastore:datastore-1871249'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #91: np_cl7_esx_402
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #92: 'vim.Datastore:datastore-10041149'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #92: np-cl7-esx-412
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #93: 'vim.Datastore:datastore-10036502'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #93: np_cl7_esx_410
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #94: 'vim.Datastore:datastore-1871246'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #94: np_cl7_esx_400
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #95: 'vim.Datastore:datastore-2851953'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #95: np_cl7_esx_405
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #96: 'vim.Datastore:datastore-2808614'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #96: np_cl7_esx_404
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #97: 'vim.Datastore:datastore-4495727'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #97: np_cl7_esx_407
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #98: 'vim.Datastore:datastore-4376249'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #98: np_cl7_esx_406
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #99: 'vim.Datastore:datastore-10041148'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #99: np-cl7-esx-411
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #100: 'vim.Datastore:datastore-11826807'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #100: esx2pr3cl20n118_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #101: 'vim.Datastore:datastore-11815498'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #101: esx2pr3cl20n109_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #102: 'vim.Datastore:datastore-11815099'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #102: esx2pr3cl70n106_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #103: 'vim.Datastore:datastore-11815107'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #103: esx2pr3cl20n119_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #104: 'vim.Datastore:datastore-11759292'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #104: esx2pr3cl20n108_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #105: 'vim.Datastore:datastore-11759240'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #105: esx2pr3cl20n106_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #106: 'vim.Datastore:datastore-11759275'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #106: esx2pr3cl20n105_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #107: 'vim.Datastore:datastore-11759241'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #107: esx2pr3cl20n103_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #108: 'vim.Datastore:datastore-11759271'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #108: esx2pr3cl20n102_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #109: 'vim.Datastore:datastore-11751302'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #109: VeeamBackup_chr2pr1bu16.chrobinson.com
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #110: 'vim.Datastore:datastore-11700812'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #110: esx2pr3cl50n111_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #111: 'vim.Datastore:datastore-9508427'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #111: esx2pr3cl71n11_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #112: 'vim.Datastore:datastore-9598086'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #112: esx2pr3cl71n41_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #113: 'vim.Datastore:datastore-9379961'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #113: esx2pr3cl60n10_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #114: 'vim.Datastore:datastore-9379962'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #114: esx2pr3cl60n08_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #115: 'vim.Datastore:datastore-11569260'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #115: esx2pr3cl71n100_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #116: 'vim.Datastore:datastore-8251885'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #116: esx2pr3cl70n11_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #117: 'vim.Datastore:datastore-10210080'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #117: esx2pr3cl60n109_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #118: 'vim.Datastore:datastore-9598084'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #118: esx2pr3cl71n39_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #119: 'vim.Datastore:datastore-10031923'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #119: esx2pr3cl60n106_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #120: 'vim.Datastore:datastore-8251886'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #120: esx2pr3cl70n12_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #121: 'vim.Datastore:datastore-11759239'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #121: esx2pr3cl20n107_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #122: 'vim.Datastore:datastore-8649668'
+[33mweb_1       |[0m DEBUG:app:Successfully processed name for datastore #122: esx2pr3cl60n02_local
+[33mweb_1       |[0m DEBUG:app:Processing datastore object #123: 'vim.Datastore:datastore-11569265'
+Gracefully stopping... (press Ctrl+C again to force)

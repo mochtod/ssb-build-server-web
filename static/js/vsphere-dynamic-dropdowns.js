@@ -453,9 +453,16 @@ function populateDropdown(selectElement, items, placeholderText) {
     placeholderOption.textContent = placeholderText;
     selectElement.appendChild(placeholderOption);
     
+    // Filter out local datastores if this is the datastore dropdown
+    let filteredItems = items;
+    if (selectElement.id === 'vsphere_datastore' && items && items.length > 0) {
+        filteredItems = items.filter(item => !item.name.includes('_local'));
+        console.log(`Filtered out ${items.length - filteredItems.length} local datastores`);
+    }
+    
     // Add items
-    if (items && items.length > 0) {
-        items.forEach(item => {
+    if (filteredItems && filteredItems.length > 0) {
+        filteredItems.forEach(item => {
             const option = document.createElement('option');
             option.value = item.id || item.name;
             option.textContent = item.name;
