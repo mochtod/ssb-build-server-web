@@ -254,8 +254,7 @@ def get_vsphere_inventory_data(si):
             # Optional: Check if it's actually a list or iterable
             if not isinstance(raw_datastores, (list, tuple)):
                  logger.error(f"Received non-iterable object for datastores: {type(raw_datastores)}")
-            else:
-                try: # Add try block around the entire loop
+            else:                try: # Add try block around the entire loop
                     for i, ds in enumerate(raw_datastores): # Added enumerate
                         logger.debug(f"Processing datastore object #{i}: {ds}") # ADDED DEBUG LOG
                         try:
@@ -263,6 +262,29 @@ def get_vsphere_inventory_data(si):
                             if hasattr(ds, 'name') and ds.name:
                                 datastore_names.append(ds.name)
                                 logger.debug(f"Successfully processed name for datastore #{i}: {ds.name}") # ADDED DEBUG LOG
+                                
+                                # Find parent datacenter for this datastore
+                                try:
+                                    # Get accessible hosts for this datastore
+                                    host_mounts = ds.host
+                                    if host_mounts:
+                                        # Get first host mount
+                                        host_mount = host_mounts[0]
+                                        if hasattr(host_mount, 'key') and host_mount.key:
+                                            # Navigate up to find datacenter
+                                            parent = host_mount.key.parent
+                                            while parent and not isinstance(parent, vim.Datacenter):
+                                                parent = parent.parent
+                                                
+                                            if parent and isinstance(parent, vim.Datacenter):
+                                                parent_dc = parent.name
+                                                # Add datastore to its datacenter's resources
+                                                if parent_dc in inventory['datacenter_resources']:
+                                                    if ds.name not in inventory['datacenter_resources'][parent_dc]['datastores']:
+                                                        inventory['datacenter_resources'][parent_dc]['datastores'].append(ds.name)
+                                                        logger.debug(f"Mapped datastore '{ds.name}' to datacenter '{parent_dc}'")
+                                except Exception as ds_map_err:
+                                    logger.error(f"Error mapping datastore to datacenter: {ds_map_err}", exc_info=True)
                             else:
                                 logger.warning(f"Datastore object #{i} found without a valid name: {ds}")
                             # Add specific log after processing object #12 name attempt
@@ -280,12 +302,46 @@ def get_vsphere_inventory_data(si):
         logger.info(f"Successfully processed {len(inventory['datastores'])} datastore names.")        # Get VM Templates
         vms = get_vsphere_objects(si, [vim.VirtualMachine])
         inventory['templates'] = sorted([vm.name for vm in vms if vm.config.template])
-        logger.info(f"Successfully fetched {len(inventory['templates'])} VM templates.") # ADDED LOG
-
-        # Get Networks
+        logger.info(f"Successfully fetched {len(inventory['templates'])} VM templates.") # ADDED LOG        # Get Networks with datacenter mapping
         try:
             networks = get_vsphere_objects(si, [vim.Network])
-            inventory['networks'] = sorted([network.name for network in networks])
+            network_names = []
+            
+            if networks:
+                logger.info(f"Processing {len(networks)} network objects...")
+                for i, network in enumerate(networks):
+                    try:
+                        if hasattr(network, 'name') and network.name:
+                            network_names.append(network.name)
+                            
+                            # Find parent datacenter for this network
+                            try:
+                                # Try to navigate up the object hierarchy
+                                parent_dc = None
+                                
+                                # Try to navigate up until we find a datacenter
+                                parent = network
+                                if hasattr(network, 'parent'):
+                                    parent = network.parent
+                                    while parent and not isinstance(parent, vim.Datacenter):
+                                        if hasattr(parent, 'parent'):
+                                            parent = parent.parent
+                                        else:
+                                            break
+                                
+                                    if parent and isinstance(parent, vim.Datacenter):
+                                        parent_dc = parent.name
+                                        # Add network to its datacenter's resources
+                                        if parent_dc in inventory['datacenter_resources']:
+                                            if network.name not in inventory['datacenter_resources'][parent_dc]['networks']:
+                                                inventory['datacenter_resources'][parent_dc]['networks'].append(network.name)
+                                                logger.debug(f"Mapped network '{network.name}' to datacenter '{parent_dc}'")
+                            except Exception as net_map_err:
+                                logger.error(f"Error mapping network to datacenter: {net_map_err}", exc_info=True)
+                    except Exception as net_err:
+                        logger.error(f"Error processing network object #{i}: {net_err}", exc_info=True)
+            
+            inventory['networks'] = sorted(network_names)
             logger.info(f"Successfully fetched {len(inventory['networks'])} networks.")
         except Exception as net_err:
             logger.error(f"Error fetching networks: {net_err}", exc_info=True)
@@ -1942,9 +1998,9 @@ def api_get_resource_pools_for_datacenter(datacenter):
         # Get cached vSphere inventory
         vsphere_data = get_vsphere_inventory()
         
-        # Check if inventory data exists and has resource pools
-        if not vsphere_data or not vsphere_data.get('resource_pools'):
-            logger.warning(f"No resource pools found in vSphere inventory data for datacenter: {datacenter}")
+        # Check if inventory data exists and has datacenter resources
+        if not vsphere_data or 'datacenter_resources' not in vsphere_data:
+            logger.warning(f"No datacenter resources found in vSphere inventory data for datacenter: {datacenter}")
             return jsonify([])
         
         # Try to get from datacenter-specific cache first
@@ -1955,20 +2011,37 @@ def api_get_resource_pools_for_datacenter(datacenter):
             logger.debug(f"Using cached resource pools for datacenter: {datacenter}")
             return jsonify(cached_pools)
             
-        logger.debug(f"Filtering resource pools for datacenter: {datacenter}")
-        logger.debug(f"Available resource pools: {vsphere_data.get('resource_pools')}")
+        logger.debug(f"Fetching resource pools for datacenter: {datacenter}")
         
-        # Store original datacenter name for logging
-        original_dc = datacenter
+        # Check if this exact datacenter exists in our hierarchical structure
+        if datacenter in vsphere_data['datacenter_resources']:
+            # Great! We have directly mapped clusters for this datacenter
+            clusters = vsphere_data['datacenter_resources'][datacenter]['clusters']
+            logger.debug(f"Found {len(clusters)} directly mapped clusters for datacenter: {datacenter}")
+            
+            filtered_pools = []
+            for cluster in clusters:
+                filtered_pools.append({
+                    "id": cluster,
+                    "name": cluster
+                })
+                
+            # Cache the results for this datacenter
+            if filtered_pools:
+                set_cache(cache_key, filtered_pools, ttl=3600)  # Cache for 1 hour
+            
+            return jsonify(filtered_pools)
+        
+        # Datacenter not found or no direct mapping, use the fallback approach
+        logger.warning(f"No direct mapping found for datacenter: {datacenter}. Using fallback approach.")
         
         # Normalize datacenter name for more flexible matching
         datacenter_normalized = datacenter.lower().replace('-', '').replace('_', '').replace(' ', '')
         
-        # Filter resource pools by datacenter
+        # Filter resource pools using original fallback logic
         filtered_pools = []
-        logger.debug(f"Using normalized datacenter name for matching: {datacenter_normalized}")
         for pool in vsphere_data.get('resource_pools', []):
-            # More flexible filtering logic to handle different formats
+            # Original flexible matching logic...
             pool_name = pool
             belongs_to_datacenter = False
             display_name = pool_name  # Default display name
@@ -1978,7 +2051,7 @@ def api_get_resource_pools_for_datacenter(datacenter):
                 belongs_to_datacenter = True
                 logger.debug(f"Pool '{pool}' matched exact datacenter name '{datacenter}'")
             
-            # Check for path format (DatacenterName/ClusterName or DatacenterName/path/to/cluster)
+            # Check for path format
             elif '/' in pool:
                 parts = pool.split('/')
                 if parts[0] == datacenter:
@@ -1988,9 +2061,7 @@ def api_get_resource_pools_for_datacenter(datacenter):
                         display_name = '/'.join(parts[1:])
                     logger.debug(f"Pool '{pool}' matched path-based datacenter '{datacenter}'")
             
-            # Check for partial match in name (for datacenters and pools with similar naming patterns)
-            # For example, if datacenter is "EBDC NONPROD" and pool is "np-cl60-lin" 
-            # or if datacenter contains "np" and pool name contains "np"
+            # Check for partial match in name
             else:
                 normalized_pool = pool.lower().replace('-', '').replace('_', '').replace(' ', '')
                 
@@ -2001,7 +2072,7 @@ def api_get_resource_pools_for_datacenter(datacenter):
                 elif "prod" in datacenter_normalized and "prod" in normalized_pool:
                     belongs_to_datacenter = True
                     logger.debug(f"Pool '{pool}' matched 'prod' in datacenter '{datacenter}'")
-                # Partial name match (if datacenter name part appears in the pool name)
+                # Partial name match
                 elif any(part.lower() in normalized_pool for part in datacenter.lower().split()):
                     belongs_to_datacenter = True
                     logger.debug(f"Pool '{pool}' matched partial datacenter name '{datacenter}'")
@@ -2016,35 +2087,23 @@ def api_get_resource_pools_for_datacenter(datacenter):
                     "id": pool,
                     "name": display_name
                 })
-          # Cache the results for this datacenter to avoid repeated filtering
+        
+        # Cache the results for this datacenter to avoid repeated filtering
         if filtered_pools:
             set_cache(cache_key, filtered_pools, ttl=3600)  # Cache for 1 hour
             
-        # If still no pools found, add a fallback for EBDC NONPROD datacenters to show all pools with "np" in them
-        if not filtered_pools and ("ebdc" in datacenter.lower() and "nonprod" in datacenter.lower()):
-            logger.warning(f"No direct matches found for datacenter '{datacenter}'. Adding NP pools as fallback.")
-            for pool in vsphere_data.get('resource_pools', []):
-                if "np" in pool.lower():
-                    filtered_pools.append({
-                        "id": pool,
-                        "name": pool
-                    })
-        
-        # If we still have no pools, return at least some pools for a better UX
+        # Return fallback pools if no matches
         if not filtered_pools:
             logger.warning(f"No resource pools matched for datacenter '{datacenter}'. Using fallback pools.")
-            # Get up to 10 pools as fallback
             fallback_pools = []
-            for pool in vsphere_data.get('resource_pools', [])[:10]:  # Limit to 10 pools
+            for pool in vsphere_data.get('resource_pools', [])[:10]:
                 fallback_pools.append({
                     "id": pool,
                     "name": pool
                 })
-            # Cache these fallback pools too
-            set_cache(cache_key, fallback_pools, ttl=1800)  # Cache for 30 minutes
             filtered_pools = fallback_pools
             
-        logger.debug(f"Filtered resource pools for datacenter {datacenter}: {filtered_pools}")
+        logger.debug(f"Returning {len(filtered_pools)} resource pools for datacenter {datacenter}")
         return jsonify(filtered_pools)
     except Exception as e:
         logger.error(f"Error fetching resource pools for datacenter {datacenter}: {e}", exc_info=True)
@@ -2058,29 +2117,38 @@ def api_get_datastores_for_resource_pool(datacenter, resource_pool):
         # Get cached vSphere inventory
         vsphere_data = get_vsphere_inventory()
         
-        # Check if inventory data exists and has datastores
-        if not vsphere_data or not vsphere_data.get('datastores'):
-            logger.warning(f"No datastores found in vSphere inventory data for datacenter: {datacenter}, resource_pool: {resource_pool}")
+        # Check if inventory data exists and has datacenter resources
+        if not vsphere_data or 'datacenter_resources' not in vsphere_data:
+            logger.warning(f"No datacenter resources found in vSphere inventory data for datacenter: {datacenter}")
             return jsonify([])
-            
-        logger.debug(f"Fetching datastores for datacenter: {datacenter}, resource_pool: {resource_pool}")
-        logger.debug(f"Available datastores: {vsphere_data.get('datastores')}")
         
-        # First, filter out any datastores ending with 'local'
-        all_datastores = vsphere_data.get('datastores', [])
+        logger.debug(f"Fetching datastores for datacenter: {datacenter}, resource_pool: {resource_pool}")
+        
+        # Try direct mapping first - get datastores for this datacenter
+        dc_datastores = []
+        if datacenter in vsphere_data['datacenter_resources']:
+            dc_datastores = vsphere_data['datacenter_resources'][datacenter]['datastores']
+            logger.debug(f"Found {len(dc_datastores)} directly mapped datastores for datacenter: {datacenter}")
+        
+        # If no datacenter-specific datastores found, fall back to all datastores
+        if not dc_datastores:
+            logger.warning(f"No datacenter-specific datastores found for {datacenter}, using global datastores")
+            dc_datastores = vsphere_data.get('datastores', [])
+        
+        # First filter out any datastores ending with 'local'
         non_local_datastores = []
-        for ds in all_datastores:
-            # Exclude datastores ending with 'local' or containing '_local'
+        for ds in dc_datastores:
             if not (ds.lower().endswith('local') or '_local' in ds.lower()):
                 non_local_datastores.append(ds)
-          # Now check if we need to filter further based on the cluster
+        
+        # Now check if we need to filter further based on the cluster
         filtered_datastores = []
         cluster_name = resource_pool.lower()
         
         # If the resource pool name contains a cluster identifier, try to find distributed datastores for that cluster
         distributed_datastores = []
         if any(cluster_id in cluster_name for cluster_id in ['cl', 'cluster']):
-            # Extract cluster number if present (e.g. 'np-cl60-lin' -> '60')
+            # Extract cluster number if present
             cluster_number = ""
             import re
             match = re.search(r'cl(\d+)', cluster_name)
@@ -2091,24 +2159,14 @@ def api_get_datastores_for_resource_pool(datacenter, resource_pool):
             # Look for distributed datastores specific to this cluster
             for ds in non_local_datastores:
                 ds_lower = ds.lower()
-                # Check for various distributed datastore naming patterns
                 is_distributed = any(pattern in ds_lower for pattern in ['vsan', 'shared', 'dist', 'distributed'])
-                # Check if datastore matches the cluster number
                 matches_cluster = cluster_number and cluster_number in ds_lower
                 
                 if is_distributed or matches_cluster:
                     distributed_datastores.append(ds)
         
-        # If we found distributed datastores, ONLY use those
-        # This ensures that when a cluster has distributed storage, we only show those options
-        datastores_to_use = []
-        if distributed_datastores:
-            logger.debug(f"Found {len(distributed_datastores)} distributed datastores for cluster {cluster_name}")
-            datastores_to_use = distributed_datastores
-        else:
-            # Only if no distributed datastores were found, fall back to non-local datastores
-            logger.warning(f"No distributed datastores found for cluster {cluster_name}, using all non-local datastores")
-            datastores_to_use = non_local_datastores
+        # Use distributed datastores if found, otherwise fall back to non-local datastores
+        datastores_to_use = distributed_datastores if distributed_datastores else non_local_datastores
         
         # Format the datastores for the response
         for ds in datastores_to_use:
@@ -2126,10 +2184,10 @@ def api_get_datastores_for_resource_pool(datacenter, resource_pool):
                     "name": ds
                 })
         
-        logger.debug(f"Returning {len(filtered_datastores)} datastores for resource pool {resource_pool}")
+        logger.debug(f"Returning {len(filtered_datastores)} datastores for datacenter {datacenter} and resource pool {resource_pool}")
         return jsonify(filtered_datastores)
     except Exception as e:
-        logger.error(f"Error fetching datastores for resource pool {resource_pool}: {e}")
+        logger.error(f"Error fetching datastores for datacenter {datacenter} and resource pool {resource_pool}: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/vsphere/datacenter/<datacenter>/pool/<path:resource_pool>/templates')
@@ -2182,11 +2240,11 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
     try:
         # Get cached vSphere inventory
         vsphere_data = get_vsphere_inventory()
-          # Check if inventory data exists and has networks
-        if not vsphere_data or not vsphere_data.get('networks', []):
-            logger.warning(f"No networks found in vSphere inventory data for datacenter: {datacenter}, resource_pool: {resource_pool}")
-            # If networks key doesn't exist yet, use environment variables as fallback
-            # Determine environment - use "development" as default
+        
+        # Check if inventory data exists and has datacenter resources
+        if not vsphere_data or 'datacenter_resources' not in vsphere_data:
+            logger.warning(f"No datacenter resources found in vSphere inventory data for datacenter: {datacenter}")
+            # Fall back to environment variables
             environment = "development"
             if "prod" in resource_pool.lower():
                 environment = "production"
@@ -2198,23 +2256,31 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
                 network_id = os.environ.get('NETWORK_ID_DEV', 'network-id-placeholder')
                 network_name = "Development Network"
             
-            # Return at least one network from environment variables
             return jsonify([{
                 "id": network_id,
                 "name": network_name
             }])
-            
+        
         logger.debug(f"Fetching networks for datacenter: {datacenter}, resource_pool: {resource_pool}")
-        logger.debug(f"Available networks: {vsphere_data.get('networks', [])}")
+        
+        # Try direct mapping first - get networks for this datacenter
+        dc_networks = []
+        if datacenter in vsphere_data['datacenter_resources']:
+            dc_networks = vsphere_data['datacenter_resources'][datacenter]['networks']
+            logger.debug(f"Found {len(dc_networks)} directly mapped networks for datacenter: {datacenter}")
+        
+        # If no datacenter-specific networks found, fall back to all networks
+        if not dc_networks:
+            logger.warning(f"No datacenter-specific networks found for {datacenter}, using global networks")
+            dc_networks = vsphere_data.get('networks', [])
         
         # Get the cluster name from the resource pool
         cluster_name = resource_pool.lower()
         
         # Filter networks based on the selected cluster/resource pool
-        all_networks = vsphere_data.get('networks', [])
         cluster_specific_networks = []
         
-        # Extract cluster number if present (e.g. 'np-cl60-lin' -> '60')
+        # Extract cluster number if present
         cluster_number = ""
         import re
         match = re.search(r'cl(\d+)', cluster_name)
@@ -2222,8 +2288,8 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
             cluster_number = match.group(1)
             logger.debug(f"Detected cluster number: {cluster_number}")
             
-        # First, look for networks that match the cluster naming pattern
-        for network in all_networks:
+        # Look for networks that match the cluster naming pattern
+        for network in dc_networks:
             network_lower = network.lower()
             
             # Check if network name matches the cluster
@@ -2234,7 +2300,7 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
                 matches_cluster = True
                 logger.debug(f"Network '{network}' matched cluster number '{cluster_number}'")
                 
-            # Look for cluster environment indicator (np, prod, etc.) in network name
+            # Look for cluster environment indicator in network name
             if any(env_marker in cluster_name and env_marker in network_lower 
                    for env_marker in ['np', 'nonprod', 'prod', 'dev']):
                 matches_cluster = True
@@ -2243,17 +2309,19 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
             # Check for direct cluster name subset
             cluster_parts = cluster_name.split('-')
             for part in cluster_parts:
-                if len(part) > 2 and part in network_lower:  # Only check meaningful parts (> 2 chars)
+                if len(part) > 2 and part in network_lower:
                     matches_cluster = True
                     logger.debug(f"Network '{network}' matched cluster part '{part}'")
                     
             if matches_cluster:
                 cluster_specific_networks.append(network)
         
-        # If no cluster-specific networks were found, use a subset of all networks
-        # determined by environment (prod/nonprod) if possible
+        # Determine which networks to use
         filtered_networks = []
-        if not cluster_specific_networks:
+        if cluster_specific_networks:
+            filtered_networks = cluster_specific_networks
+        else:
+            # Fall back to environment-based filtering
             logger.debug(f"No cluster-specific networks found for {resource_pool}, filtering by environment")
             
             # Determine environment from the cluster name
@@ -2261,7 +2329,7 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
             is_nonprod = any(nonprod_marker in cluster_name for nonprod_marker in ['np', 'nonprod', 'dev', 'int', 'test'])
             
             # Filter networks by environment indicators
-            for network in all_networks:
+            for network in dc_networks:
                 network_lower = network.lower()
                 
                 if is_prod and any(prod_marker in network_lower for prod_marker in ['prod', 'pr']):
@@ -2269,14 +2337,10 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
                 elif is_nonprod and any(nonprod_marker in network_lower for nonprod_marker in ['np', 'nonprod', 'dev', 'int', 'test']):
                     filtered_networks.append(network)
             
-            # If still no networks found, or environment couldn't be determined,
-            # return all networks (better than returning nothing)
+            # If still no networks found, use all datacenter networks
             if not filtered_networks:
-                logger.debug(f"No environment-specific networks found, using all networks")
-                filtered_networks = all_networks
-        else:
-            # Use the cluster-specific networks we found
-            filtered_networks = cluster_specific_networks
+                logger.debug(f"No environment-specific networks found, using all datacenter networks")
+                filtered_networks = dc_networks
             
         # Format the networks for the response
         network_objects = []
@@ -2286,10 +2350,10 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
                 "name": network
             })
         
-        logger.debug(f"Returning {len(network_objects)} networks for resource pool {resource_pool}")
+        logger.debug(f"Returning {len(network_objects)} networks for datacenter {datacenter} and resource pool {resource_pool}")
         return jsonify(network_objects)
     except Exception as e:
-        logger.error(f"Error fetching networks for resource pool {resource_pool}: {e}")
+        logger.error(f"Error fetching networks for datacenter {datacenter} and resource pool {resource_pool}: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 # --- End API Endpoints for vSphere Resources ---
