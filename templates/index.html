@@ -3,6 +3,16 @@
 {% block title %}Create VM - RHEL9 VM Provisioning{% endblock %}
 
 {% block content %}
+            <!-- Progress Bar -->
+            <div id="loading-progress-container" style="display: none;">
+                <div class="loading-progress-inner">
+                    <div id="loading-progress-bar" class="loading-progress-bar info"></div>
+                    <div class="loading-progress-status">
+                        <span id="loading-progress-text">Initializing...</span>
+                        <span id="loading-progress-percentage">0%</span>
+                    </div>
+                </div>
+            </div>
 
             <div class="card">
                 <h2>Create New Virtual Machine</h2>

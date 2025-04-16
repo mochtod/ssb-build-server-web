@@ -92,9 +92,13 @@ function initializeDynamicVSphereDropdowns() {
                 // Keep the other dropdowns disabled until resource pool selection
                 setDropdownLoading(datastoreSelect, false);
                 setDropdownLoading(templateSelect, false);
-                if (networkSelect) setDropdownLoading(networkSelect, false);
-            } else {                // Fetch all resources for the selected datacenter and cache them
+                if (networkSelect) setDropdownLoading(networkSelect, false);            } else {                // Fetch all resources for the selected datacenter and cache them
                 console.log(`Fetching all resources for datacenter: ${selectedDC}`);
+                
+                // Make sure the progress container is visible
+                if (progressContainer) {
+                    progressContainer.style.display = 'block';
+                }
                 
                 // Start progress tracking for resource pool loading
                 startProgress(`Loading resources for ${selectedDC}`, 1, 'info');
