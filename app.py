@@ -183,7 +183,9 @@ def get_vsphere_inventory_data(si):
         'resource_pools': [],
         'datastores': [],
         'templates': [],
-        'networks': []
+        'networks': [],
+        # Add hierarchical structure for datacenter-specific resources
+        'datacenter_resources': {}
     }
 
     try:
@@ -191,24 +193,49 @@ def get_vsphere_inventory_data(si):
         datacenters = get_vsphere_objects(si, [vim.Datacenter])
         inventory['datacenters'] = sorted([dc.name for dc in datacenters])
         logger.info(f"Successfully fetched {len(inventory['datacenters'])} datacenters.") # ADDED LOG
-
-        # Get Clusters (these represent the resource pools we care about) with enhanced logging/error handling
+        
+        # Initialize datacenter resource mapping
+        for dc in datacenters:
+            inventory['datacenter_resources'][dc.name] = {
+                'clusters': [],
+                'datastores': [],
+                'networks': []
+            }        # Get Clusters (these represent the resource pools we care about) with enhanced logging/error handling
         logger.info("Attempting to fetch raw cluster objects...") # ADDED LOG
         raw_clusters = get_vsphere_objects(si, [vim.ClusterComputeResource])
         logger.info(f"Received {len(raw_clusters) if raw_clusters is not None else 'None'} raw cluster objects.") # MODIFIED LOG
         cluster_names_list = []
+        
+        # Enhanced cluster processing with datacenter mapping
         if raw_clusters:
             logger.info("Starting processing of raw cluster objects...")
-            for i, c in enumerate(raw_clusters): # Added enumerate for index logging
-                logger.debug(f"Processing cluster object #{i}: {c}") # ADDED DEBUG LOG (use debug level)
+            for i, cluster in enumerate(raw_clusters): # Added enumerate for index logging
+                logger.debug(f"Processing cluster object #{i}: {cluster}") # ADDED DEBUG LOG (use debug level)
                 try:
-                    if hasattr(c, 'name') and c.name:
-                        cluster_names_list.append(c.name)
-                        logger.debug(f"Successfully processed name for cluster #{i}: {c.name}") # ADDED DEBUG LOG
+                    if hasattr(cluster, 'name') and cluster.name:
+                        cluster_names_list.append(cluster.name)
+                        logger.debug(f"Successfully processed name for cluster #{i}: {cluster.name}") # ADDED DEBUG LOG
+                        
+                        # Find parent datacenter for this cluster
+                        parent_dc = None
+                        try:
+                            # Navigate up the inventory tree to find the parent datacenter
+                            parent = cluster.parent
+                            while parent and not isinstance(parent, vim.Datacenter):
+                                parent = parent.parent
+                            
+                            if parent and isinstance(parent, vim.Datacenter):
+                                parent_dc = parent.name
+                                # Add cluster to its datacenter's resources
+                                if parent_dc in inventory['datacenter_resources']:
+                                    inventory['datacenter_resources'][parent_dc]['clusters'].append(cluster.name)
+                                    logger.debug(f"Mapped cluster '{cluster.name}' to datacenter '{parent_dc}'")
+                        except Exception as map_err:
+                            logger.error(f"Error mapping cluster to datacenter: {map_err}", exc_info=True)
                     else:
-                        logger.warning(f"Cluster object #{i} found without a valid name: {c}")
+                        logger.warning(f"Cluster object #{i} found without a valid name: {cluster}")
                 except Exception as c_err:
-                    logger.error(f"Error accessing name for cluster object #{i} ({c}): {c_err}", exc_info=True)
+                    logger.error(f"Error accessing name for cluster object #{i} ({cluster}): {c_err}", exc_info=True)
             logger.info("Finished processing raw cluster objects.") # ADDED LOG
         else:
             logger.info("No raw cluster objects received.") # ADDED LOG
@@ -2039,13 +2066,61 @@ def api_get_datastores_for_resource_pool(datacenter, resource_pool):
         logger.debug(f"Fetching datastores for datacenter: {datacenter}, resource_pool: {resource_pool}")
         logger.debug(f"Available datastores: {vsphere_data.get('datastores')}")
         
-        # In a production environment, this would use your hierarchical loader to get only datastores 
-        # in the specific cluster/resource pool
-        # Here we're returning all datastores with proper object structure
+        # First, filter out any datastores ending with 'local'
+        all_datastores = vsphere_data.get('datastores', [])
+        non_local_datastores = []
+        for ds in all_datastores:
+            # Exclude datastores ending with 'local' or containing '_local'
+            if not (ds.lower().endswith('local') or '_local' in ds.lower()):
+                non_local_datastores.append(ds)
+          # Now check if we need to filter further based on the cluster
         filtered_datastores = []
-        for ds in vsphere_data.get('datastores', []):
-            # Filter out local datastores (but ensure we have at least some datastores to show)
-            if not ("_local" in ds.lower() and len(vsphere_data.get('datastores')) > 5):
+        cluster_name = resource_pool.lower()
+        
+        # If the resource pool name contains a cluster identifier, try to find distributed datastores for that cluster
+        distributed_datastores = []
+        if any(cluster_id in cluster_name for cluster_id in ['cl', 'cluster']):
+            # Extract cluster number if present (e.g. 'np-cl60-lin' -> '60')
+            cluster_number = ""
+            import re
+            match = re.search(r'cl(\d+)', cluster_name)
+            if match:
+                cluster_number = match.group(1)
+                logger.debug(f"Detected cluster number: {cluster_number}")
+            
+            # Look for distributed datastores specific to this cluster
+            for ds in non_local_datastores:
+                ds_lower = ds.lower()
+                # Check for various distributed datastore naming patterns
+                is_distributed = any(pattern in ds_lower for pattern in ['vsan', 'shared', 'dist', 'distributed'])
+                # Check if datastore matches the cluster number
+                matches_cluster = cluster_number and cluster_number in ds_lower
+                
+                if is_distributed or matches_cluster:
+                    distributed_datastores.append(ds)
+        
+        # If we found distributed datastores, ONLY use those
+        # This ensures that when a cluster has distributed storage, we only show those options
+        datastores_to_use = []
+        if distributed_datastores:
+            logger.debug(f"Found {len(distributed_datastores)} distributed datastores for cluster {cluster_name}")
+            datastores_to_use = distributed_datastores
+        else:
+            # Only if no distributed datastores were found, fall back to non-local datastores
+            logger.warning(f"No distributed datastores found for cluster {cluster_name}, using all non-local datastores")
+            datastores_to_use = non_local_datastores
+        
+        # Format the datastores for the response
+        for ds in datastores_to_use:
+            filtered_datastores.append({
+                "id": ds,
+                "name": ds
+            })
+        
+        # If we ended up with no datastores, fall back to showing all non-local datastores
+        if not filtered_datastores and non_local_datastores:
+            logger.warning(f"No matching distributed datastores found for {resource_pool}, showing all non-local datastores")
+            for ds in non_local_datastores:
                 filtered_datastores.append({
                     "id": ds,
                     "name": ds
@@ -2132,18 +2207,87 @@ def api_get_networks_for_resource_pool(datacenter, resource_pool):
         logger.debug(f"Fetching networks for datacenter: {datacenter}, resource_pool: {resource_pool}")
         logger.debug(f"Available networks: {vsphere_data.get('networks', [])}")
         
-        # In a production environment, this would use your hierarchical loader to get only networks
-        # available to the specific cluster/resource pool
+        # Get the cluster name from the resource pool
+        cluster_name = resource_pool.lower()
+        
+        # Filter networks based on the selected cluster/resource pool
+        all_networks = vsphere_data.get('networks', [])
+        cluster_specific_networks = []
+        
+        # Extract cluster number if present (e.g. 'np-cl60-lin' -> '60')
+        cluster_number = ""
+        import re
+        match = re.search(r'cl(\d+)', cluster_name)
+        if match:
+            cluster_number = match.group(1)
+            logger.debug(f"Detected cluster number: {cluster_number}")
+            
+        # First, look for networks that match the cluster naming pattern
+        for network in all_networks:
+            network_lower = network.lower()
+            
+            # Check if network name matches the cluster
+            matches_cluster = False
+            
+            # Look for cluster number in network name
+            if cluster_number and cluster_number in network_lower:
+                matches_cluster = True
+                logger.debug(f"Network '{network}' matched cluster number '{cluster_number}'")
+                
+            # Look for cluster environment indicator (np, prod, etc.) in network name
+            if any(env_marker in cluster_name and env_marker in network_lower 
+                   for env_marker in ['np', 'nonprod', 'prod', 'dev']):
+                matches_cluster = True
+                logger.debug(f"Network '{network}' matched environment marker in '{cluster_name}'")
+                
+            # Check for direct cluster name subset
+            cluster_parts = cluster_name.split('-')
+            for part in cluster_parts:
+                if len(part) > 2 and part in network_lower:  # Only check meaningful parts (> 2 chars)
+                    matches_cluster = True
+                    logger.debug(f"Network '{network}' matched cluster part '{part}'")
+                    
+            if matches_cluster:
+                cluster_specific_networks.append(network)
+        
+        # If no cluster-specific networks were found, use a subset of all networks
+        # determined by environment (prod/nonprod) if possible
         filtered_networks = []
-        for network in vsphere_data.get('networks', []):
-            # Add each network with proper structure
-            filtered_networks.append({
+        if not cluster_specific_networks:
+            logger.debug(f"No cluster-specific networks found for {resource_pool}, filtering by environment")
+            
+            # Determine environment from the cluster name
+            is_prod = any(prod_marker in cluster_name for prod_marker in ['prod', 'pr'])
+            is_nonprod = any(nonprod_marker in cluster_name for nonprod_marker in ['np', 'nonprod', 'dev', 'int', 'test'])
+            
+            # Filter networks by environment indicators
+            for network in all_networks:
+                network_lower = network.lower()
+                
+                if is_prod and any(prod_marker in network_lower for prod_marker in ['prod', 'pr']):
+                    filtered_networks.append(network)
+                elif is_nonprod and any(nonprod_marker in network_lower for nonprod_marker in ['np', 'nonprod', 'dev', 'int', 'test']):
+                    filtered_networks.append(network)
+            
+            # If still no networks found, or environment couldn't be determined,
+            # return all networks (better than returning nothing)
+            if not filtered_networks:
+                logger.debug(f"No environment-specific networks found, using all networks")
+                filtered_networks = all_networks
+        else:
+            # Use the cluster-specific networks we found
+            filtered_networks = cluster_specific_networks
+            
+        # Format the networks for the response
+        network_objects = []
+        for network in filtered_networks:
+            network_objects.append({
                 "id": network,
                 "name": network
             })
         
-        logger.debug(f"Returning {len(filtered_networks)} networks for resource pool {resource_pool}")
-        return jsonify(filtered_networks)
+        logger.debug(f"Returning {len(network_objects)} networks for resource pool {resource_pool}")
+        return jsonify(network_objects)
     except Exception as e:
         logger.error(f"Error fetching networks for resource pool {resource_pool}: {e}")
         return jsonify({"error": str(e)}), 500
