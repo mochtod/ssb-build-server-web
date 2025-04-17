@@ -1479,6 +1479,26 @@ def generate_atlantis_plan_payload(config_data, tf_directory, tf_files):
     # Generate a unique hostname for this VM
     vm_hostname = f"{config_data['server_name']}-{config_data['start_number']}"
     
+    # Get vSphere credentials for Terraform to include in plan
+    vsphere_vars = get_vsphere_terraform_vars()
+    logger.info(f"Retrieved vSphere credentials for plan payload. Server: {vsphere_vars.get('vsphere_server', 'MISSING')}")
+    
+    # Read terraform.tfvars to include all variables in the payload
+    additional_vars = {}
+    tfvars_path = os.path.join(tf_directory, 'terraform.tfvars')
+    if os.path.exists(tfvars_path):
+        logger.info(f"Loading additional variables from {tfvars_path}")
+        with open(tfvars_path, 'r') as f:
+            for line in f:
+                if '=' in line and not line.strip().startswith('#'):
+                    key, value = line.split('=', 1)
+                    additional_vars[key.strip()] = value.strip()
+        
+        # Merge with vsphere_vars, giving priority to existing values in vsphere_vars
+        for key, value in additional_vars.items():
+            if key not in vsphere_vars:
+                vsphere_vars[key] = value
+    
     # Create a dictionary with all the necessary fields
     payload_dict = {
         'repo': {
@@ -1510,8 +1530,17 @@ def generate_atlantis_plan_payload(config_data, tf_directory, tf_files):
         'parallel_plan': False,                    # Disable parallel planning
         'parallel_apply': False,                   # Disable parallel applying
         'terraform_version': '',                   # Let Atlantis use its default version
-        'log_level': 'info'                        # Set log level
+        'log_level': 'info',                       # Set log level
+        'terraform_vars': vsphere_vars,            # Add vSphere and other variables
+        'action': 'plan'                           # Explicitly set action field
     }
+    
+    # Add repository_id field which might be required by Atlantis
+    payload_dict['repository_id'] = f"{payload_dict['repo']['owner']}/{payload_dict['repo']['name']}"
+    
+    # Add additional fields that might be required for the specific version of Atlantis
+    payload_dict['command_name'] = 'plan'
+    payload_dict['plan_requirements'] = []
     
     # Convert to JSON string with proper formatting to ensure all commas are present
     payload_string = json.dumps(payload_dict, ensure_ascii=False)
@@ -1541,12 +1570,50 @@ def generate_atlantis_apply_payload(config_data, tf_directory):
         try:
             # Get vSphere credentials for Terraform
             vsphere_vars = get_vsphere_terraform_vars()
+            logger.info(f"Retrieved vSphere credentials for apply payload. Server: {vsphere_vars.get('vsphere_server', 'MISSING')}")
+            
+            # Ensure we have the critical credentials
+            if not vsphere_vars.get('vsphere_user') or not vsphere_vars.get('vsphere_password') or not vsphere_vars.get('vsphere_server'):
+                logger.error("Missing critical vSphere credentials for apply operation")
+                logger.error(f"Auth fields present: vsphere_user={bool(vsphere_vars.get('vsphere_user'))}, "
+                            f"vsphere_password={bool(vsphere_vars.get('vsphere_password'))}, "
+                            f"vsphere_server={bool(vsphere_vars.get('vsphere_server'))}")
+                
+                # Try to load from tfvars file as a backup
+                tfvars_path = os.path.join(tf_directory, 'terraform.tfvars')
+                if os.path.exists(tfvars_path):
+                    logger.info(f"Attempting to load vSphere credentials from {tfvars_path}")
+                    with open(tfvars_path, 'r') as f:
+                        for line in f:
+                            if '=' in line and not line.strip().startswith('#'):
+                                key, value = line.split('=', 1)
+                                key = key.strip()
+                                value = value.strip()
+                                if key in ['vsphere_user', 'vsphere_password', 'vsphere_server'] and not vsphere_vars.get(key):
+                                    vsphere_vars[key] = value
+                                    logger.info(f"Loaded {key} from tfvars file")
             
             # Enhance logging for troubleshooting
             logger.debug(f"Sending apply payload to Atlantis API for {config_data.get('server_name')}")
-            logger.debug(f"Auth fields present: vsphere_user={bool(os.environ.get('VSPHERE_USER'))}, "
-                        f"vsphere_password={bool(os.environ.get('VSPHERE_PASSWORD'))}, "
-                        f"vsphere_server={bool(os.environ.get('VSPHERE_SERVER'))}")
+            logger.debug(f"Auth fields present after loading: vsphere_user={bool(vsphere_vars.get('vsphere_user'))}, "
+                        f"vsphere_password={bool(vsphere_vars.get('vsphere_password'))}, "
+                        f"vsphere_server={bool(vsphere_vars.get('vsphere_server'))}")
+            
+            # Read terraform.tfvars to include all variables in the payload
+            additional_vars = {}
+            tfvars_path = os.path.join(tf_directory, 'terraform.tfvars')
+            if os.path.exists(tfvars_path):
+                logger.info(f"Loading additional variables from {tfvars_path}")
+                with open(tfvars_path, 'r') as f:
+                    for line in f:
+                        if '=' in line and not line.strip().startswith('#'):
+                            key, value = line.split('=', 1)
+                            additional_vars[key.strip()] = value.strip()
+                
+                # Merge with vsphere_vars, giving priority to existing values in vsphere_vars
+                for key, value in additional_vars.items():
+                    if key not in vsphere_vars:
+                        vsphere_vars[key] = value
             
             # Generate a JSON payload for apply operation
             payload_dict = {
@@ -1596,7 +1663,12 @@ def generate_atlantis_apply_payload(config_data, tf_directory):
             }
             
             logger.info(f"Sending apply request to Atlantis for {config_data.get('server_name', 'unknown')}")
-            response = requests.post(f"{ATLANTIS_URL}/api/apply", data=payload_string, headers=headers)
+            logger.debug(f"Using vSphere credentials - Server: {vsphere_vars.get('vsphere_server')}, User: {vsphere_vars.get('vsphere_user')}")
+            response = requests.post(
+                f"{ATLANTIS_URL}/api/apply", 
+                data=payload_string, 
+                headers=headers
+            )
             
             if response.status_code != 200:
                 # If API call fails, log the error
@@ -1652,7 +1724,7 @@ Atlantis Apply URL: {apply_url}
                 'status': 'error',
                 'message': f"Error calling Atlantis API: {str(api_error)}"
             }
-            
+        
     except Exception as e:
         logger.exception(f"Error applying Terraform plan: {str(e)}")
         return {
@@ -1664,6 +1736,8 @@ def run_atlantis_plan(config_data, tf_directory):
     """Run a Terraform plan in Atlantis"""
     try:
         logger.info(f"Starting Atlantis plan process for config: {config_data.get('server_name')} in {tf_directory}")
+        logger.info(f"*** ATLANTIS PLAN CODE VERSION WITH FIXED FIELDS - 2025-04-16 ***")
+        logger.info(f"*** ATLANTIS PLAN CODE VERSION WITH FIXED FIELDS - 2025-04-16 ***")
         logger.debug(f"Full config for plan: {config_data.get('server_name')} with environment {config_data.get('environment')}")
           # Create the .git directory to make it appear as a git repo
         git_dir = os.path.join(tf_directory, '.git')
@@ -1716,7 +1790,7 @@ def run_atlantis_plan(config_data, tf_directory):
         
         # Prepare necessary files for the plan
         # 1. Copy vm-workspace files if they don't exist
-        prepare_terraform_files(tf_directory, config_data)
+        ensure_vsphere_provider_files(tf_directory)
           # 2. Read all Terraform files in the directory
         tf_files = {}
         for filename in os.listdir(tf_directory):
@@ -1746,35 +1820,16 @@ def run_atlantis_plan(config_data, tf_directory):
             }
             
             logger.info(f"Sending real plan request to Atlantis for {config_data['server_name']}")
-            try:
-                response = requests.post(
-                    f"{ATLANTIS_URL}/api/plan", 
-                    data=payload_string, 
-                    headers=headers,
-                    timeout=30  # Add timeout to prevent hanging indefinitely
-                )
-            except requests.exceptions.Timeout:
-                logger.error(f"Timeout while connecting to Atlantis API at {ATLANTIS_URL}")
-                return {
-                    'status': 'error',
-                    'message': f"Timeout connecting to Atlantis API. Please check if the server is responding."
-                }
-            except requests.exceptions.ConnectionError as conn_err:
-                logger.error(f"Connection error while connecting to Atlantis API: {conn_err}", exc_info=True)
-                return {
-                    'status': 'error',
-                    'message': f"Unable to connect to Atlantis API. Please check the server URL and network connection."
-                }
-            except Exception as req_err:
-                logger.error(f"Error during Atlantis API request: {req_err}", exc_info=True)
-                return {
-                    'status': 'error',
-                    'message': f"Error sending request to Atlantis: {str(req_err)}"
-                }
+            response = requests.post(
+                f"{ATLANTIS_URL}/api/plan", 
+                data=payload_string, 
+                headers=headers
+            )
             
             if response.status_code != 200:
                 # If API call fails, log the error and return with proper error info
                 error_message = f"Failed to trigger Atlantis plan: HTTP {response.status_code}"
+                logger.error(error_message)
                 try:
                     error_detail = response.json()
                     logger.error(f"{error_message} - Details: {error_detail}")
@@ -1837,14 +1892,14 @@ def run_atlantis_plan(config_data, tf_directory):
 Terraform Plan Output:
 ----------------------
 Plan ID: {plan_id}
-Environment: {config_data.get('environment', 'unknown')}
+Environment: {config_data.get('environment', 'development')}
 Server: {config_data.get('server_name', 'unknown')}
 Planned Resources:
-- {config_data.get('quantity', 0)} virtual machine(s)
+- {config_data.get('quantity', 1)} virtual machine(s)
 - {len(config_data.get('additional_disks', []))} additional disk(s)
 
 This plan will:
-- Create {config_data.get('quantity', 0)} new VM(s)
+- Create {config_data.get('quantity', 1)} new VM(s)
 - Configure networking and storage
 - Register VMs with infrastructure management systems
 
@@ -1852,13 +1907,14 @@ Initiated at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Initiated by: {config_data.get('build_owner', 'Unknown')}
 
 Atlantis Plan URL: {plan_url}
-            """
+                """
                 logger.info(f"Generated plan log summary for plan ID: {plan_id}")
             except Exception as log_err:
                 logger.error(f"Error generating plan log: {log_err}", exc_info=True)
                 # Create a simplified log if there's an error
                 plan_log = f"Terraform Plan initiated with ID: {plan_id}\nAtlantis Plan URL: {plan_url}"
                 logger.info("Generated simplified plan log due to error with detailed log")
+        
         except Exception as api_error:
             # If any exception occurs during API call that wasn't caught by specific handlers
             logger.exception(f"Unhandled error during Atlantis API processing: {str(api_error)}")
@@ -1887,23 +1943,41 @@ Atlantis Plan URL: {plan_url}
             'message': f"Error running Terraform plan: {str(e)}"
         }
 
-def prepare_terraform_files(tf_directory, config_data):
-    """Prepare all necessary Terraform files for a plan"""
-    # Copy necessary files from vm-workspace if they don't exist
-    files_to_copy = {
+def ensure_vsphere_provider_files(tf_directory):
+    """Ensure all files needed for vSphere provider functionality are present"""
+    logger.info(f"Ensuring vSphere provider files are present in {tf_directory}")
+    
+    # Files to copy from vm-workspace if they don't exist
+    required_files = {
         'providers.tf': 'vm-workspace/providers.tf',
-        'fetch_next_ip.py': 'vm-workspace/fetch_next_ip.py',
         'data.tf': 'vm-workspace/data.tf',
+        'fetch_next_ip.py': 'vm-workspace/fetch_next_ip.py',
     }
     
-    for target_name, source_path in files_to_copy.items():
+    # Copy module directory if it doesn't exist
+    module_source = 'vm-workspace/modules'
+    module_target = os.path.join(tf_directory, 'modules')
+    if not os.path.exists(module_target) and os.path.exists(module_source):
+        logger.info(f"Copying modules directory to {module_target}")
+        shutil.copytree(module_source, module_target)
+    
+    # Copy individual files
+    for target_name, source_path in required_files.items():
         target_path = os.path.join(tf_directory, target_name)
         if not os.path.exists(target_path) and os.path.exists(source_path):
+            logger.info(f"Copying {source_path} to {target_path}")
             shutil.copy2(source_path, target_path)
             
             # If it's a Python file, make it executable
             if target_name.endswith('.py'):
                 os.chmod(target_path, os.stat(target_path).st_mode | 0o111)
+                
+    return True
+
+def prepare_terraform_files(tf_directory, config_data):
+    """Prepare all necessary Terraform files for a plan"""
+    # Ensure all vSphere provider files are present (including modules)
+    ensure_vsphere_provider_files(tf_directory)
     
     # Create/Update terraform.tfvars with VSphere and NetBox specific variables
     tfvars_path = os.path.join(tf_directory, 'terraform.tfvars')
@@ -1916,7 +1990,10 @@ def prepare_terraform_files(tf_directory, config_data):
                 if '=' in line and not line.strip().startswith('#'):
                     key, value = line.split('=', 1)
                     existing_vars[key.strip()] = value.strip()
-      # Add necessary variables that might be missing
+                    
+    logger.info(f"Adding critical vSphere and NetBox variables to {tfvars_path}")
+    
+    # Add necessary variables that might be missing
     additional_vars = {
         # NetBox variables
         'netbox_token': f'"{os.environ.get("NETBOX_TOKEN", "netbox-api-token")}"',
@@ -1927,20 +2004,40 @@ def prepare_terraform_files(tf_directory, config_data):
         'vsphere_user': f'"{os.environ.get("VSPHERE_USER", "vsphere-user")}"',
         'vsphere_password': f'"{os.environ.get("VSPHERE_PASSWORD", "vsphere-password")}"',
         'allow_unverified_ssl': 'true',
+        'vsphere_insecure': 'true',
+        'vsphere_datacenter': f'"{os.environ.get("VSPHERE_DATACENTER", "default-datacenter")}"',
         
         # Additional VM resource variables
         'template_uuid': f'"{os.environ.get("TEMPLATE_UUID", "template-uuid-placeholder")}"',
         'datacenter_id': f'"{os.environ.get("VSPHERE_DATACENTER_ID", "datacenter-id-placeholder")}"'
     }
     
+    # Add environment-specific variables
+    environment = config_data.get('environment', 'development')
+    if environment == 'production':
+        additional_vars.update({
+            'resource_pool_id': f'"{os.environ.get("RESOURCE_POOL_ID", "resource-pool-prod-placeholder")}"',
+            'network_id': f'"{os.environ.get("NETWORK_ID_PROD", "network-id-prod-placeholder")}"'
+        })
+    else:
+        additional_vars.update({
+            'resource_pool_id': f'"{os.environ.get("DEV_RESOURCE_POOL_ID", "resource-pool-dev-placeholder")}"',
+            'network_id': f'"{os.environ.get("NETWORK_ID_DEV", "network-id-dev-placeholder")}"'
+        })
+    
+    # Always use the updated values from environment variables
     for key, value in additional_vars.items():
-        if key not in existing_vars:
-            existing_vars[key] = value
+        existing_vars[key] = value
     
     # Write back the combined variables
     with open(tfvars_path, 'w') as f:
+        f.write("# Updated with critical vSphere credentials on {}\n".format(
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ))
         for key, value in existing_vars.items():
             f.write(f"{key} = {value}\n")
+            
+    logger.info(f"Successfully prepared Terraform files in {tf_directory} with critical vSphere variables")
 
 def generate_variables_file(variables_file, config):
     """Generate Terraform variables file based on user input"""
@@ -1987,7 +2084,7 @@ ipv4_gateway     = "192.168.1.1"
 dns_servers      = ["8.8.8.8", "8.8.4.4"]
 time_zone        = "UTC"
 """
-    
+
     # Write to file
     with open(variables_file, 'w') as f:
         f.write(variables_content)
@@ -2257,7 +2354,7 @@ def api_get_resource_pools_for_datacenter(datacenter):
         # Normalize datacenter name for more flexible matching
         datacenter_normalized = datacenter.lower().replace('-', '').replace('_', '').replace(' ', '')
         
-        # Filter resource pools using original fallback logic
+        # Filter resource pools using original fallback logic...
         filtered_pools = []
         for pool in vsphere_data.get('resource_pools', []):
             # Original flexible matching logic...
