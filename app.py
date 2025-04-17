@@ -1479,6 +1479,9 @@ def generate_atlantis_plan_payload(config_data, tf_directory, tf_files):
     # Generate a unique hostname for this VM
     vm_hostname = f"{config_data['server_name']}-{config_data['start_number']}"
     
+    # Generate a unique plan ID to track this plan request
+    plan_id = str(uuid.uuid4())
+    
     # Get vSphere credentials for Terraform to include in plan
     vsphere_vars = get_vsphere_terraform_vars()
     logger.info(f"Retrieved vSphere credentials for plan payload. Server: {vsphere_vars.get('vsphere_server', 'MISSING')}")
@@ -1509,21 +1512,22 @@ def generate_atlantis_plan_payload(config_data, tf_directory, tf_files):
         'pull_request': {
             'num': 1,
             'branch': 'main',
-            'author': config_data['build_owner']
+            'author': config_data.get('build_owner', 'Admin User')
         },
         'head_commit': 'abcd1234',
         'pull_num': 1,
-        'pull_author': config_data['build_owner'],
+        'pull_author': config_data.get('build_owner', 'Admin User'),
         'repo_rel_dir': tf_dir_name,
-        'workspace': config_data['environment'],
+        'workspace': config_data.get('environment', 'development'),
         'project_name': vm_hostname,
+        'plan_id': plan_id,  # Add unique plan ID for tracking
         'comment': f"VM Provisioning Plan: {vm_hostname}",
-        'user': config_data['build_owner'],
+        'user': config_data.get('build_owner', 'Admin User'),
         'verbose': True,
         'cmd': 'plan',             # Critical: ensure command is explicitly set to 'plan'
         'dir': '.',                # Critical: add the 'dir' field that's required
         'terraform_files': tf_files,
-        'environment': config_data['environment'],  # Critical: environment field must be present
+        'environment': config_data.get('environment', 'development'),  # Critical: environment field must be present
         # Add these missing fields required by Atlantis
         'atlantis_workflow': 'custom',             # Match your workflow defined in repo-config.yaml
         'autoplan': False,                         # Explicitly set to False for manual plans
@@ -1532,7 +1536,8 @@ def generate_atlantis_plan_payload(config_data, tf_directory, tf_files):
         'terraform_version': '',                   # Let Atlantis use its default version
         'log_level': 'info',                       # Set log level
         'terraform_vars': vsphere_vars,            # Add vSphere and other variables
-        'action': 'plan'                           # Explicitly set action field
+        'action': 'plan',                          # Explicitly set action field
+        'apply_requirements': ['approved']         # Add apply requirements
     }
     
     # Add repository_id field which might be required by Atlantis
@@ -1745,8 +1750,7 @@ def run_atlantis_plan(config_data, tf_directory):
             if not os.path.exists(git_dir):
                 os.makedirs(git_dir, exist_ok=True)
                 logger.info(f"Created fake .git directory at {git_dir} to simulate git repo")
-                
-                # Create refs directory structure
+                  # Create refs directory structure
                 refs_dir = os.path.join(git_dir, 'refs', 'heads')
                 os.makedirs(refs_dir, exist_ok=True)
                 logger.debug(f"Created fake .git/refs/heads directory structure")
@@ -2012,7 +2016,7 @@ def prepare_terraform_files(tf_directory, config_data):
         'datacenter_id': f'"{os.environ.get("VSPHERE_DATACENTER_ID", "datacenter-id-placeholder")}"'
     }
     
-    # Add environment-specific variables
+    # Add environment-specific variables based on the selected environment
     environment = config_data.get('environment', 'development')
     if environment == 'production':
         additional_vars.update({
@@ -2038,58 +2042,6 @@ def prepare_terraform_files(tf_directory, config_data):
             f.write(f"{key} = {value}\n")
             
     logger.info(f"Successfully prepared Terraform files in {tf_directory} with critical vSphere variables")
-
-def generate_variables_file(variables_file, config):
-    """Generate Terraform variables file based on user input"""
-    # Extract configuration values
-    server_name = config['server_name']
-    environment = config['environment']
-    
-    # Determine environment-specific values based on environment variables
-    if environment == "production":
-        resource_pool_id = os.environ.get('RESOURCE_POOL_ID', 'resource-pool-id-placeholder')
-        network_id = os.environ.get('NETWORK_ID_PROD', 'network-id-placeholder')
-    else:
-        resource_pool_id = os.environ.get('DEV_RESOURCE_POOL_ID', 'resource-pool-id-placeholder')
-        network_id = os.environ.get('NETWORK_ID_DEV', 'network-id-placeholder')
-    
-    # Get common vSphere resources from environment variables
-    datastore_id = os.environ.get('DATASTORE_ID', 'datastore-id-placeholder')
-    template_uuid = os.environ.get('TEMPLATE_UUID', 'template-uuid-placeholder')
-    
-    # Generate variables content
-    variables_content = f"""
-# Terraform variables for {server_name}
-# Generated on {config['timestamp']}
-
-# VM Configuration
-name             = "{server_name}"
-num_cpus         = {config['num_cpus']}
-memory           = {config['memory']}
-disk_size        = {config['disk_size']}
-quantity         = {config['quantity']}
-start_number     = {config['start_number']}
-
-# Environment Configuration
-environment      = "{environment}"
-
-# vSphere Environment
-resource_pool_id = "{resource_pool_id}"
-datastore_id     = "{datastore_id}"
-network_id       = "{network_id}"
-template_uuid    = "{template_uuid}"
-ipv4_address     = "192.168.1.100"
-ipv4_netmask     = 24
-ipv4_gateway     = "192.168.1.1"
-dns_servers      = ["8.8.8.8", "8.8.4.4"]
-time_zone        = "UTC"
-"""
-
-    # Write to file
-    with open(variables_file, 'w') as f:
-        f.write(variables_content)
-    
-    return variables_content
 
 def generate_terraform_config(config):
     """Generate Terraform configuration based on user input"""
@@ -2764,3 +2716,5 @@ if __name__ == '__main__':
     # Set debug based on environment variable, default to False    
     app_debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
     app.run(debug=app_debug, host='0.0.0.0', port=5150, use_reloader=False)
+``
+
