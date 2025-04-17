@@ -368,7 +368,7 @@ def get_vsphere_inventory_data(si):
             logger.info("Disconnected from vSphere.")
 
 def background_vsphere_sync():
-    """Background task to fetch vSphere inventory and update cache."""
+    """Background task to fetch vSphere inventory and update cache asynchronously."""
     with app.app_context(): # Ensure task runs within app context if needed
         logger.info("Background task: Starting vSphere inventory sync...") # Modified log
         service_instance = None # Initialize service_instance
@@ -381,10 +381,27 @@ def background_vsphere_sync():
         # Store sync status in cache to make it available for API endpoint
         set_cache('vsphere_sync_status', sync_status, ttl=300)
         
+        # Check if existing data is in cache
+        cache_key = 'vsphere_inventory'
+        existing_data = get_cache(cache_key)
+        
         try: # Add outer try block
             service_instance = connect_to_vsphere()
             if not service_instance:
                 logger.error("Background task: Failed to connect to vSphere. Aborting sync.")
+                
+                # If we have existing data in cache, return it so the app remains usable
+                if existing_data:
+                    logger.info("Using existing cached data despite connection failure")
+                    sync_status = {
+                        'status': 'warning',
+                        'step': 'connecting',
+                        'message': 'Using cached data (vSphere connection failed)',
+                        'progress': 100
+                    }
+                    set_cache('vsphere_sync_status', sync_status, ttl=300)
+                    return
+                
                 sync_status = {
                     'status': 'error',
                     'step': 'connecting',
@@ -394,28 +411,139 @@ def background_vsphere_sync():
                 set_cache('vsphere_sync_status', sync_status, ttl=300)
                 return # Connection failed
             
+            # If we have existing data, mark sync as partial update
+            sync_mode = 'full' if not existing_data else 'incremental'
+            
             # Update sync status - connected successfully
             sync_status = {
                 'status': 'in_progress',
                 'step': 'fetching',
-                'message': 'Connected to vSphere, fetching inventory data...',
+                'message': f'Connected to vSphere, performing {sync_mode} data sync...',
                 'progress': 30
             }
             set_cache('vsphere_sync_status', sync_status, ttl=300)
             
-            # Assign the result to inventory_data
+            # If we have existing data, we can immediately make the app functional with cached data
+            if existing_data:
+                # Update timestamp in existing data to indicate it's being refreshed
+                if isinstance(existing_data, dict):
+                    existing_data['last_refresh_started'] = datetime.datetime.now().isoformat()
+                    set_cache(cache_key, existing_data)
+                    
+                # Set status to indicate we're using cache while refreshing
+                sync_status = {
+                    'status': 'in_progress',
+                    'step': 'refreshing',
+                    'message': 'Using cached data while refreshing in background',
+                    'progress': 40
+                }
+                set_cache('vsphere_sync_status', sync_status, ttl=300)
+            
+            # Assign the result to inventory_data - either full fetch or incremental update
             inventory_data = get_vsphere_inventory_data(service_instance) # Pass si here
-            cache_key = 'vsphere_inventory'
-
+            
             if inventory_data:
                 # Update sync status - processing data
                 sync_status = {
                     'status': 'in_progress',
                     'step': 'processing',
-                    'message': 'Processing vSphere inventory data...',
+                    'message': f'Processing {sync_mode} vSphere inventory data...',
                     'progress': 70
                 }
                 set_cache('vsphere_sync_status', sync_status, ttl=300)
+                      # Use enhanced Redis cache module for delta-based updates
+            try:
+                # Import the enhanced Redis cache module
+                import vsphere_redis_cache_sync
+                
+                # Process inventory with delta tracking
+                if sync_mode == 'incremental' and existing_data:
+                    logger.info("Performing incremental update of vSphere inventory data using delta tracking")
+                    
+                    # Update resources in cache with delta tracking
+                    resource_changes = vsphere_redis_cache_sync.update_vsphere_resources(inventory_data)
+                    
+                    # Compile changes for tracking
+                    changes = {'added': 0, 'removed': 0, 'updated': 0}
+                    for resource_type, type_changes in resource_changes.items():
+                        changes['added'] += type_changes['added']
+                        changes['removed'] += type_changes['removed']
+                        changes['updated'] += type_changes['updated']
+                    
+                    # Add metadata to inventory data
+                    inventory_data['last_full_sync'] = existing_data.get('last_full_sync', datetime.datetime.now().isoformat())
+                    inventory_data['last_incremental_sync'] = datetime.datetime.now().isoformat()
+                    inventory_data['changes'] = changes
+                    
+                    # Log summary of changes
+                    logger.info(f"Incremental update completed with {changes['added']} additions, " +
+                               f"{changes['removed']} removals, and {changes['updated']} updates.")
+                else:
+                    # This is a full sync
+                    logger.info("Performing full sync of vSphere inventory data")
+                    
+                    # Clear existing cache and update with all new resources
+                    vsphere_redis_cache_sync.clear_vsphere_cache()
+                    vsphere_redis_cache_sync.update_vsphere_resources(inventory_data)
+                    
+                    # Track as a full sync in metadata
+                    inventory_data['last_full_sync'] = datetime.datetime.now().isoformat()
+                    changes = {'added': sum(len(inventory_data.get(res_type, [])) for res_type in 
+                                        ['datacenters', 'resource_pools', 'datastores', 'templates', 'networks']),
+                             'removed': 0, 'updated': 0}
+            except ImportError:
+                # Fall back to the original incremental update logic if module not available
+                logger.warning("Enhanced Redis cache module not available, falling back to basic incremental updates")
+                changes = {'added': 0, 'removed': 0, 'updated': 0}
+                
+                if sync_mode == 'incremental' and existing_data:
+                    logger.info("Performing incremental update of vSphere inventory data")
+                    
+                    # Process each resource type for changes
+                    for resource_type in ['datacenters', 'resource_pools', 'datastores', 'templates', 'networks']:
+                        # Skip if not present in both datasets
+                        if resource_type not in inventory_data or resource_type not in existing_data:
+                            continue
+                            
+                        # Compare by name (or ID if available)
+                        existing_items = {item.get('id', item.get('name', '')): item 
+                                         for item in existing_data.get(resource_type, [])}
+                        new_items = {item.get('id', item.get('name', '')): item 
+                                    for item in inventory_data.get(resource_type, [])}
+                        
+                        # Find additions, removals, and potential updates
+                        added_ids = set(new_items.keys()) - set(existing_items.keys())
+                        removed_ids = set(existing_items.keys()) - set(new_items.keys())
+                        common_ids = set(existing_items.keys()) & set(new_items.keys())
+                        
+                        # Check for updates in common items (e.g., free_space changes in datastores)
+                        updated_ids = set()
+                        for item_id in common_ids:
+                            new_item = new_items[item_id]
+                            existing_item = existing_items[item_id]
+                            
+                            # For datastores, check free space changes
+                            if resource_type == 'datastores' and 'free_gb' in new_item and 'free_gb' in existing_item:
+                                if abs(new_item['free_gb'] - existing_item['free_gb']) > (existing_item['free_gb'] * 0.05):
+                                    updated_ids.add(item_id)
+                        
+                        # Update counts
+                        changes['added'] += len(added_ids)
+                        changes['removed'] += len(removed_ids) 
+                        changes['updated'] += len(updated_ids)
+                        
+                        # Log changes if significant
+                        if added_ids or removed_ids or updated_ids:
+                            logger.info(f"Changes in {resource_type}: +{len(added_ids)}, -{len(removed_ids)}, Δ{len(updated_ids)}")
+                    
+                    # Add metadata to inventory data
+                    inventory_data['last_full_sync'] = existing_data.get('last_full_sync', datetime.datetime.now().isoformat())
+                    inventory_data['last_incremental_sync'] = datetime.datetime.now().isoformat()
+                    inventory_data['changes'] = changes
+                else:
+                    # This is a full sync
+                    logger.info("Performing full sync of vSphere inventory data")
+                    inventory_data['last_full_sync'] = datetime.datetime.now().isoformat()
                 
                 # Try to import the new cache configuration
                 try:
@@ -428,24 +556,55 @@ def background_vsphere_sync():
                     ttl = 3600 * 2  # 2 hours
                     logger.info(f"Using default TTL of {ttl} seconds for vSphere inventory")
                 
+                # Add timestamp for cache monitoring
+                inventory_data['cached_at'] = datetime.datetime.now().isoformat()
                 set_cache(cache_key, inventory_data, ttl=ttl)
-                logger.info("Background task: Successfully fetched and cached vSphere inventory.")
+                
+                # If in incremental mode, also update individual resource caches
+                if sync_mode == 'incremental':
+                    for resource_type in ['datacenters', 'resource_pools', 'datastores', 'templates', 'networks']:
+                        if resource_type in inventory_data:
+                            resource_key = f'vsphere_{resource_type}'
+                            resource_ttl = CACHE_TTL.get(resource_key, ttl) if 'CACHE_TTL' in locals() else ttl
+                            set_cache(resource_key, inventory_data[resource_type], ttl=resource_ttl)
+                
+                # Success message varies based on sync mode
+                if sync_mode == 'incremental':
+                    logger.info(f"Background task: Successfully updated vSphere inventory with {changes['added']} additions, " +
+                               f"{changes['removed']} removals, and {changes['updated']} updates.")
+                else:
+                    logger.info("Background task: Successfully fetched and cached full vSphere inventory.")
                 
                 # Update sync status - completed successfully
                 sync_status = {
                     'status': 'success',
                     'step': 'completed',
-                    'message': f"Successfully fetched {len(inventory_data.get('datacenters', []))} datacenters, " +
+                    'message': f"Successfully {'updated' if sync_mode == 'incremental' else 'fetched'} " +
+                              f"{len(inventory_data.get('datacenters', []))} datacenters, " +
                               f"{len(inventory_data.get('resource_pools', []))} resource pools, and " +
                               f"{len(inventory_data.get('templates', []))} templates",
-                    'progress': 100
+                    'progress': 100,
+                    'sync_mode': sync_mode,
+                    'changes': changes if sync_mode == 'incremental' else None
                 }
                 set_cache('vsphere_sync_status', sync_status, ttl=300)
             else:
                 # get_vsphere_inventory_data logs errors internally now
                 logger.error("Background task: Failed to fetch vSphere inventory data (check previous logs).")
                 
-                # Update sync status - failed to fetch data
+                # If we have existing data, we can still use it despite the error
+                if existing_data:
+                    logger.info("Using existing cached data despite fetch failure")
+                    sync_status = {
+                        'status': 'warning',
+                        'step': 'fetching',
+                        'message': 'Using cached data (fetch failed)',
+                        'progress': 100
+                    }
+                    set_cache('vsphere_sync_status', sync_status, ttl=300)
+                    return
+                
+                # Otherwise report error
                 sync_status = {
                     'status': 'error',
                     'step': 'fetching',
@@ -456,17 +615,26 @@ def background_vsphere_sync():
 
         except Exception as e: # Catch any unexpected errors during the process
             logger.error(f"Background task: Unhandled exception during vSphere sync: {e}", exc_info=True)
-            # Optionally log the full traceback
-            # logger.error(f"Traceback: {traceback.format_exc()}")
             
-            # Update sync status - unexpected error
-            sync_status = {
-                'status': 'error',
-                'step': 'unknown',
-                'message': f'Unexpected error during vSphere sync: {str(e)}',
-                'progress': 0
-            }
-            set_cache('vsphere_sync_status', sync_status, ttl=300)
+            # If we have existing data, we can still use it despite the error
+            if existing_data:
+                logger.info("Using existing cached data despite sync error")
+                sync_status = {
+                    'status': 'warning',
+                    'step': 'processing',
+                    'message': 'Using cached data (sync error occurred)',
+                    'progress': 100
+                }
+                set_cache('vsphere_sync_status', sync_status, ttl=300)
+            else:
+                # Update sync status - unexpected error
+                sync_status = {
+                    'status': 'error',
+                    'step': 'unknown',
+                    'message': f'Unexpected error during vSphere sync: {str(e)}',
+                    'progress': 0
+                }
+                set_cache('vsphere_sync_status', sync_status, ttl=300)
 
         finally:
             # Ensure disconnection even if errors occur after connection
@@ -1507,12 +1675,22 @@ def generate_atlantis_plan_payload(config_data, tf_directory, tf_files):
         'repo': {
             'owner': 'fake',
             'name': 'terraform-repo',
-            'clone_url': 'https://github.com/fake/terraform-repo.git'
+            'clone_url': 'https://github.com/fake/terraform-repo.git',
+            'full_name': 'fake/terraform-repo',
+            'html_url': 'https://github.com/fake/terraform-repo',
+            'ssh_url': 'git@github.com:fake/terraform-repo.git',
+            'vcs_host': {
+                'hostname': 'github.com',
+                'type': 'github'
+            }
         },
         'pull_request': {
             'num': 1,
             'branch': 'main',
-            'author': config_data.get('build_owner', 'Admin User')
+            'author': config_data.get('build_owner', 'Admin User'),
+            'base_branch': 'main',
+            'url': 'https://github.com/fake/terraform-repo/pull/1',
+            'state': 'open'
         },
         'head_commit': 'abcd1234',
         'pull_num': 1,
@@ -1520,35 +1698,67 @@ def generate_atlantis_plan_payload(config_data, tf_directory, tf_files):
         'repo_rel_dir': tf_dir_name,
         'workspace': config_data.get('environment', 'development'),
         'project_name': vm_hostname,
-        'plan_id': plan_id,  # Add unique plan ID for tracking
+        'plan_id': plan_id,
         'comment': f"VM Provisioning Plan: {vm_hostname}",
         'user': config_data.get('build_owner', 'Admin User'),
         'verbose': True,
-        'cmd': 'plan',             # Critical: ensure command is explicitly set to 'plan'
-        'dir': '.',                # Critical: add the 'dir' field that's required
+        'cmd': 'plan',
+        'dir': '.',
         'terraform_files': tf_files,
-        'environment': config_data.get('environment', 'development'),  # Critical: environment field must be present
-        # Add these missing fields required by Atlantis
-        'atlantis_workflow': 'custom',             # Match your workflow defined in repo-config.yaml
-        'autoplan': False,                         # Explicitly set to False for manual plans
-        'parallel_plan': False,                    # Disable parallel planning
-        'parallel_apply': False,                   # Disable parallel applying
-        'terraform_version': '',                   # Let Atlantis use its default version
-        'log_level': 'info',                       # Set log level
-        'terraform_vars': vsphere_vars,            # Add vSphere and other variables
-        'action': 'plan',                          # Explicitly set action field
-        'apply_requirements': ['approved']         # Add apply requirements
+        'environment': config_data.get('environment', 'development'),
+        'atlantis_workflow': 'custom',
+        'autoplan': False,
+        'parallel_plan': False,
+        'parallel_apply': False,
+        'terraform_version': '',
+        'log_level': 'info',
+        'terraform_vars': vsphere_vars,
+        'action': 'plan',
+        'apply_requirements': ['approved'],
+        'repository_id': 'fake/terraform-repo',
+        'vcs_status': 'pending',
+        'command_name': 'plan',
+        'plan_requirements': []
     }
     
-    # Add repository_id field which might be required by Atlantis
-    payload_dict['repository_id'] = f"{payload_dict['repo']['owner']}/{payload_dict['repo']['name']}"
+    # These are the essential fields for Atlantis 0.24.0+ that must be included
+    # Command field must be present (in addition to cmd and command_name)
+    payload_dict['command'] = 'plan'
     
-    # Add additional fields that might be required for the specific version of Atlantis
-    payload_dict['command_name'] = 'plan'
-    payload_dict['plan_requirements'] = []
+    # BaseRepo is required for newer Atlantis versions
+    payload_dict['base_repo'] = {
+        'id': f"{payload_dict['repo']['owner']}/{payload_dict['repo']['name']}",
+        'owner': payload_dict['repo']['owner'],
+        'name': payload_dict['repo']['name'],
+        'clone_url': payload_dict['repo']['clone_url'],
+        'html_url': payload_dict['repo']['html_url'],
+        'ssh_url': payload_dict['repo']['ssh_url']
+    }
+    
+    # HeadRepo is required for newer Atlantis versions
+    payload_dict['head_repo'] = {
+        'id': f"{payload_dict['repo']['owner']}/{payload_dict['repo']['name']}",
+        'owner': payload_dict['repo']['owner'],
+        'name': payload_dict['repo']['name'],
+        'clone_url': payload_dict['repo']['clone_url'],
+        'html_url': payload_dict['repo']['html_url'],
+        'ssh_url': payload_dict['repo']['ssh_url']
+    }
+    
+    # Always ensure user and project name are set
+    if not payload_dict.get('user'):
+        payload_dict['user'] = 'Admin User'
+    
+    if not payload_dict.get('project_name'):
+        payload_dict['project_name'] = vm_hostname
+    
+    # Ensure repository_id is present and consistently formatted
+    payload_dict['repository_id'] = f"{payload_dict['repo']['owner']}/{payload_dict['repo']['name']}"
     
     # Convert to JSON string with proper formatting to ensure all commas are present
     payload_string = json.dumps(payload_dict, ensure_ascii=False)
+    
+    logger.info(f"Generated Atlantis payload with fields: {', '.join(payload_dict.keys())}")
     
     return payload_string
 

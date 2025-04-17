@@ -15,6 +15,8 @@ services:
       - TERRAFORM_DIR=/app/terraform
       - USERS_FILE=/app/users.json
       - DEBUG=True
+      # Timezone setting for Chicago CST
+      - TZ=America/Chicago
       # Atlantis integration
       - ATLANTIS_URL=http://atlantis:4141
       - ATLANTIS_TOKEN=${ATLANTIS_TOKEN:-your-atlantis-api-secret}

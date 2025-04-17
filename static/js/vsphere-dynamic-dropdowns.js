@@ -234,12 +234,25 @@ function initializeDynamicVSphereDropdowns() {
             setDropdownLoading(datastoreSelect, true);
             setDropdownLoading(templateSelect, true);
             if (networkSelect) setDropdownLoading(networkSelect, true);
+              // Initialize cache structure if needed
+            if (!datacenterResourcesCache[selectedDC]) {
+                datacenterResourcesCache[selectedDC] = {
+                    datastoresByPool: {},
+                    templatesByPool: {},
+                    networksByPool: {}
+                };
+            }
             
-            // Check if we have the resources cached
-            if (datacenterResourcesCache[selectedDC] && 
-                datacenterResourcesCache[selectedDC].datastoresByPool[selectedPool] &&
-                datacenterResourcesCache[selectedDC].templatesByPool[selectedPool]) {
-                
+            // Check if we have both datastores and templates cached
+            const datastoresCached = datacenterResourcesCache[selectedDC].datastoresByPool && 
+                                   datacenterResourcesCache[selectedDC].datastoresByPool[selectedPool];
+            const templatesCached = datacenterResourcesCache[selectedDC].templatesByPool && 
+                                  datacenterResourcesCache[selectedDC].templatesByPool[selectedPool];
+            
+            // Debug cache state
+            console.log(`Cache state - Datastores: ${datastoresCached ? 'Found' : 'Not found'}, Templates: ${templatesCached ? 'Found' : 'Not found'}`);
+            
+            if (datastoresCached && templatesCached) {
                 // Use cached data
                 console.log(`Using cached resources for pool: ${selectedPool}`);
                 
@@ -248,18 +261,21 @@ function initializeDynamicVSphereDropdowns() {
                 
                 // Populate datastores
                 const datastores = datacenterResourcesCache[selectedDC].datastoresByPool[selectedPool];
+                console.log(`Populating datastores dropdown with ${datastores.length} items from cache`);
                 populateDropdown(datastoreSelect, datastores, "Select Datastore...");
                 setDropdownLoading(datastoreSelect, false);
                 updateProgress(1, `Loading datastores from cache`);
                 
                 // Populate templates
                 const templates = datacenterResourcesCache[selectedDC].templatesByPool[selectedPool];
+                console.log(`Populating templates dropdown with ${templates.length} items from cache`);
                 populateDropdown(templateSelect, templates, "Select Template...");
                 setDropdownLoading(templateSelect, false);
                 updateProgress(1, `Loading templates from cache`);
                 
                 // Populate networks if available
-                if (networkSelect && datacenterResourcesCache[selectedDC].networksByPool[selectedPool]) {
+                if (networkSelect && datacenterResourcesCache[selectedDC].networksByPool && 
+                    datacenterResourcesCache[selectedDC].networksByPool[selectedPool]) {
                     const networks = datacenterResourcesCache[selectedDC].networksByPool[selectedPool];
                     populateDropdown(networkSelect, networks, "Select Network...");
                     setDropdownLoading(networkSelect, false);
@@ -273,7 +289,7 @@ function initializeDynamicVSphereDropdowns() {
                 
                 // Update status
                 updateStatusMessage(`Loaded resources for ${selectedPool}`, 'success');
-            } else {                let completedRequests = 0;
+            } else {let completedRequests = 0;
                 const totalRequests = networkSelect ? 3 : 2;
                 
                 // Start progress tracking for resource loading
@@ -296,10 +312,16 @@ function initializeDynamicVSphereDropdowns() {
                     fetchDatastoresForResourcePool(selectedDC, selectedPool)
                         .then(datastores => {
                             console.log(`Received ${datastores.length} datastores:`, datastores);
-                            
-                            // Cache the results
+                              // Cache the results
                             if (!datacenterResourcesCache[selectedDC]) {
-                                datacenterResourcesCache[selectedDC] = { datastoresByPool: {} };
+                                datacenterResourcesCache[selectedDC] = {
+                                    datastoresByPool: {},
+                                    templatesByPool: {},
+                                    networksByPool: {}
+                                };
+                            }
+                            if (!datacenterResourcesCache[selectedDC].datastoresByPool) {
+                                datacenterResourcesCache[selectedDC].datastoresByPool = {};
                             }
                             datacenterResourcesCache[selectedDC].datastoresByPool[selectedPool] = datastores;
                             
@@ -323,10 +345,16 @@ function initializeDynamicVSphereDropdowns() {
                     fetchTemplatesForResourcePool(selectedDC, selectedPool)
                         .then(templates => {
                             console.log(`Received ${templates.length} templates:`, templates);
-                            
-                            // Cache the results
+                              // Cache the results
                             if (!datacenterResourcesCache[selectedDC]) {
-                                datacenterResourcesCache[selectedDC] = { templatesByPool: {} };
+                                datacenterResourcesCache[selectedDC] = {
+                                    datastoresByPool: {},
+                                    templatesByPool: {},
+                                    networksByPool: {}
+                                };
+                            }
+                            if (!datacenterResourcesCache[selectedDC].templatesByPool) {
+                                datacenterResourcesCache[selectedDC].templatesByPool = {};
                             }
                             datacenterResourcesCache[selectedDC].templatesByPool[selectedPool] = templates;
                             
