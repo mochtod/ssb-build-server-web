@@ -2713,8 +2713,7 @@ threading.Thread(target=initial_sync, daemon=True).start() # Use daemon thread
 if __name__ == '__main__':
     # Use host='0.0.0.0' to be accessible externally if needed
     # debug=True should be False in production    # use_reloader=False is important when using APScheduler with Flask's dev server
-    # Set debug based on environment variable, default to False    
-    app_debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    # Set debug based on environment variable, default to False      app_debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
     app.run(debug=app_debug, host='0.0.0.0', port=5150, use_reloader=False)
-``
+
 
