@@ -14,6 +14,7 @@ from functools import wraps
 from git import Repo
 from git.exc import GitCommandError
 import logging
+from vsphere_redis_cache import VSphereRedisCache, sync_vsphere_to_redis
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
@@ -174,6 +175,14 @@ def submit():
         memory = int(request.form.get('memory', DEFAULT_CONFIG['memory']))
         disk_size = int(request.form.get('disk_size', DEFAULT_CONFIG['disk_size']))
         
+        # Get vSphere resource selections
+        vsphere_server = request.form.get('vsphere_server')
+        datacenter = request.form.get('datacenter')
+        cluster = request.form.get('cluster')
+        datastore_cluster = request.form.get('datastore_cluster')
+        network = request.form.get('network')
+        template = request.form.get('template')
+        
         # Determine environment based on server prefix
         environment = "production" if server_prefix in ENVIRONMENTS["prod"] else "development"
         
@@ -188,6 +197,11 @@ def submit():
             
         if server_prefix not in SERVER_PREFIXES:
             flash('Invalid server prefix', 'error')
+            return redirect(url_for('index'))
+        
+        # Validate vSphere selections
+        if not vsphere_server or not datacenter or not cluster or not datastore_cluster or not network or not template:
+            flash('All vSphere resource selections are required', 'error')
             return redirect(url_for('index'))
         
         # Additional disks processing
@@ -230,7 +244,14 @@ def submit():
             'plan_log': '',
             'build_owner': session.get('name', 'unknown'),
             'build_username': session.get('username', 'unknown'),
-            'created_at': datetime.datetime.now().isoformat()
+            'created_at': datetime.datetime.now().isoformat(),
+            # vSphere resource selections
+            'vsphere_server': vsphere_server,
+            'datacenter': datacenter,
+            'cluster': cluster,
+            'datastore_cluster': datastore_cluster,
+            'network': network,
+            'template': template
         }
         
         # Save configuration to JSON file
@@ -253,10 +274,31 @@ def submit():
         variables_file = os.path.join(tf_directory, "terraform.tfvars")
         generate_variables_file(variables_file, config_data)
         
+        # Generate and save machine_inputs.tfvars to the VM workspace directory
+        machine_inputs_content = generate_machine_inputs_tfvars(config_data)
+        
+        # Ensure the vm-workspace directory exists
+        vm_workspace_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vm-workspace")
+        if not os.path.exists(vm_workspace_dir):
+            logger.warning(f"VM workspace directory {vm_workspace_dir} does not exist, creating it")
+            os.makedirs(vm_workspace_dir, exist_ok=True)
+        
+        # Save machine_inputs.tfvars to the vm-workspace directory
+        machine_inputs_file = os.path.join(vm_workspace_dir, "machine_inputs.tfvars")
+        with open(machine_inputs_file, 'w') as f:
+            f.write(machine_inputs_content)
+        
+        # Also save a copy to the request-specific terraform directory for reference
+        with open(os.path.join(tf_directory, "machine_inputs.tfvars"), 'w') as f:
+            f.write(machine_inputs_content)
+            
+        logger.info(f"Generated machine_inputs.tfvars for {server_name}")
+        
         flash('VM configuration created successfully!', 'success')
         return redirect(url_for('show_config', request_id=request_id, timestamp=timestamp))
         
     except Exception as e:
+        logger.exception(f"Error creating configuration: {str(e)}")
         flash(f'Error creating configuration: {str(e)}', 'error')
         return redirect(url_for('index'))
 
@@ -602,6 +644,50 @@ def add_user():
 def run_atlantis_plan(config_data, tf_directory):
     """Run a Terraform plan in Atlantis"""
     try:
+        # Get vSphere resources from Redis cache
+        logger.info(f"Retrieving vSphere resources for environment: {config_data['environment']}")
+        vsphere_cache = VSphereRedisCache()
+        vsphere_resources = vsphere_cache.get_resource_for_terraform(config_data['environment'])
+        
+        # Update machine_inputs.tfvars with vSphere resource IDs from Redis
+        vm_workspace_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "vm-workspace")
+        machine_inputs_file = os.path.join(vm_workspace_dir, "machine_inputs.tfvars")
+        
+        try:
+            with open(machine_inputs_file, 'r') as f:
+                machine_inputs_content = f.read()
+            
+            # Replace placeholder values with actual vSphere resource IDs
+            if vsphere_resources['resource_pool_id']:
+                machine_inputs_content = machine_inputs_content.replace('<resource_pool_id>', vsphere_resources['resource_pool_id'])
+            
+            if vsphere_resources['datastore_id']:
+                machine_inputs_content = machine_inputs_content.replace('<datastore_id>', vsphere_resources['datastore_id'])
+            
+            if vsphere_resources['network_id']:
+                machine_inputs_content = machine_inputs_content.replace('<network_id>', vsphere_resources['network_id'])
+            
+            if vsphere_resources['template_uuid']:
+                machine_inputs_content = machine_inputs_content.replace('<template_uuid>', vsphere_resources['template_uuid'])
+            
+            if vsphere_resources['ipv4_gateway']:
+                machine_inputs_content = machine_inputs_content.replace('<ipv4_gateway>', vsphere_resources['ipv4_gateway'])
+            
+            if vsphere_resources['ipv4_address']:
+                machine_inputs_content = machine_inputs_content.replace('<ipv4_address>', vsphere_resources['ipv4_address'])
+            
+            # Write updated machine_inputs.tfvars
+            with open(machine_inputs_file, 'w') as f:
+                f.write(machine_inputs_content)
+            
+            # Copy updated machine_inputs.tfvars to the terraform directory
+            shutil.copy(machine_inputs_file, os.path.join(tf_directory, "machine_inputs.tfvars"))
+            
+            logger.info(f"Updated machine_inputs.tfvars with vSphere resource IDs for {config_data['server_name']}")
+        except Exception as e:
+            logger.error(f"Error updating machine_inputs.tfvars: {str(e)}")
+            # Continue with plan even if we couldn't update machine_inputs.tfvars
+        
         # Read the Terraform files
         tf_files = {}
         for filename in os.listdir(tf_directory):
@@ -696,6 +782,12 @@ This plan will:
 - Create {config_data['quantity']} new VM(s)
 - Configure networking and storage
 - Register VMs with Ansible
+
+vSphere Resources:
+- Resource Pool: {vsphere_resources['resource_pool_id'] or 'Not found - will cause failure'}
+- Datastore: {vsphere_resources['datastore_id'] or 'Not found - will cause failure'}
+- Network: {vsphere_resources['network_id'] or 'Not found - will cause failure'}
+- Template: {vsphere_resources['template_uuid'] or 'Not found - will cause failure'}
 
 Atlantis Plan URL: {plan_url}
         """
@@ -866,6 +958,61 @@ time_zone        = "UTC"
         f.write(variables_content)
     
     return variables_content
+
+def generate_machine_inputs_tfvars(config):
+    """
+    Generate a machine_inputs.tfvars file from web form input data
+    This is used to feed variables to the vSphere provider in Terraform
+    """
+    # Extract configuration values
+    server_name = config['server_name']
+    num_cpus = config['num_cpus']
+    memory = config['memory']
+    disk_size = config['disk_size']
+    additional_disks = config['additional_disks']
+    quantity = config['quantity']
+    environment = config['environment']
+    start_number = config.get('start_number', 10001)
+    
+    # Format additional disks for Terraform
+    additional_disks_tf = "[\n"
+    for disk in additional_disks:
+        additional_disks_tf += f'  {{ size = {disk["size"]}, type = "{disk["type"]}" }},\n'
+    additional_disks_tf += "]"
+    
+    # Use default values where appropriate for vSphere-specific fields that may not be present in the form
+    # These will be replaced with actual values from the vSphere Redis cache later
+    
+    # Generate the tfvars content
+    tfvars_content = f"""# Machine inputs for {server_name}
+# Generated on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+# Environment: {environment}
+
+name             = "{server_name}"
+num_cpus         = {num_cpus}
+memory           = {memory}
+disk_size        = {disk_size}
+guest_id         = "rhel9_64Guest"
+adapter_type     = "vmxnet3"
+time_zone        = "UTC"
+quantity         = {quantity}
+start_number     = {start_number}
+dns_servers      = ["8.8.8.8", "8.8.4.4"]
+
+# These values will be populated from vSphere during the Terraform plan phase
+resource_pool_id = "<resource_pool_id>"
+datastore_id     = "<datastore_id>"
+network_id       = "<network_id>"
+template_uuid    = "<template_uuid>"
+ipv4_address     = "<ipv4_address>"
+ipv4_netmask     = 24
+ipv4_gateway     = "<ipv4_gateway>"
+
+# Additional disk configuration
+additional_disks = {additional_disks_tf}
+"""
+    
+    return tfvars_content
 
 def generate_terraform_config(config):
     """Generate Terraform configuration based on user input"""
@@ -1046,8 +1193,185 @@ output "vm_ids" {{
   value       = [for vm in vsphere_virtual_machine.vm : vm.id]
 }}
 """
-    
+
     return tf_config
+
+# vSphere Redis Cache API endpoints
+@app.route('/api/vsphere-cache/status', methods=['GET'])
+@login_required
+def get_vsphere_cache_status():
+    """
+    Get the status of the vSphere Redis cache
+    """
+    try:
+        cache = VSphereRedisCache()
+        status = cache.get_cache_status()
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+    except Exception as e:
+        logging.error(f"Error getting vSphere cache status: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere-cache/sync', methods=['POST'])
+@login_required
+@role_required(ROLE_ADMIN)
+def trigger_vsphere_cache_sync():
+    """
+    Trigger a manual sync of vSphere objects to Redis cache
+    """
+    try:
+        success = sync_vsphere_to_redis()
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'vSphere cache sync completed successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to sync vSphere cache'
+            }), 500
+    except Exception as e:
+        logging.error(f"Error syncing vSphere cache: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere-cache/clear', methods=['POST'])
+@login_required
+@role_required(ROLE_ADMIN)
+def clear_vsphere_cache():
+    """
+    Clear the vSphere Redis cache
+    """
+    try:
+        cache = VSphereRedisCache()
+        success = cache.clear_cache()
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'vSphere cache cleared successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to clear vSphere cache'
+            }), 500
+    except Exception as e:
+        logging.error(f"Error clearing vSphere cache: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere/hierarchical', methods=['GET'])
+@login_required
+def get_vsphere_hierarchical_data():
+    """
+    Get the hierarchical data for vSphere resources
+    Used to populate the cascading dropdown menus for VM creation
+    """
+    try:
+        vsphere_server = request.args.get('vsphere_server')
+        datacenter_id = request.args.get('datacenter_id')
+        cluster_id = request.args.get('cluster_id')
+        datastore_cluster_id = request.args.get('datastore_cluster_id')
+        
+        cache = VSphereRedisCache()
+        hierarchical_data = cache.get_hierarchical_data(
+            vsphere_server=vsphere_server,
+            datacenter_id=datacenter_id,
+            cluster_id=cluster_id,
+            datastore_cluster_id=datastore_cluster_id
+        )
+        
+        return jsonify({
+            'success': True,
+            'data': hierarchical_data
+        })
+    except Exception as e:
+        logging.error(f"Error getting vSphere hierarchical data: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere/servers', methods=['GET'])
+@login_required
+def get_vsphere_servers():
+    """
+    Get the list of available vSphere servers
+    This is a simplified endpoint that just returns the hardcoded server list
+    """
+    try:
+        cache = VSphereRedisCache()
+        servers = cache.get_vsphere_servers()
+        return jsonify({
+            'success': True,
+            'data': {
+                'vsphere_servers': servers
+            }
+        })
+    except Exception as e:
+        logging.error(f"Error getting vSphere servers: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere-cache/sync-essential', methods=['POST'])
+@login_required
+@role_required(ROLE_ADMIN)
+def trigger_vsphere_essential_sync():
+    """
+    Trigger a quick sync of essential vSphere objects to Redis cache
+    Only syncs data needed for the UI (datacenters, clusters, networks, templates)
+    """
+    try:
+        from vsphere_redis_cache import sync_essential_to_redis
+        success = sync_essential_to_redis()
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Essential vSphere data synchronized successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to synchronize essential vSphere data'
+            }), 500
+    except Exception as e:
+        logging.error(f"Error syncing essential vSphere data: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/vsphere-cache/progress', methods=['GET'])
+@login_required
+def get_vsphere_sync_progress():
+    """
+    Get the progress of the current vSphere sync operation
+    """
+    try:
+        from vsphere_redis_cache import get_sync_progress
+        progress = get_sync_progress()
+        return jsonify({
+            'success': True,
+            'progress': progress
+        })
+    except Exception as e:
+        logging.error(f"Error getting vSphere sync progress: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5150)

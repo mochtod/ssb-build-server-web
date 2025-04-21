@@ -4,10 +4,16 @@ services:
     ports:
       - "5150:5150"  # Map port 5150 for the Flask app
     volumes:
-      - .:/app
+      # Mount only specific files/directories instead of the entire app directory
       - ./configs:/app/configs
       - ./terraform:/app/terraform
       - ./users.json:/app/users.json
+      # For development, you can uncomment below to enable hot-reloading of code changes
+      # - ./app.py:/app/app.py
+      # - ./vsphere_redis_cache.py:/app/vsphere_redis_cache.py
+      # - ./redis_client.py:/app/redis_client.py
+      # - ./templates:/app/templates
+      # - ./static:/app/static
     environment:
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change_this_to_a_random_secure_key}
       - CONFIG_DIR=/app/configs
@@ -18,8 +24,14 @@ services:
       - ATLANTIS_URL=http://atlantis:4141
       - ATLANTIS_TOKEN=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
       - TIMEOUT=120
+      # Redis integration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_CACHE_TTL=${REDIS_CACHE_TTL:-3600}
     depends_on:
       - atlantis
+      - redis
     networks:
       - app-network
     restart: unless-stopped
@@ -70,6 +82,45 @@ services:
       - app-network
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  vsphere-sync:
+    build: .
+    command: python /app/vsphere_sync_scheduler.py
+    volumes:
+      # Use specific volume mounts instead of mounting the entire directory
+      - ./configs:/app/configs
+      - ./terraform:/app/terraform
+    environment:
+      # vSphere connection settings
+      - VSPHERE_SERVER=${VSPHERE_SERVER}
+      - VSPHERE_USER=${VSPHERE_USER}
+      - VSPHERE_PASSWORD=${VSPHERE_PASSWORD}
+      - VSPHERE_PORT=${VSPHERE_PORT:-443}
+      - VSPHERE_USE_SSL=${VSPHERE_USE_SSL:-true}
+      # Redis connection settings
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_CACHE_TTL=${REDIS_CACHE_TTL:-3600}
+      # Sync settings
+      - VSPHERE_SYNC_INTERVAL_MINUTES=${VSPHERE_SYNC_INTERVAL_MINUTES:-15}
+      - VSPHERE_CACHE_TTL=${VSPHERE_CACHE_TTL:-3600}
+    depends_on:
+      - redis
+    networks:
+      - app-network
+    restart: unless-stopped
+
 networks:
   app-network:
     driver: bridge
@@ -78,3 +129,4 @@ volumes:
   configs:
   terraform:
   atlantis-data:
+  redis-data:  # Persistent storage for Redis data

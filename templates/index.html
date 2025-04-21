@@ -62,6 +62,84 @@
                         <p class="preview">Preview: <span id="name_preview">lin2xx-app-10001</span></p>
                     </div>
 
+                    <!-- vSphere Configuration Section -->
+                    <div class="form-section" id="vsphere-section">
+                        <h3>vSphere Configuration</h3>
+                        <div id="vsphere-loading" class="loading-indicator">
+                            <div class="spinner"></div>
+                            <p>Loading vSphere data... <span id="loading-detail">Initializing</span></p>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="loading-progress-bar"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="vsphere-error-message" class="alert alert-error" style="display: none;">
+                            Error loading vSphere data. <button id="retry-vsphere-load" class="btn-small">Retry</button>
+                            <button id="use-cached-data" class="btn-small">Use Cached Data</button>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vsphere_server">vSphere Server:</label>
+                                <select id="vsphere_server" name="vsphere_server" required>
+                                    <option value="">Select vSphere Server</option>
+                                    <option value="virtualcenter.chrobinson.com">virtualcenter.chrobinson.com PROD</option>
+                                </select>
+                                <div class="loading-status" id="server-loading-status">Connecting...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="datacenter">Datacenter:</label>
+                                <select id="datacenter" name="datacenter" required>
+                                    <option value="">Select Datacenter</option>
+                                </select>
+                                <div class="loading-status" id="datacenter-loading-status">Waiting for server selection...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cluster">Cluster:</label>
+                                <select id="cluster" name="cluster" required>
+                                    <option value="">Select Cluster</option>
+                                </select>
+                                <div class="loading-status" id="cluster-loading-status">Waiting for datacenter selection...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="datastore_cluster">Datastore Cluster:</label>
+                                <select id="datastore_cluster" name="datastore_cluster" required>
+                                    <option value="">Select Datastore Cluster</option>
+                                </select>
+                                <div class="loading-status" id="datastore-loading-status">Waiting for cluster selection...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="network">Network:</label>
+                                <select id="network" name="network" required>
+                                    <option value="">Select Network</option>
+                                </select>
+                                <div class="loading-status" id="network-loading-status">Waiting for datacenter selection...</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="template">Template:</label>
+                                <select id="template" name="template" required>
+                                    <option value="">Select Template</option>
+                                </select>
+                                <div class="loading-status" id="template-loading-status">Waiting for datacenter selection...</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-section">
                         <h3>VM Specifications</h3>
                         <div class="form-row">
