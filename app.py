@@ -157,11 +157,44 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    return render_template('index.html', 
-                          server_prefixes=SERVER_PREFIXES,
-                          environments=ENVIRONMENTS,
-                          user_role=session.get('role', ''),
-                          user_name=session.get('name', ''))
+    try:
+        # Check if vSphere Redis cache is available
+        vsphere_cache = VSphereRedisCache()
+        cache_status = vsphere_cache.get_cache_status()
+        
+        # Get initial vSphere servers for dropdown
+        vsphere_servers = vsphere_cache.get_vsphere_servers()
+        
+        # Get the full hierarchical vSphere data with all components needed for machine_inputs.tfvars
+        # Include all parameters to ensure we get complete data
+        hierarchical_data = vsphere_cache.get_hierarchical_data(
+            vsphere_server=vsphere_servers[0]["id"] if vsphere_servers else None,
+            # Don't specify other parameters so we get all data at each level
+        )
+        
+        # Debug log to server console
+        logger.info(f"Rendering index template with vSphere data: {len(vsphere_servers)} servers available")
+        logger.info(f"Cache status: {cache_status}")
+        logger.info(f"Retrieved datastore clusters: {len(hierarchical_data.get('datastore_clusters', []))} available")
+        
+        return render_template('index.html', 
+                              server_prefixes=SERVER_PREFIXES,
+                              environments=ENVIRONMENTS,
+                              user_role=session.get('role', ''),
+                              user_name=session.get('name', ''),
+                              vsphere_servers=vsphere_servers,
+                              vsphere_cache_status=cache_status,
+                              vsphere_data=hierarchical_data)  # Pass the full data to the template
+    except Exception as e:
+        logger.error(f"Error initializing index page: {str(e)}")
+        logger.exception("Detailed exception information:")
+        # Still render the template, but with an error message
+        return render_template('index.html', 
+                              server_prefixes=SERVER_PREFIXES,
+                              environments=ENVIRONMENTS,
+                              user_role=session.get('role', ''),
+                              user_name=session.get('name', ''),
+                              vsphere_error=str(e))
 
 @app.route('/submit', methods=['POST'])
 @login_required
@@ -657,12 +690,28 @@ def run_atlantis_plan(config_data, tf_directory):
             with open(machine_inputs_file, 'r') as f:
                 machine_inputs_content = f.read()
             
-            # Replace placeholder values with actual vSphere resource IDs
-            if vsphere_resources['resource_pool_id']:
-                machine_inputs_content = machine_inputs_content.replace('<resource_pool_id>', vsphere_resources['resource_pool_id'])
+            # Get the appropriate resource pool ID (which might be a cluster ID)
+            resource_pool_id = vsphere_resources['resource_pool_id']
+            if resource_pool_id:
+                if vsphere_resources.get('resource_pool_is_cluster', False):
+                    logger.info(f"Using cluster as resource pool: {vsphere_resources['resource_pool_name']} (ID: {resource_pool_id})")
+                else:
+                    logger.info(f"Using resource pool: {vsphere_resources['resource_pool_name']} (ID: {resource_pool_id})")
+                machine_inputs_content = machine_inputs_content.replace('<resource_pool_id>', resource_pool_id)
             
-            if vsphere_resources['datastore_id']:
-                machine_inputs_content = machine_inputs_content.replace('<datastore_id>', vsphere_resources['datastore_id'])
+            # Determine and use the appropriate storage ID (either datastore or datastore cluster)
+            storage_id = vsphere_resources.get('storage_id')
+            storage_type = vsphere_resources.get('storage_type')
+            
+            if storage_id:
+                if storage_type == 'datastore_cluster':
+                    logger.info(f"Using datastore cluster for storage (ID: {storage_id})")
+                    # For a datastore cluster, we need to set it differently in Terraform
+                    machine_inputs_content = machine_inputs_content.replace('datastore_id     = "<datastore_id>"', 
+                                                                           f'datastore_id     = null\ndatastore_cluster_id = "{storage_id}"')
+                else:
+                    logger.info(f"Using individual datastore for storage (ID: {storage_id})")
+                    machine_inputs_content = machine_inputs_content.replace('<datastore_id>', storage_id)
             
             if vsphere_resources['network_id']:
                 machine_inputs_content = machine_inputs_content.replace('<network_id>', vsphere_resources['network_id'])
@@ -686,6 +735,7 @@ def run_atlantis_plan(config_data, tf_directory):
             logger.info(f"Updated machine_inputs.tfvars with vSphere resource IDs for {config_data['server_name']}")
         except Exception as e:
             logger.error(f"Error updating machine_inputs.tfvars: {str(e)}")
+            logger.exception("Detailed error:")
             # Continue with plan even if we couldn't update machine_inputs.tfvars
         
         # Read the Terraform files
@@ -768,6 +818,18 @@ def run_atlantis_plan(config_data, tf_directory):
         # For simplicity, we'll just return the plan ID here
         
         # Generate plan log
+        storage_description = ""
+        if vsphere_resources.get('storage_type') == 'datastore_cluster':
+            storage_description = f"Datastore Cluster: {vsphere_resources['datastore_cluster_id'] or 'Not found - will cause failure'}"
+        else:
+            storage_description = f"Datastore: {vsphere_resources['datastore_id'] or 'Not found - will cause failure'}"
+            
+        resource_pool_description = ""
+        if vsphere_resources.get('resource_pool_is_cluster', False):
+            resource_pool_description = f"Cluster as Resource Pool: {vsphere_resources.get('resource_pool_name')} ({vsphere_resources['resource_pool_id'] or 'Not found - will cause failure'})"
+        else:
+            resource_pool_description = f"Resource Pool: {vsphere_resources['resource_pool_id'] or 'Not found - will cause failure'}"
+            
         plan_log = f"""
 Terraform Plan Output:
 ----------------------
@@ -784,8 +846,8 @@ This plan will:
 - Register VMs with Ansible
 
 vSphere Resources:
-- Resource Pool: {vsphere_resources['resource_pool_id'] or 'Not found - will cause failure'}
-- Datastore: {vsphere_resources['datastore_id'] or 'Not found - will cause failure'}
+- {resource_pool_description}
+- {storage_description}
 - Network: {vsphere_resources['network_id'] or 'Not found - will cause failure'}
 - Template: {vsphere_resources['template_uuid'] or 'Not found - will cause failure'}
 

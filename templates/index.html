@@ -65,6 +65,9 @@
                     <!-- vSphere Configuration Section -->
                     <div class="form-section" id="vsphere-section">
                         <h3>vSphere Configuration</h3>
+                        
+                        <!-- Only show loading indicator if no cached data is available -->
+                        {% if not vsphere_data %}
                         <div id="vsphere-loading" class="loading-indicator">
                             <div class="spinner"></div>
                             <p>Loading vSphere data... <span id="loading-detail">Initializing</span></p>
@@ -77,13 +80,20 @@
                             Error loading vSphere data. <button id="retry-vsphere-load" class="btn-small">Retry</button>
                             <button id="use-cached-data" class="btn-small">Use Cached Data</button>
                         </div>
+                        {% endif %}
                         
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="vsphere_server">vSphere Server:</label>
                                 <select id="vsphere_server" name="vsphere_server" required>
                                     <option value="">Select vSphere Server</option>
-                                    <option value="virtualcenter.chrobinson.com">virtualcenter.chrobinson.com PROD</option>
+                                    {% if vsphere_data and vsphere_data.vsphere_servers %}
+                                        {% for server in vsphere_data.vsphere_servers %}
+                                            <option value="{{ server.id }}">{{ server.name }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="virtualcenter.chrobinson.com">virtualcenter.chrobinson.com PROD</option>
+                                    {% endif %}
                                 </select>
                                 <div class="loading-status" id="server-loading-status">Connecting...</div>
                             </div>
@@ -94,6 +104,11 @@
                                 <label for="datacenter">Datacenter:</label>
                                 <select id="datacenter" name="datacenter" required>
                                     <option value="">Select Datacenter</option>
+                                    {% if vsphere_data and vsphere_data.datacenters %}
+                                        {% for datacenter in vsphere_data.datacenters %}
+                                            <option value="{{ datacenter.id }}">{{ datacenter.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
                                 </select>
                                 <div class="loading-status" id="datacenter-loading-status">Waiting for server selection...</div>
                             </div>
@@ -104,6 +119,11 @@
                                 <label for="cluster">Cluster:</label>
                                 <select id="cluster" name="cluster" required>
                                     <option value="">Select Cluster</option>
+                                    {% if vsphere_data and vsphere_data.clusters %}
+                                        {% for cluster in vsphere_data.clusters %}
+                                            <option value="{{ cluster.id }}">{{ cluster.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
                                 </select>
                                 <div class="loading-status" id="cluster-loading-status">Waiting for datacenter selection...</div>
                             </div>
@@ -114,6 +134,11 @@
                                 <label for="datastore_cluster">Datastore Cluster:</label>
                                 <select id="datastore_cluster" name="datastore_cluster" required>
                                     <option value="">Select Datastore Cluster</option>
+                                    {% if vsphere_data and vsphere_data.datastore_clusters %}
+                                        {% for datastore in vsphere_data.datastore_clusters %}
+                                            <option value="{{ datastore.id }}">{{ datastore.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
                                 </select>
                                 <div class="loading-status" id="datastore-loading-status">Waiting for cluster selection...</div>
                             </div>
@@ -124,6 +149,11 @@
                                 <label for="network">Network:</label>
                                 <select id="network" name="network" required>
                                     <option value="">Select Network</option>
+                                    {% if vsphere_data and vsphere_data.networks %}
+                                        {% for network in vsphere_data.networks %}
+                                            <option value="{{ network.id }}">{{ network.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
                                 </select>
                                 <div class="loading-status" id="network-loading-status">Waiting for datacenter selection...</div>
                             </div>
@@ -134,6 +164,11 @@
                                 <label for="template">Template:</label>
                                 <select id="template" name="template" required>
                                     <option value="">Select Template</option>
+                                    {% if vsphere_data and vsphere_data.templates %}
+                                        {% for template in vsphere_data.templates %}
+                                            <option value="{{ template.id }}">{{ template.name }}</option>
+                                        {% endfor %}
+                                    {% endif %}
                                 </select>
                                 <div class="loading-status" id="template-loading-status">Waiting for datacenter selection...</div>
                             </div>
@@ -217,6 +252,13 @@
         </footer>
     </div>
 
+    <!-- Add the vsphere data as a hidden JSON object to be accessible to JavaScript -->
+    {% if vsphere_data %}
+    <script>
+        window.initialVSphereData = {{ vsphere_data|tojson|safe }};
+    </script>
+    {% endif %}
+    
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

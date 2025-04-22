@@ -4,44 +4,227 @@
  * Handles dynamic behavior for the VM provisioning web application.
  */
 
+// Global variables for vSphere elements
+let vsphereSection;
+let vsphereLoading;
+let vsphereErrorMessage;
+let retryButton;
+
+let vsphereServerSelect;
+let datacenterSelect;
+let clusterSelect;
+let datastoreClusterSelect;
+let networkSelect;
+let templateSelect;
+
+let serverLoadingStatus;
+let datacenterLoadingStatus;
+let clusterLoadingStatus;
+let datastoreLoadingStatus;
+let networkLoadingStatus;
+let templateLoadingStatus;
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Server name preview
+    console.log("DOM loaded - initializing application");
+    
+    // Add debug output to help diagnose issues
+    const addDebugMessage = (message) => {
+        console.log(`[DEBUG] ${message}`);
+        
+        // Create debug panel if it doesn't exist
+        if (!document.getElementById('debug-panel')) {
+            const debugPanel = document.createElement('div');
+            debugPanel.id = 'debug-panel';
+            debugPanel.className = 'debug-panel';
+            debugPanel.innerHTML = `
+                <div class="debug-header">
+                    <div class="debug-title">Debug Information</div>
+                    <button onclick="document.getElementById('debug-panel').remove()">Close</button>
+                </div>
+                <div class="debug-content" id="debug-content"></div>
+            `;
+            document.querySelector('.card').appendChild(debugPanel);
+        }
+        
+        // Add message to debug content
+        const debugContent = document.getElementById('debug-content');
+        const p = document.createElement('p');
+        p.textContent = message;
+        debugContent.appendChild(p);
+        
+        // Scroll to bottom
+        debugContent.scrollTop = debugContent.scrollHeight;
+    };
+
+    // Initialize standard UI elements
+    addDebugMessage("Initializing standard UI elements...");
     initializeServerNamePreview();
-    
-    // Additional disks functionality
     initializeAdditionalDisks();
-    
-    // Copy functionality for receipts
     initializeCopyButtons();
-    
-    // Plan status checking
     initializePlanStatusCheck();
 
-    // Elements
-    const vsphereSection = document.getElementById('vsphere-section');
-    const vsphereLoading = document.getElementById('vsphere-loading');
-    const vsphereErrorMessage = document.getElementById('vsphere-error-message');
-    const retryButton = document.getElementById('retry-vsphere-load');
+    // Initialize vSphere elements
+    addDebugMessage("Looking for vSphere section...");
+    vsphereSection = document.getElementById('vsphere-section');
     
-    const vsphereServerSelect = document.getElementById('vsphere_server');
-    const datacenterSelect = document.getElementById('datacenter');
-    const clusterSelect = document.getElementById('cluster');
-    const datastoreClusterSelect = document.getElementById('datastore_cluster');
-    const networkSelect = document.getElementById('network');
-    const templateSelect = document.getElementById('template');
-    
-    const serverLoadingStatus = document.getElementById('server-loading-status');
-    const datacenterLoadingStatus = document.getElementById('datacenter-loading-status');
-    const clusterLoadingStatus = document.getElementById('cluster-loading-status');
-    const datastoreLoadingStatus = document.getElementById('datastore-loading-status');
-    const networkLoadingStatus = document.getElementById('network-loading-status');
-    const templateLoadingStatus = document.getElementById('template-loading-status');
-    
-    // Initialize the form elements
-    initializeVSphereMenus();
-    initializeServerNamePreview();
-    initializeAdditionalDisks();
+    // Check if we found the vsphere section
+    if (vsphereSection) {
+        addDebugMessage("Found vSphere section, initializing elements...");
+        
+        // Ensure the section is visible
+        vsphereSection.style.display = 'block';
+        
+        // Initialize loading indicators
+        vsphereLoading = document.getElementById('vsphere-loading');
+        vsphereErrorMessage = document.getElementById('vsphere-error-message');
+        retryButton = document.getElementById('retry-vsphere-load');
+        
+        // Initialize select elements
+        vsphereServerSelect = document.getElementById('vsphere_server');
+        datacenterSelect = document.getElementById('datacenter');
+        clusterSelect = document.getElementById('cluster');
+        datastoreClusterSelect = document.getElementById('datastore_cluster');
+        networkSelect = document.getElementById('network');
+        templateSelect = document.getElementById('template');
+        
+        // Initialize loading status elements
+        serverLoadingStatus = document.getElementById('server-loading-status');
+        datacenterLoadingStatus = document.getElementById('datacenter-loading-status');
+        clusterLoadingStatus = document.getElementById('cluster-loading-status');
+        datastoreLoadingStatus = document.getElementById('datastore-loading-status');
+        networkLoadingStatus = document.getElementById('network-loading-status');
+        templateLoadingStatus = document.getElementById('template-loading-status');
+        
+        // Initialize the menus
+        addDebugMessage("Initializing vSphere menus and loading data...");
+        initializeVSphereMenus();
+    } else {
+        addDebugMessage("ERROR: vSphere section not found in DOM!");
+        console.error("vSphere section not found in DOM");
+        
+        // Try to create the section if it doesn't exist
+        addDebugMessage("Attempting to create vSphere section...");
+        createVSphereSection();
+    }
 });
+
+/**
+ * Create the vSphere section if it doesn't exist
+ */
+function createVSphereSection() {
+    // Find the section where vSphere should be inserted
+    const vmIdentificationSection = document.querySelector('.form-section');
+    if (!vmIdentificationSection) {
+        console.error("Cannot find VM Identification section to insert vSphere section after");
+        return;
+    }
+    
+    // Create the new vSphere section
+    const vsphereSectionHtml = `
+    <div class="form-section" id="vsphere-section">
+        <h3>vSphere Configuration</h3>
+        <div id="vsphere-loading" class="loading-indicator">
+            <div class="spinner"></div>
+            <p>Loading vSphere data... <span id="loading-detail">Initializing</span></p>
+            <div class="progress-container">
+                <div class="progress-bar" id="loading-progress-bar"></div>
+            </div>
+        </div>
+        
+        <div id="vsphere-error-message" class="alert alert-error" style="display: none;">
+            Error loading vSphere data. <button id="retry-vsphere-load" class="btn-small">Retry</button>
+            <button id="use-cached-data" class="btn-small">Use Cached Data</button>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="vsphere_server">vSphere Server:</label>
+                <select id="vsphere_server" name="vsphere_server" required>
+                    <option value="">Select vSphere Server</option>
+                    <option value="virtualcenter.chrobinson.com">virtualcenter.chrobinson.com PROD</option>
+                </select>
+                <div class="loading-status" id="server-loading-status">Connecting...</div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="datacenter">Datacenter:</label>
+                <select id="datacenter" name="datacenter" required>
+                    <option value="">Select Datacenter</option>
+                </select>
+                <div class="loading-status" id="datacenter-loading-status">Waiting for server selection...</div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="cluster">Cluster:</label>
+                <select id="cluster" name="cluster" required>
+                    <option value="">Select Cluster</option>
+                </select>
+                <div class="loading-status" id="cluster-loading-status">Waiting for datacenter selection...</div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="datastore_cluster">Datastore Cluster:</label>
+                <select id="datastore_cluster" name="datastore_cluster" required>
+                    <option value="">Select Datastore Cluster</option>
+                </select>
+                <div class="loading-status" id="datastore-loading-status">Waiting for cluster selection...</div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="network">Network:</label>
+                <select id="network" name="network" required>
+                    <option value="">Select Network</option>
+                </select>
+                <div class="loading-status" id="network-loading-status">Waiting for datacenter selection...</div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="template">Template:</label>
+                <select id="template" name="template" required>
+                    <option value="">Select Template</option>
+                </select>
+                <div class="loading-status" id="template-loading-status">Waiting for datacenter selection...</div>
+            </div>
+        </div>
+    </div>`;
+    
+    // Insert after VM Identification section
+    vmIdentificationSection.insertAdjacentHTML('afterend', vsphereSectionHtml);
+    
+    // Initialize the newly created vSphere section
+    vsphereSection = document.getElementById('vsphere-section');
+    vsphereLoading = document.getElementById('vsphere-loading');
+    vsphereErrorMessage = document.getElementById('vsphere-error-message');
+    retryButton = document.getElementById('retry-vsphere-load');
+    
+    vsphereServerSelect = document.getElementById('vsphere_server');
+    datacenterSelect = document.getElementById('datacenter');
+    clusterSelect = document.getElementById('cluster');
+    datastoreClusterSelect = document.getElementById('datastore_cluster');
+    networkSelect = document.getElementById('network');
+    templateSelect = document.getElementById('template');
+    
+    serverLoadingStatus = document.getElementById('server-loading-status');
+    datacenterLoadingStatus = document.getElementById('datacenter-loading-status');
+    clusterLoadingStatus = document.getElementById('cluster-loading-status');
+    datastoreLoadingStatus = document.getElementById('datastore-loading-status');
+    networkLoadingStatus = document.getElementById('network-loading-status');
+    templateLoadingStatus = document.getElementById('template-loading-status');
+    
+    // Initialize vSphere menus
+    console.log("Created and initialized vSphere section");
+    initializeVSphereMenus();
+}
 
 /**
  * Initialize server name preview functionality

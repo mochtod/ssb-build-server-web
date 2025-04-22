@@ -38,6 +38,7 @@ VSPHERE_DATACENTERS_KEY = f'{VSPHERE_CACHE_PREFIX}datacenters'
 VSPHERE_CLUSTERS_KEY = f'{VSPHERE_CACHE_PREFIX}clusters'
 VSPHERE_HOSTS_KEY = f'{VSPHERE_CACHE_PREFIX}hosts'
 VSPHERE_DATASTORES_KEY = f'{VSPHERE_CACHE_PREFIX}datastores'
+VSPHERE_DATASTORE_CLUSTERS_KEY = f'{VSPHERE_CACHE_PREFIX}datastore_clusters'  # New key for datastore clusters
 VSPHERE_NETWORKS_KEY = f'{VSPHERE_CACHE_PREFIX}networks'
 VSPHERE_VMS_KEY = f'{VSPHERE_CACHE_PREFIX}vms'
 VSPHERE_RESOURCE_POOLS_KEY = f'{VSPHERE_CACHE_PREFIX}resource_pools'
@@ -404,6 +405,35 @@ class VSphereRedisCache:
             logger.error(f"Error getting templates: {str(e)}")
             return []
 
+    def get_all_datastore_clusters(self):
+        """
+        Get all datastore clusters from vSphere
+        """
+        try:
+            container = self.content.viewManager.CreateContainerView(
+                self.content.rootFolder, [vim.StoragePod], True
+            )
+            datastore_clusters = []
+            for ds_cluster in container.view:
+                # Get datastore IDs in this cluster
+                datastore_ids = []
+                if hasattr(ds_cluster, 'childEntity'):
+                    for ds in ds_cluster.childEntity:
+                        datastore_ids.append(ds._moId)
+
+                datastore_clusters.append({
+                    'id': ds_cluster._moId,
+                    'name': ds_cluster.name,
+                    'datastore_ids': datastore_ids,
+                    'capacity_bytes': ds_cluster.summary.capacity if hasattr(ds_cluster.summary, 'capacity') else 0,
+                    'free_space_bytes': ds_cluster.summary.freeSpace if hasattr(ds_cluster.summary, 'freeSpace') else 0,
+                })
+            container.Destroy()
+            return datastore_clusters
+        except Exception as e:
+            logger.error(f"Error getting datastore clusters: {str(e)}")
+            return []
+
     def _sync_resource_to_redis(self, resource_type, get_resource_func, resource_key, sync_queue=None, progress_callback=None):
         """
         Sync a specific resource type to Redis
@@ -435,12 +465,20 @@ class VSphereRedisCache:
             return False
 
         try:
-            # Only get datacenters, clusters and templates (what's needed for UI)
+            # Get essential data needed for the UI
             datacenters = self.get_all_datacenters()
             self.redis_client.set(VSPHERE_DATACENTERS_KEY, datacenters, VSPHERE_CACHE_TTL)
             
             clusters = self.get_all_clusters()
             self.redis_client.set(VSPHERE_CLUSTERS_KEY, clusters, VSPHERE_CACHE_TTL)
+            
+            # Get datastore clusters - now included in essential data
+            datastore_clusters = self.get_all_datastore_clusters()
+            self.redis_client.set(VSPHERE_DATASTORE_CLUSTERS_KEY, datastore_clusters, VSPHERE_CACHE_TTL)
+            
+            # Get datastores - also essential for selecting storage
+            datastores = self.get_all_datastores()
+            self.redis_client.set(VSPHERE_DATASTORES_KEY, datastores, VSPHERE_CACHE_TTL)
             
             templates = self.get_all_templates()
             self.redis_client.set(VSPHERE_TEMPLATES_KEY, templates, VSPHERE_CACHE_TTL)
@@ -455,13 +493,16 @@ class VSphereRedisCache:
                 'type': 'essential',
                 'datacenters_count': len(datacenters),
                 'clusters_count': len(clusters),
+                'datastore_clusters_count': len(datastore_clusters),
+                'datastores_count': len(datastores),
                 'networks_count': len(networks),
                 'templates_count': len(templates),
                 'status': 'success'
             })
 
             logger.info(f"Essential vSphere data synchronized to Redis: {len(datacenters)} datacenters, "
-                       f"{len(clusters)} clusters, {len(networks)} networks, {len(templates)} templates")
+                       f"{len(clusters)} clusters, {len(datastore_clusters)} datastore clusters, "
+                       f"{len(datastores)} datastores, {len(networks)} networks, {len(templates)} templates")
             
             # Start background sync for the rest
             self.start_background_sync()
@@ -539,7 +580,7 @@ class VSphereRedisCache:
             # Set up progress tracking
             sync_queue = queue.Queue()
             progress_data = {
-                'total_resources': 8,  # datacenters, clusters, hosts, datastores, networks, resource_pools, vms, templates
+                'total_resources': 9,  # datacenters, clusters, hosts, datastores, datastore_clusters, networks, resource_pools, vms, templates
                 'completed_resources': 0,
                 'counts': {},
                 'started': datetime.utcnow().isoformat()
@@ -596,6 +637,7 @@ class VSphereRedisCache:
                 self._sync_resource_to_redis('clusters', self.get_all_clusters, VSPHERE_CLUSTERS_KEY, sync_queue, update_progress)
                 self._sync_resource_to_redis('hosts', self.get_all_hosts, VSPHERE_HOSTS_KEY, sync_queue, update_progress)
                 self._sync_resource_to_redis('datastores', self.get_all_datastores, VSPHERE_DATASTORES_KEY, sync_queue, update_progress)
+                self._sync_resource_to_redis('datastore_clusters', self.get_all_datastore_clusters, VSPHERE_DATASTORE_CLUSTERS_KEY, sync_queue, update_progress)
                 self._sync_resource_to_redis('networks', self.get_all_networks, VSPHERE_NETWORKS_KEY, sync_queue, update_progress)
                 self._sync_resource_to_redis('resource_pools', self.get_all_resource_pools, VSPHERE_RESOURCE_POOLS_KEY, sync_queue, update_progress)
                 self._sync_resource_to_redis('vms', self.get_all_vms, VSPHERE_VMS_KEY, sync_queue, update_progress)
@@ -750,32 +792,61 @@ class VSphereRedisCache:
         try:
             # Get resources from Redis
             resource_pools = self.redis_client.get(VSPHERE_RESOURCE_POOLS_KEY) or []
+            clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
             datastores = self.redis_client.get(VSPHERE_DATASTORES_KEY) or []
+            datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
             networks = self.redis_client.get(VSPHERE_NETWORKS_KEY) or []
             templates = self.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
             
             # Select appropriate resources based on environment
             env_prefix = "PROD" if environment.lower() == "production" else "DEV"
             
-            # Find resource pool
+            # Find resource pool (either a dedicated resource pool or a cluster as default resource pool)
             selected_resource_pool = None
+            
+            # First try to find dedicated resource pools matching the environment
             for rp in resource_pools:
                 if rp['name'].startswith(env_prefix):
                     selected_resource_pool = rp
+                    logger.info(f"Found dedicated resource pool for {environment}: {rp['name']} (ID: {rp['id']})")
                     break
             
-            # Find datastore
-            selected_datastore = None
-            for ds in datastores:
-                if ds['name'].startswith(env_prefix) and ds['accessible'] and ds['free_space_bytes'] > 0:
-                    selected_datastore = ds
+            # If no dedicated resource pool found, use a cluster as the default resource pool
+            if not selected_resource_pool:
+                for cluster in clusters:
+                    if cluster['name'].startswith(env_prefix):
+                        # Use the cluster ID as the resource pool ID
+                        selected_resource_pool = {
+                            'id': cluster['id'],
+                            'name': cluster['name'],
+                            'is_cluster': True
+                        }
+                        logger.info(f"Using cluster as default resource pool for {environment}: {cluster['name']} (ID: {cluster['id']})")
+                        break
+            
+            # Find datastore cluster first (preferred storage type)
+            selected_datastore_cluster = None
+            for ds_cluster in datastore_clusters:
+                if ds_cluster['name'].startswith(env_prefix) and ds_cluster['free_space_bytes'] > 0:
+                    selected_datastore_cluster = ds_cluster
+                    logger.info(f"Found datastore cluster for {environment}: {ds_cluster['name']} (ID: {ds_cluster['id']})")
                     break
+                    
+            # Find individual datastore as fallback
+            selected_datastore = None
+            if not selected_datastore_cluster:
+                for ds in datastores:
+                    if ds['name'].startswith(env_prefix) and ds['accessible'] and ds['free_space_bytes'] > 0:
+                        selected_datastore = ds
+                        logger.info(f"Found datastore for {environment}: {ds['name']} (ID: {ds['id']})")
+                        break
             
             # Find network
             selected_network = None
             for net in networks:
                 if net['name'].startswith(env_prefix) and net['accessible']:
                     selected_network = net
+                    logger.info(f"Found network for {environment}: {net['name']} (ID: {net['id']})")
                     break
             
             # Find template
@@ -783,12 +854,28 @@ class VSphereRedisCache:
             for template in templates:
                 if template['name'].startswith('RHEL') and template['is_template']:
                     selected_template = template
+                    logger.info(f"Found template: {template['name']} (ID: {template['id']})")
                     break
+            
+            # Choose datastore ID from either datastore cluster or individual datastore
+            storage_id = None
+            storage_type = None
+            if selected_datastore_cluster:
+                storage_id = selected_datastore_cluster['id']
+                storage_type = 'datastore_cluster'
+            elif selected_datastore:
+                storage_id = selected_datastore['id']
+                storage_type = 'datastore'
             
             # Return resources
             return {
                 'resource_pool_id': selected_resource_pool['id'] if selected_resource_pool else None,
+                'resource_pool_name': selected_resource_pool['name'] if selected_resource_pool else None,
+                'resource_pool_is_cluster': selected_resource_pool.get('is_cluster', False) if selected_resource_pool else False,
+                'storage_id': storage_id,
+                'storage_type': storage_type,
                 'datastore_id': selected_datastore['id'] if selected_datastore else None,
+                'datastore_cluster_id': selected_datastore_cluster['id'] if selected_datastore_cluster else None,
                 'network_id': selected_network['id'] if selected_network else None,
                 'template_uuid': selected_template['id'] if selected_template else None,
                 'ipv4_gateway': f"192.168.{10 if environment.lower() == 'production' else 20}.1",
@@ -796,9 +883,15 @@ class VSphereRedisCache:
             }
         except Exception as e:
             logger.error(f"Error getting vSphere resources for Terraform: {str(e)}")
+            logger.exception("Detailed error:")
             return {
                 'resource_pool_id': None,
+                'resource_pool_name': None,
+                'resource_pool_is_cluster': False,
+                'storage_id': None,
+                'storage_type': None,
                 'datastore_id': None,
+                'datastore_cluster_id': None,
                 'network_id': None,
                 'template_uuid': None,
                 'ipv4_gateway': None,
@@ -836,6 +929,7 @@ class VSphereRedisCache:
                     "datacenters": [],
                     "clusters": [],
                     "datastore_clusters": [],
+                    "datastores": [],
                     "networks": [],
                     "templates": []
                 }
@@ -844,9 +938,16 @@ class VSphereRedisCache:
             datacenters = self.redis_client.get(VSPHERE_DATACENTERS_KEY) or []
             clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
             datastores = self.redis_client.get(VSPHERE_DATASTORES_KEY) or []
+            datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
             networks = self.redis_client.get(VSPHERE_NETWORKS_KEY) or []
             templates = self.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
             hosts = self.redis_client.get(VSPHERE_HOSTS_KEY) or []
+            vms = self.redis_client.get(VSPHERE_VMS_KEY) or []
+            
+            # Log the data we've fetched from Redis
+            logger.info(f"Fetched data from Redis: {len(datacenters)} datacenters, {len(clusters)} clusters, "
+                       f"{len(datastore_clusters)} datastore clusters, {len(datastores)} datastores, "
+                       f"{len(networks)} networks, {len(templates)} templates")
             
             # Filter datacenters - always return all datacenters since they're at the top level
             filtered_datacenters = datacenters
@@ -855,8 +956,46 @@ class VSphereRedisCache:
             filtered_clusters = clusters
             if datacenter_id:
                 filtered_clusters = [c for c in clusters if c.get('datacenter_id') == datacenter_id]
+                logger.info(f"Filtered clusters for datacenter {datacenter_id}: {len(filtered_clusters)} clusters")
             
-            # If cluster is selected, filter datastores by cluster
+            # Get host IDs in clusters related to the selected datacenter (used for other filters)
+            datacenter_host_ids = set()
+            if datacenter_id:
+                # Get clusters in the datacenter
+                datacenter_cluster_ids = [c['id'] for c in filtered_clusters]
+                
+                # Get hosts in these clusters
+                for host in hosts:
+                    if host.get('cluster_id') in datacenter_cluster_ids:
+                        datacenter_host_ids.add(host['id'])
+                
+                logger.info(f"Found {len(datacenter_host_ids)} hosts in datacenter {datacenter_id}")
+            
+            # Filter datastore clusters by datacenter (when datacenter is selected)
+            filtered_datastore_clusters = datastore_clusters
+            if datacenter_id:
+                # Use helper method to determine datacenter for each datastore cluster
+                # by examining the datastores it contains
+                datacenter_datastore_ids = set()
+                
+                # First find datastores in this datacenter by connection to hosts
+                for ds in datastores:
+                    # If we find a way to connect this datastore to a host in our datacenter
+                    # we consider it part of the datacenter
+                    if ds.get('accessible', False):
+                        datacenter_datastore_ids.add(ds['id'])
+                
+                # Now filter datastore clusters by looking at their contained datastores
+                filtered_datastore_clusters = []
+                for ds_cluster in datastore_clusters:
+                    # Check if any datastores in this cluster belong to the datacenter
+                    cluster_datastore_ids = set(ds_cluster.get('datastore_ids', []))
+                    if cluster_datastore_ids.intersection(datacenter_datastore_ids):
+                        filtered_datastore_clusters.append(ds_cluster)
+                
+                logger.info(f"Filtered datastore clusters for datacenter {datacenter_id}: {len(filtered_datastore_clusters)} datastore clusters")
+            
+            # Filter datastores by datacenter or cluster
             filtered_datastores = datastores
             if cluster_id:
                 # Get hosts in the cluster
@@ -870,20 +1009,58 @@ class VSphereRedisCache:
                 for ds in datastores:
                     # Check if accessible and has connectivity to cluster hosts
                     if ds.get('accessible', False):
-                        # For simplicity, show all accessible datastores since
-                        # host_ids relationship might not be fully modeled in our cache
+                        # For simplicity, show all accessible datastores
+                        filtered_datastores.append(ds)
+            elif datacenter_id:
+                # Filter datastores by datacenter when no cluster is selected
+                filtered_datastores = []
+                for ds in datastores:
+                    if ds.get('accessible', False):
                         filtered_datastores.append(ds)
             
             # Filter networks by datacenter
             filtered_networks = networks
             if datacenter_id:
-                # Our networks may not have datacenter_id in the model
-                # For simplicity, we'll return all networks
-                # In a real implementation, you'd filter by datacenter
-                pass
+                # Networks may not have direct datacenter_id reference
+                # We can filter networks that are used by VMs in this datacenter's hosts
+                
+                # Get VM networks used in this datacenter
+                vm_networks_in_datacenter = set()
+                for vm in vms:
+                    # Check if VM is on a host in this datacenter
+                    if vm.get('host_id') in datacenter_host_ids:
+                        for net_id in vm.get('network_ids', []):
+                            vm_networks_in_datacenter.add(net_id)
+                
+                # Filter networks that exist in this datacenter
+                if vm_networks_in_datacenter:
+                    filtered_networks = [n for n in networks if n.get('id') in vm_networks_in_datacenter or n.get('accessible', False)]
+                else:
+                    # If we can't determine networks by VM usage, show all accessible networks
+                    filtered_networks = [n for n in networks if n.get('accessible', False)]
+                
+                logger.info(f"Filtered networks for datacenter {datacenter_id}: {len(filtered_networks)} networks")
             
-            # Filter templates - only return deployable templates
+            # Filter templates by datacenter
             filtered_templates = [t for t in templates if t.get('is_template', False)]
+            if datacenter_id:
+                # Templates may be associated with datastores in the datacenter
+                # Get datastore IDs in this datacenter
+                datacenter_datastore_ids = set()
+                for ds in filtered_datastores:
+                    datacenter_datastore_ids.add(ds['id'])
+                
+                # Filter templates that exist on datastores in this datacenter
+                datacenter_templates = []
+                for template in filtered_templates:
+                    template_datastore_ids = set(template.get('datastore_ids', []))
+                    if template_datastore_ids.intersection(datacenter_datastore_ids):
+                        datacenter_templates.append(template)
+                
+                # If we found templates specific to this datacenter, use them
+                if datacenter_templates:
+                    filtered_templates = datacenter_templates
+                    logger.info(f"Filtered templates for datacenter {datacenter_id}: {len(filtered_templates)} templates")
             
             # Add helpful descriptions to templates where possible
             for template in filtered_templates:
@@ -897,21 +1074,37 @@ class VSphereRedisCache:
                 if 'cpu_count' in template and 'memory_mb' in template:
                     template['name'] = f"{template['name']} - {template['cpu_count']}CPU/{template['memory_mb']}MB"
             
+            # Add capacity/free space info to datastore and datastore clusters
+            for ds in filtered_datastores:
+                if 'capacity_bytes' in ds and 'free_space_bytes' in ds:
+                    capacity_gb = ds['capacity_bytes'] / (1024**3)
+                    free_gb = ds['free_space_bytes'] / (1024**3)
+                    ds['name'] = f"{ds['name']} ({free_gb:.1f}GB free / {capacity_gb:.1f}GB total)"
+            
+            for ds_cluster in filtered_datastore_clusters:
+                if 'capacity_bytes' in ds_cluster and 'free_space_bytes' in ds_cluster:
+                    capacity_gb = ds_cluster['capacity_bytes'] / (1024**3)
+                    free_gb = ds_cluster['free_space_bytes'] / (1024**3)
+                    ds_cluster['name'] = f"{ds_cluster['name']} ({free_gb:.1f}GB free / {capacity_gb:.1f}GB total)"
+            
             return {
                 "vsphere_servers": self.get_vsphere_servers(),
                 "datacenters": filtered_datacenters,
                 "clusters": filtered_clusters,
-                "datastore_clusters": filtered_datastores,
+                "datastore_clusters": filtered_datastore_clusters,
+                "datastores": filtered_datastores,
                 "networks": filtered_networks,
                 "templates": filtered_templates
             }
         except Exception as e:
             logger.error(f"Error getting hierarchical data: {str(e)}")
+            logger.exception("Detailed exception:")
             return {
                 "vsphere_servers": self.get_vsphere_servers(),
                 "datacenters": [],
                 "clusters": [],
                 "datastore_clusters": [],
+                "datastores": [],
                 "networks": [],
                 "templates": []
             }
