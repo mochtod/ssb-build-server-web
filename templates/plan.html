@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, text-size-adjust=100%">
+    <meta name="viewport" content="width=device-width, initial-scale=100%">
     <title>Terraform Plan - {{ config.server_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="dark-mode">
+<body>
     <div class="container">
         <header>
             <h1>Terraform Plan</h1>
@@ -17,6 +17,7 @@
                     {% if user_role == 'admin' %}
                     <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
                     {% endif %}
+                    <li><a href="{{ url_for('settings') }}">Settings</a></li>
                     <li><a href="{{ url_for('logout') }}">Logout</a></li>
                 </ul>
             </nav>

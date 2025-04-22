@@ -4,6 +4,40 @@
  * Handles dynamic behavior for the VM provisioning web application.
  */
 
+// Theme handling functionality
+function setTheme(theme) {
+    if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        if (document.getElementById('theme-toggle')) {
+            document.getElementById('theme-toggle').checked = true;
+        }
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'dark');
+        if (document.getElementById('theme-toggle')) {
+            document.getElementById('theme-toggle').checked = false;
+        }
+    }
+}
+
+function initializeTheme() {
+    // Get saved theme from localStorage
+    const savedTheme = localStorage.getItem('theme');
+    
+    // Apply the saved theme or default to dark
+    setTheme(savedTheme || 'dark');
+    
+    // Set up theme toggle if it exists
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.checked = savedTheme === 'light';
+        themeToggle.addEventListener('change', function() {
+            setTheme(this.checked ? 'light' : 'dark');
+        });
+    }
+}
+
 // Global variables for vSphere elements
 let vsphereSection;
 let vsphereLoading;
@@ -62,6 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAdditionalDisks();
     initializeCopyButtons();
     initializePlanStatusCheck();
+    initializeTheme();
 
     // Initialize vSphere elements
     addDebugMessage("Looking for vSphere section...");
@@ -417,6 +452,8 @@ function confirmAction(message, callback) {
  * Initialize vSphere menu dropdowns and handle loading states
  */
 function initializeVSphereMenus() {
+    console.log('Initializing vSphere menus');
+    
     // Add event listeners for the "Use Cached Data" button
     const useCachedDataBtn = document.getElementById('use-cached-data');
     if (useCachedDataBtn) {
@@ -427,68 +464,162 @@ function initializeVSphereMenus() {
     }
     
     // Set initial loading states
-    setLoadingStatus(serverLoadingStatus, 'Connecting to vSphere...', 'loading');
+    if (serverLoadingStatus) {
+        setLoadingStatus(serverLoadingStatus, 'Connecting to vSphere...', 'loading');
+    }
     
     // Update the loading detail and progress bar
     const loadingDetail = document.getElementById('loading-detail');
     const loadingProgressBar = document.getElementById('loading-progress-bar');
     
     // First try to use cached data if available
-    loadCachedVSphereData();
+    if (window.initialVSphereData) {
+        console.log('Found initial vSphere data in window, using this data');
+        // Use the data passed from the server
+        populateFromInitialData();
+    } else {
+        console.log('No initial vSphere data found, fetching from API');
+        loadCachedVSphereData();
+    }
     
     // Server selection change handler
-    vsphereServerSelect.addEventListener('change', function() {
-        const selectedServer = this.value;
-        
-        if (!selectedServer) {
-            resetDropdowns();
-            return;
-        }
-        
-        // Load datacenters for selected server
-        loadDatacentersForServer(selectedServer);
-    });
+    if (vsphereServerSelect) {
+        vsphereServerSelect.addEventListener('change', function() {
+            const selectedServer = this.value;
+            
+            if (!selectedServer) {
+                resetDropdowns();
+                return;
+            }
+            
+            // Load datacenters for selected server
+            loadDatacentersForServer(selectedServer);
+        });
+    }
     
     // Datacenter selection change handler
-    datacenterSelect.addEventListener('change', function() {
-        const selectedDatacenter = this.value;
-        const selectedServer = vsphereServerSelect.value;
-        
-        if (!selectedDatacenter || !selectedServer) {
-            resetClusterAndBelow();
-            return;
-        }
-        
-        // Load clusters for selected datacenter
-        loadClustersForDatacenter(selectedServer, selectedDatacenter);
-        
-        // Also load networks as they depend on datacenter
-        loadNetworksForDatacenter(selectedServer, selectedDatacenter);
-    });
+    if (datacenterSelect) {
+        datacenterSelect.addEventListener('change', function() {
+            const selectedDatacenter = this.value;
+            const selectedServer = vsphereServerSelect ? vsphereServerSelect.value : '';
+            
+            if (!selectedDatacenter || !selectedServer) {
+                resetClusterAndBelow();
+                return;
+            }
+            
+            // Load clusters for selected datacenter
+            loadClustersForDatacenter(selectedServer, selectedDatacenter);
+            
+            // Also load networks as they depend on datacenter
+            loadNetworksForDatacenter(selectedServer, selectedDatacenter);
+            
+            // Load templates filtered for this datacenter
+            loadTemplatesForDatacenter(selectedServer, selectedDatacenter);
+        });
+    }
     
     // Cluster selection change handler
-    clusterSelect.addEventListener('change', function() {
-        const selectedCluster = this.value;
-        const selectedDatacenter = datacenterSelect.value;
-        const selectedServer = vsphereServerSelect.value;
-        
-        if (!selectedCluster || !selectedDatacenter || !selectedServer) {
-            resetDatastoreClusters();
-            return;
-        }
-        
-        // Load datastore clusters for selected cluster
-        loadDatastoreClustersForCluster(selectedServer, selectedDatacenter, selectedCluster);
-    });
+    if (clusterSelect) {
+        clusterSelect.addEventListener('change', function() {
+            const selectedCluster = this.value;
+            const selectedDatacenter = datacenterSelect ? datacenterSelect.value : '';
+            const selectedServer = vsphereServerSelect ? vsphereServerSelect.value : '';
+            
+            if (!selectedCluster || !selectedDatacenter || !selectedServer) {
+                resetDatastoreClusters();
+                return;
+            }
+            
+            // Load datastore clusters for selected cluster
+            loadDatastoreClustersForCluster(selectedServer, selectedDatacenter, selectedCluster);
+        });
+    }
     
     // Retry button handler
     if (retryButton) {
         retryButton.addEventListener('click', function() {
-            vsphereErrorMessage.style.display = 'none';
-            vsphereLoading.style.display = 'flex';
+            if (vsphereErrorMessage) vsphereErrorMessage.style.display = 'none';
+            if (vsphereLoading) vsphereLoading.style.display = 'flex';
             triggerEssentialSync();
         });
     }
+}
+
+/**
+ * Populate dropdowns from initialVSphereData passed from server
+ */
+function populateFromInitialData() {
+    console.log('Populating from initial data');
+    
+    if (!window.initialVSphereData) {
+        console.error('No initial data available');
+        return;
+    }
+    
+    // Hide loading indicators
+    if (vsphereLoading) {
+        vsphereLoading.style.display = 'none';
+    }
+    
+    // Populate server dropdown
+    if (vsphereServerSelect && window.initialVSphereData.vsphere_servers) {
+        populateSelect(vsphereServerSelect, window.initialVSphereData.vsphere_servers);
+        vsphereServerSelect.disabled = false;
+        if (serverLoadingStatus) {
+            setLoadingStatus(serverLoadingStatus, 'Server list loaded', 'success');
+        }
+    }
+    
+    // Populate datacenter dropdown
+    if (datacenterSelect && window.initialVSphereData.datacenters) {
+        populateSelect(datacenterSelect, window.initialVSphereData.datacenters);
+        datacenterSelect.disabled = false;
+        if (datacenterLoadingStatus) {
+            setLoadingStatus(datacenterLoadingStatus, 'Datacenters loaded', 'success');
+        }
+    }
+    
+    // Populate cluster dropdown
+    if (clusterSelect && window.initialVSphereData.clusters) {
+        populateSelect(clusterSelect, window.initialVSphereData.clusters);
+        clusterSelect.disabled = false;
+        if (clusterLoadingStatus) {
+            setLoadingStatus(clusterLoadingStatus, 'Clusters loaded', 'success');
+        }
+    }
+    
+    // Populate datastore cluster dropdown
+    if (datastoreClusterSelect && window.initialVSphereData.datastore_clusters) {
+        populateSelect(datastoreClusterSelect, window.initialVSphereData.datastore_clusters);
+        datastoreClusterSelect.disabled = false;
+        if (datastoreLoadingStatus) {
+            setLoadingStatus(datastoreLoadingStatus, 'Datastore clusters loaded', 'success');
+        }
+    }
+    
+    // Populate network dropdown
+    if (networkSelect && window.initialVSphereData.networks) {
+        populateSelect(networkSelect, window.initialVSphereData.networks);
+        networkSelect.disabled = false;
+        if (networkLoadingStatus) {
+            setLoadingStatus(networkLoadingStatus, 'Networks loaded', 'success');
+        }
+    }
+    
+    // Populate template dropdown
+    if (templateSelect && window.initialVSphereData.templates) {
+        populateSelect(templateSelect, window.initialVSphereData.templates);
+        templateSelect.disabled = false;
+        if (templateLoadingStatus) {
+            setLoadingStatus(templateLoadingStatus, 'Templates loaded', 'success');
+        }
+        
+        // Auto-select RHEL9 template if available
+        autoSelectRhel9Template();
+    }
+    
+    console.log('Completed populating dropdowns from initial data');
 }
 
 /**
@@ -840,6 +971,41 @@ function loadTemplatesForServer(server) {
         })
         .catch(error => {
             console.error('Error loading templates:', error);
+            setLoadingStatus(templateLoadingStatus, 'Failed to load templates', 'error');
+        });
+}
+
+/**
+ * Load templates for a selected datacenter
+ */
+function loadTemplatesForDatacenter(server, datacenter) {
+    // Set loading state
+    templateSelect.disabled = true;
+    setLoadingStatus(templateLoadingStatus, 'Loading templates for datacenter...', 'loading');
+    
+    // Fetch templates filtered for this datacenter
+    fetch(`/api/vsphere/hierarchical?vsphere_server=${encodeURIComponent(server)}&datacenter_id=${encodeURIComponent(datacenter)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.data && data.data.templates) {
+                // Populate dropdown
+                populateSelect(templateSelect, data.data.templates);
+                templateSelect.disabled = false;
+                setLoadingStatus(templateLoadingStatus, 'Templates loaded for datacenter', 'success');
+                
+                // Auto-select RHEL9 template if available
+                autoSelectRhel9Template();
+            } else {
+                throw new Error(data.error || 'No templates found for this datacenter');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading templates for datacenter:', error);
             setLoadingStatus(templateLoadingStatus, 'Failed to load templates', 'error');
         });
 }

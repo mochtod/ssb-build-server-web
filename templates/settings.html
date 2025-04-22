@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - RHEL9 VM Provisioning</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Theme toggle specific styles */
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin: 0 15px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--input-bg);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--text-color);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .theme-icon {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Application Settings</h1>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('index') }}">Create VM</a></li>
+                    <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
+                    {% if user_role == 'admin' %}
+                    <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('settings') }}" class="active">Settings</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card">
+                <h2>User Preferences</h2>
+                
+                <div class="form-section">
+                    <h3>Theme Settings</h3>
+                    <div class="theme-switcher">
+                        <span class="theme-icon">🌙</span>
+                        <label class="switch">
+                            <input type="checkbox" id="theme-toggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="theme-icon">☀️</span>
+                    </div>
+                    <p>Choose between dark and light theme for the application.</p>
+                </div>
+            </div>
+
+            {% if user_role == 'admin' %}
+            <div class="card">
+                <h2>Application Environment Settings</h2>
+                <p class="info-panel">
+                    <span class="info-title">About Environment Settings</span>
+                    <div class="info-content">
+                        These settings affect the application's behavior and are stored in the .env file.
+                        Changes made here will be applied to the application after saving.
+                    </div>
+                </p>
+                
+                <form action="{{ url_for('update_env_settings') }}" method="post">
+                    <div class="form-section">
+                        <h3>Server Configuration</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="config_dir">Configuration Directory:</label>
+                                <input type="text" id="config_dir" name="config_dir" value="{{ env_settings.get('CONFIG_DIR', 'configs') }}">
+                                <small>Directory to store VM configuration files</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="terraform_dir">Terraform Directory:</label>
+                                <input type="text" id="terraform_dir" name="terraform_dir" value="{{ env_settings.get('TERRAFORM_DIR', 'terraform') }}">
+                                <small>Directory to store Terraform files</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>Terraform & Atlantis Configuration</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="atlantis_url">Atlantis URL:</label>
+                                <input type="text" id="atlantis_url" name="atlantis_url" value="{{ env_settings.get('ATLANTIS_URL', 'http://atlantis:4141') }}">
+                                <small>URL of the Atlantis server</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="atlantis_token">Atlantis Token:</label>
+                                <input type="password" id="atlantis_token" name="atlantis_token" value="{{ env_settings.get('ATLANTIS_TOKEN', '') }}">
+                                <small>API token for Atlantis authentication</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>Application Security</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="flask_secret_key">Flask Secret Key:</label>
+                                <input type="password" id="flask_secret_key" name="flask_secret_key" value="{{ env_settings.get('FLASK_SECRET_KEY', '') }}">
+                                <small>Secret key for Flask session encryption (generated automatically if empty)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="users_file">Users File Path:</label>
+                                <input type="text" id="users_file" name="users_file" value="{{ env_settings.get('USERS_FILE', 'users.json') }}">
+                                <small>Path to the users configuration file</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Save Environment Settings</button>
+                        <button type="reset" class="btn">Reset</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2>Redis Cache Management</h2>
+                <div class="form-section">
+                    <h3>Cache Status</h3>
+                    <p id="cache-status-display">Checking cache status...</p>
+                    
+                    <div id="cache-performance-metrics" class="performance-metrics">
+                        <div class="metrics-row">
+                            <div class="metric-card">
+                                <span class="metric-title">Cache Hit Rate</span>
+                                <span class="metric-value" id="cache-hit-rate">-</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-title">Memory Usage</span>
+                                <span class="metric-value" id="memory-usage">-</span>
+                            </div>
+                            <div class="metric-card">
+                                <span class="metric-title">Sync Duration</span>
+                                <span class="metric-value" id="sync-duration">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cache-management">
+                        <h4>Cache Management</h4>
+                        <div class="cache-info">
+                            <p>The vSphere cache stores infrastructure data to improve application performance. This prevents excessive API calls to the vSphere server when users are viewing or creating VMs.</p>
+                            <p>Cache synchronization status: <span id="sync-status">Unknown</span></p>
+                        </div>
+                        
+                        <div class="cache-actions">
+                            <button id="sync-essential-cache" class="btn">Sync Essential Data</button>
+                            <button id="sync-full-cache" class="btn btn-primary">Sync All Data</button>
+                            <button id="clear-resource-cache" class="btn btn-danger">Clear Cache</button>
+                            <button id="refresh-cache-status" class="btn">Refresh Status</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+
+        <footer>
+            <p>&copy; 2025 CH Robinson - RHEL9 VM Provisioning Tool</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% if user_role == 'admin' %}
+    <script>
+        // Redis cache management scripts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch cache status on page load
+            fetchCacheStatus();
+            
+            // Set up refresh button
+            document.getElementById('refresh-cache-status').addEventListener('click', fetchCacheStatus);
+            
+            // Set up sync button
+            document.getElementById('sync-essential-cache').addEventListener('click', function() {
+                syncResourceCache('essential');
+            });
+            
+            document.getElementById('sync-full-cache').addEventListener('click', function() {
+                syncResourceCache('full');
+            });
+            
+            // Set up clear button
+            document.getElementById('clear-resource-cache').addEventListener('click', clearResourceCache);
+        });
+        
+        function fetchCacheStatus() {
+            const statusElement = document.getElementById('cache-status-display');
+            statusElement.textContent = 'Checking cache status...';
+            
+            fetch('/api/vsphere-cache/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusElement.innerHTML = `
+                            <strong>Last Updated:</strong> ${data.status.last_updated || 'Never'}<br>
+                            <strong>Total Objects:</strong> ${data.status.total_objects || 0}<br>
+                            <strong>Cache Health:</strong> ${data.status.connected ? '<span class="status-badge completed">Connected</span>' : '<span class="status-badge failed">Disconnected</span>'}
+                        `;
+                        document.getElementById('cache-hit-rate').textContent = data.status.cache_hit_rate || '-';
+                        document.getElementById('memory-usage').textContent = data.status.memory_usage || '-';
+                        document.getElementById('sync-duration').textContent = data.status.sync_duration || '-';
+                    } else {
+                        statusElement.innerHTML = `<span class="status-badge failed">Error: ${data.error}</span>`;
+                    }
+                })
+                .catch(error => {
+                    statusElement.innerHTML = `<span class="status-badge failed">Connection Error: ${error.message}</span>`;
+                });
+        }
+        
+        function syncResourceCache(strategy) {
+            const statusElement = document.getElementById('cache-status-display');
+            statusElement.innerHTML = '<span class="status-badge planning">Syncing resource data...</span>';
+            
+            fetch('/api/vsphere-cache/sync', {
+                method: 'POST',
+                body: JSON.stringify({
+                    strategy: strategy
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusElement.innerHTML = `<span class="status-badge completed">${data.message}</span>`;
+                        // Refresh the status after a short delay
+                        setTimeout(fetchCacheStatus, 2000);
+                    } else {
+                        statusElement.innerHTML = `<span class="status-badge failed">Error: ${data.error}</span>`;
+                    }
+                })
+                .catch(error => {
+                    statusElement.innerHTML = `<span class="status-badge failed">Connection Error: ${error.message}</span>`;
+                });
+        }
+        
+        function clearResourceCache() {
+            if (!confirm('Are you sure you want to clear the resource cache? This will remove all cached data.')) {
+                return;
+            }
+            
+            const statusElement = document.getElementById('cache-status-display');
+            statusElement.innerHTML = '<span class="status-badge planning">Clearing resource cache...</span>';
+            
+            fetch('/api/vsphere-cache/clear', {
+                method: 'POST',
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusElement.innerHTML = `<span class="status-badge completed">${data.message}</span>`;
+                        // Refresh the status after a short delay
+                        setTimeout(fetchCacheStatus, 2000);
+                    } else {
+                        statusElement.innerHTML = `<span class="status-badge failed">Error: ${data.error}</span>`;
+                    }
+                })
+                .catch(error => {
+                    statusElement.innerHTML = `<span class="status-badge failed">Connection Error: ${error.message}</span>`;
+                });
+        }
+    </script>
+    {% endif %}
+</body>
+</html>

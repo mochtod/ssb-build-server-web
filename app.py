@@ -1435,5 +1435,113 @@ def get_vsphere_sync_progress():
             'error': str(e)
         }), 500
 
+@app.route('/settings')
+@login_required
+def settings():
+    """
+    User settings page with theme preferences and environment settings for admins
+    """
+    # Default env settings
+    env_settings = {
+        'CONFIG_DIR': os.environ.get('CONFIG_DIR', 'configs'),
+        'TERRAFORM_DIR': os.environ.get('TERRAFORM_DIR', 'terraform'),
+        'USERS_FILE': os.environ.get('USERS_FILE', 'users.json'),
+        'GIT_REPO_URL': os.environ.get('GIT_REPO_URL', ''),
+        'GIT_USERNAME': os.environ.get('GIT_USERNAME', ''),
+        'GIT_TOKEN': os.environ.get('GIT_TOKEN', ''),
+        'ATLANTIS_URL': os.environ.get('ATLANTIS_URL', 'https://atlantis.chrobinson.com'),
+        'ATLANTIS_TOKEN': os.environ.get('ATLANTIS_TOKEN', ''),
+        'FLASK_SECRET_KEY': os.environ.get('FLASK_SECRET_KEY', ''),
+        'VSPHERE_SERVER': os.environ.get('VSPHERE_SERVER', ''),
+        'VSPHERE_PORT': os.environ.get('VSPHERE_PORT', ''),
+        'VSPHERE_USER': os.environ.get('VSPHERE_USER', ''),
+        'VSPHERE_PASSWORD': os.environ.get('VSPHERE_PASSWORD', ''),
+        'VSPHERE_USE_SSL': os.environ.get('VSPHERE_USE_SSL', 'True')
+    }
+    
+    return render_template(
+        'settings.html',
+        user_role=session.get('role', ''),
+        user_name=session.get('name', ''),
+        env_settings=env_settings
+    )
+
+@app.route('/update_env_settings', methods=['POST'])
+@login_required
+@role_required(ROLE_ADMIN)
+def update_env_settings():
+    """
+    Update application environment settings (.env file)
+    """
+    try:
+        # Get form data
+        config_dir = request.form.get('config_dir')
+        terraform_dir = request.form.get('terraform_dir')
+        users_file = request.form.get('users_file')
+        git_repo_url = request.form.get('git_repo_url')
+        git_username = request.form.get('git_username')
+        git_token = request.form.get('git_token')
+        atlantis_url = request.form.get('atlantis_url')
+        atlantis_token = request.form.get('atlantis_token')
+        flask_secret_key = request.form.get('flask_secret_key')
+        vsphere_server = request.form.get('vsphere_server')
+        vsphere_port = request.form.get('vsphere_port')
+        vsphere_user = request.form.get('vsphere_user')
+        vsphere_password = request.form.get('vsphere_password')
+        vsphere_use_ssl = request.form.get('vsphere_use_ssl')
+        
+        # Validate input
+        if not config_dir or not terraform_dir or not users_file:
+            flash('Configuration directory, Terraform directory, and Users file path are required', 'error')
+            return redirect(url_for('settings'))
+        
+        # Validate vSphere settings
+        if vsphere_server and not vsphere_user:
+            flash('vSphere Username is required when Server is specified', 'error')
+            return redirect(url_for('settings'))
+        
+        # Create or update .env file
+        env_content = f"""# Application Environment Settings
+# Updated on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+# Configuration paths
+CONFIG_DIR={config_dir}
+TERRAFORM_DIR={terraform_dir}
+USERS_FILE={users_file}
+
+# GitHub and Atlantis integration
+GIT_REPO_URL={git_repo_url}
+GIT_USERNAME={git_username}
+GIT_TOKEN={git_token}
+ATLANTIS_URL={atlantis_url}
+ATLANTIS_TOKEN={atlantis_token}
+
+# Application security
+FLASK_SECRET_KEY={flask_secret_key if flask_secret_key else 'dev_key_for_development_only'}
+
+# vSphere connection settings
+VSPHERE_SERVER={vsphere_server}
+VSPHERE_PORT={vsphere_port}
+VSPHERE_USER={vsphere_user}
+VSPHERE_PASSWORD={vsphere_password}
+VSPHERE_USE_SSL={vsphere_use_ssl}
+"""
+        
+        # Write .env file
+        with open('.env', 'w') as f:
+            f.write(env_content)
+        
+        # Create directories if they don't exist
+        os.makedirs(config_dir, exist_ok=True)
+        os.makedirs(terraform_dir, exist_ok=True)
+        
+        flash('Environment settings updated successfully. Restart the application for changes to take effect.', 'success')
+        return redirect(url_for('settings'))
+    
+    except Exception as e:
+        logger.exception(f"Error updating environment settings: {str(e)}")
+        flash(f'Error updating environment settings: {str(e)}', 'error')
+        return redirect(url_for('settings'))
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5150)

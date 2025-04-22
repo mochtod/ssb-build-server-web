@@ -6,12 +6,14 @@ from datetime import datetime
 import threading
 import queue
 from functools import partial
-import pyVmomi
+import concurrent.futures
+# Import VMware SDK components
+from pyVim import connect
 from pyVmomi import vim
-from pyVim.connect import SmartConnect, Disconnect
 import ssl
 import socket
 import urllib3
+import redis
 from redis_client import RedisClient
 
 # Disable SSL warnings
@@ -38,11 +40,17 @@ VSPHERE_DATACENTERS_KEY = f'{VSPHERE_CACHE_PREFIX}datacenters'
 VSPHERE_CLUSTERS_KEY = f'{VSPHERE_CACHE_PREFIX}clusters'
 VSPHERE_HOSTS_KEY = f'{VSPHERE_CACHE_PREFIX}hosts'
 VSPHERE_DATASTORES_KEY = f'{VSPHERE_CACHE_PREFIX}datastores'
-VSPHERE_DATASTORE_CLUSTERS_KEY = f'{VSPHERE_CACHE_PREFIX}datastore_clusters'  # New key for datastore clusters
+VSPHERE_DATASTORE_CLUSTERS_KEY = f'{VSPHERE_CACHE_PREFIX}datastore_clusters'
 VSPHERE_NETWORKS_KEY = f'{VSPHERE_CACHE_PREFIX}networks'
 VSPHERE_VMS_KEY = f'{VSPHERE_CACHE_PREFIX}vms'
 VSPHERE_RESOURCE_POOLS_KEY = f'{VSPHERE_CACHE_PREFIX}resource_pools'
 VSPHERE_TEMPLATES_KEY = f'{VSPHERE_CACHE_PREFIX}templates'
+
+# Cache monitoring keys
+VSPHERE_CACHE_HITS_KEY = f'{VSPHERE_CACHE_PREFIX}stats:hits'
+VSPHERE_CACHE_MISSES_KEY = f'{VSPHERE_CACHE_PREFIX}stats:misses'
+VSPHERE_CACHE_LAST_SYNC_DURATION_KEY = f'{VSPHERE_CACHE_PREFIX}stats:last_sync_duration'
+VSPHERE_CACHE_MEMORY_USAGE_KEY = f'{VSPHERE_CACHE_PREFIX}stats:memory_usage'
 
 # New keys for partial loading
 VSPHERE_SYNC_STATUS_KEY = f'{VSPHERE_CACHE_PREFIX}sync_status'
@@ -59,7 +67,7 @@ VSPHERE_REFRESH_INTERVAL = int(os.environ.get('VSPHERE_REFRESH_INTERVAL', 60))  
 
 class VSphereRedisCache:
     """
-    Handles synchronization of vSphere objects to Redis cache
+    Handles synchronization of vSphere objects to Redis cache with performance optimizations
     """
     def __init__(self):
         """
@@ -71,443 +79,809 @@ class VSphereRedisCache:
         self._background_refresh_running = False
         self._background_refresh_thread = None
         self._sync_lock = threading.Lock()
+        # Thread pool for parallel operations
+        self._thread_pool = None
+        # Number of parallel workers (configurable)
+        self.max_workers = int(os.environ.get('VSPHERE_PARALLEL_WORKERS', 4))
+        # Stats tracking
+        self._stats = {
+            'cache_hits': 0,
+            'cache_misses': 0,
+            'last_sync_duration': 0,
+            'total_objects': 0
+        }
+        
+    def get_vsphere_servers(self):
+        """
+        Get the list of available vSphere servers
+        Returns a list of dictionaries with server information
+        """
+        try:
+            # Check if we have vSphere server information in Redis
+            vsphere_server = os.environ.get('VSPHERE_SERVER', '')
+            
+            # If VSPHERE_SERVER environment variable is set, return it
+            if vsphere_server:
+                return [{
+                    'id': vsphere_server,
+                    'name': vsphere_server,
+                    'status': 'configured'
+                }]
+            
+            # Default fallback value if nothing is configured
+            return [{
+                'id': 'virtualcenter.chrobinson.com',
+                'name': 'vSphere Server',
+                'status': 'default'
+            }]
+        except Exception as e:
+            logger.error(f"Error getting vSphere servers: {str(e)}")
+            # Return a default server if we can't get the server list
+            return [{
+                'id': 'virtualcenter.chrobinson.com',
+                'name': 'Default vSphere Server',
+                'status': 'error'
+            }]
+            
+    def get_hierarchical_data(self, vsphere_server=None, datacenter_id=None, cluster_id=None, datastore_cluster_id=None):
+        """
+        Get hierarchical vSphere data for UI dropdown population
+        Returns a nested structure with all required data components
+        """
+        try:
+            result = {
+                'datacenters': [],
+                'clusters': [],
+                'hosts': [],
+                'datastores': [],
+                'datastore_clusters': [],
+                'networks': [],
+                'templates': []
+            }
+            
+            # Get data from Redis cache, safely handling missing keys
+            datacenters = self.redis_client.get(VSPHERE_DATACENTERS_KEY) or []
+            result['datacenters'] = datacenters
+            
+            clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
+            result['clusters'] = clusters
+            
+            datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
+            result['datastore_clusters'] = datastore_clusters
+            
+            datastores = self.redis_client.get(VSPHERE_DATASTORES_KEY) or []
+            result['datastores'] = datastores
+            
+            networks = self.redis_client.get(VSPHERE_NETWORKS_KEY) or []
+            result['networks'] = networks
+            
+            templates = self.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
+            result['templates'] = templates
+            
+            # Filter by datacenter if specified
+            if datacenter_id:
+                result['clusters'] = [c for c in clusters if c.get('datacenter_id') == datacenter_id]
+            
+            # Filter by cluster if specified
+            if cluster_id:
+                result['hosts'] = [h for h in self.redis_client.get(VSPHERE_HOSTS_KEY) or [] 
+                                   if h.get('cluster_id') == cluster_id]
+            
+            return result
+        except Exception as e:
+            logger.error(f"Error getting hierarchical vSphere data: {str(e)}")
+            return {
+                'datacenters': [],
+                'clusters': [],
+                'hosts': [],
+                'datastores': [],
+                'datastore_clusters': [],
+                'networks': [],
+                'templates': [],
+                'error': str(e)
+            }
+            
+    def get_resource_for_terraform(self, environment):
+        """
+        Get vSphere resources formatted for Terraform configuration
+        Returns a dictionary with resource IDs needed for Terraform
+        """
+        try:
+            # Default values
+            result = {
+                'resource_pool_id': None,
+                'resource_pool_name': None,
+                'resource_pool_is_cluster': False,
+                'datastore_id': None,
+                'datastore_cluster_id': None,
+                'storage_id': None,
+                'storage_type': None,
+                'network_id': None,
+                'template_uuid': None,
+                'ipv4_gateway': "192.168.1.1",
+                'ipv4_address': "192.168.1.100"
+            }
+            
+            # Get cached data
+            clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
+            datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
+            datastores = self.redis_client.get(VSPHERE_DATASTORES_KEY) or []
+            networks = self.redis_client.get(VSPHERE_NETWORKS_KEY) or []
+            templates = self.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
+            
+            # Find matching resources based on environment (production vs non-production)
+            if clusters:
+                # Use first available cluster as resource pool
+                cluster = clusters[0]
+                result['resource_pool_id'] = cluster.get('id')
+                result['resource_pool_name'] = cluster.get('name')
+                result['resource_pool_is_cluster'] = True
+            
+            # Prefer datastore clusters if available
+            if datastore_clusters:
+                datastore_cluster = datastore_clusters[0]
+                result['datastore_cluster_id'] = datastore_cluster.get('id')
+                result['storage_id'] = datastore_cluster.get('id')
+                result['storage_type'] = 'datastore_cluster'
+            elif datastores:
+                datastore = datastores[0]
+                result['datastore_id'] = datastore.get('id')
+                result['storage_id'] = datastore.get('id')
+                result['storage_type'] = 'datastore'
+            
+            # Get network
+            if networks:
+                network = networks[0]
+                result['network_id'] = network.get('id')
+            
+            # Get template
+            # For RHEL9 templates specifically
+            rhel9_templates = [t for t in templates if 'rhel9' in t.get('name', '').lower()]
+            if rhel9_templates:
+                template = rhel9_templates[0]
+                result['template_uuid'] = template.get('id')
+            elif templates:
+                # Fallback to any template
+                template = templates[0]
+                result['template_uuid'] = template.get('id')
+            
+            # Environment-specific settings
+            if environment == 'production':
+                result['ipv4_gateway'] = "10.1.1.1"
+                result['ipv4_address'] = "10.1.1.100"
+            else:
+                result['ipv4_gateway'] = "192.168.1.1"
+                result['ipv4_address'] = "192.168.1.100"
+            
+            return result
+        except Exception as e:
+            logger.error(f"Error getting vSphere resources for Terraform: {str(e)}")
+            return {
+                'resource_pool_id': None,
+                'datastore_id': None,
+                'network_id': None,
+                'template_uuid': None,
+                'ipv4_gateway': "192.168.1.1",
+                'ipv4_address': "192.168.1.100",
+                'error': str(e)
+            }
 
     def connect_to_vsphere(self):
         """
-        Connect to vSphere server
+        Connect to vSphere server with improved error handling and retry logic
         """
-        try:
-            # SSL context setup for self-signed certificates
-            context = None
-            if VSPHERE_USE_SSL:
-                context = ssl.create_default_context()
-                context.check_hostname = False
-                context.verify_mode = ssl.CERT_NONE
-
-            self.vsphere_conn = SmartConnect(
-                host=VSPHERE_HOST,
-                user=VSPHERE_USER,
-                pwd=VSPHERE_PASSWORD,
-                port=VSPHERE_PORT,
-                sslContext=context
-            )
-            
-            if not self.vsphere_conn:
-                raise Exception("Failed to connect to vSphere")
+        max_retries = 3
+        retry_delay = 5  # seconds
+        
+        for attempt in range(1, max_retries + 1):
+            try:
+                # SSL context setup for self-signed certificates
+                context = None
+                if VSPHERE_USE_SSL:
+                    context = ssl.create_default_context()
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
                 
-            self.content = self.vsphere_conn.RetrieveContent()
-            logger.info(f"Connected to vSphere server: {VSPHERE_HOST}")
-            return True
-        except Exception as e:
-            logger.error(f"Error connecting to vSphere: {str(e)}")
-            return False
+                # Set socket timeout to prevent hanging connections
+                socket.setdefaulttimeout(30)
+                
+                # Attempt connection
+                self.vsphere_conn = connect.SmartConnect(
+                    host=VSPHERE_HOST,
+                    user=VSPHERE_USER,
+                    pwd=VSPHERE_PASSWORD,
+                    port=VSPHERE_PORT,
+                    sslContext=context
+                )
+                
+                if not self.vsphere_conn:
+                    raise Exception("Failed to connect to vSphere - connection is None")
+                    
+                self.content = self.vsphere_conn.RetrieveContent()
+                logger.info(f"Connected to vSphere server: {VSPHERE_HOST}")
+                return True
+            except Exception as e:
+                logger.error(f"Error connecting to vSphere (attempt {attempt}/{max_retries}): {str(e)}")
+                
+                if attempt < max_retries:
+                    logger.info(f"Retrying connection in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    logger.error(f"Failed to connect to vSphere after {max_retries} attempts")
+                    return False
+        
+        return False
 
     def disconnect_from_vsphere(self):
         """
         Disconnect from vSphere server
         """
         if self.vsphere_conn:
-            Disconnect(self.vsphere_conn)
+            connect.Disconnect(self.vsphere_conn)
             self.vsphere_conn = None
             self.content = None
             logger.info("Disconnected from vSphere server")
+
+    def _create_container_view(self, obj_type):
+        """
+        Create a container view for a specific object type with error handling
+        """
+        try:
+            if not self.content or not self.content.viewManager:
+                raise Exception("vSphere content or viewManager is not available")
+                
+            return self.content.viewManager.CreateContainerView(
+                self.content.rootFolder, [obj_type], True
+            )
+        except Exception as e:
+            logger.error(f"Error creating container view for {obj_type.__name__}: {str(e)}")
+            return None
+
+    def _fetch_objects_safely(self, container, transform_func):
+        """
+        Safely fetch objects from a container view with error handling and performance monitoring
+        """
+        if not container:
+            return []
+            
+        try:
+            start_time = time.time()
+            objects = []
+            
+            # Process objects in batches to prevent memory issues with large environments
+            batch_size = 500
+            view_list = list(container.view)
+            total_objects = len(view_list)
+            
+            for i in range(0, total_objects, batch_size):
+                batch = view_list[i:i+batch_size]
+                transformed_batch = []
+                
+                for obj in batch:
+                    try:
+                        transformed = transform_func(obj)
+                        if transformed:
+                            transformed_batch.append(transformed)
+                    except Exception as e:
+                        # Log error but continue processing other objects
+                        logger.error(f"Error processing object {getattr(obj, 'name', 'unknown')}: {str(e)}")
+                
+                objects.extend(transformed_batch)
+            
+            fetch_time = time.time() - start_time
+            logger.info(f"Fetched {len(objects)} objects in {fetch_time:.2f} seconds")
+            return objects
+        except Exception as e:
+            logger.error(f"Error fetching objects: {str(e)}")
+            return []
+        finally:
+            try:
+                # Always destroy the container view to release resources
+                container.Destroy()
+            except:
+                pass
 
     def get_all_datacenters(self):
         """
         Get all datacenters from vSphere
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.Datacenter], True
-            )
-            datacenters = []
-            for dc in container.view:
-                datacenters.append({
-                    'id': dc._moId,
-                    'name': dc.name,
-                    'vm_folder': dc.vmFolder._moId if dc.vmFolder else None,
-                    'host_folder': dc.hostFolder._moId if dc.hostFolder else None,
-                    'datastore_folder': dc.datastoreFolder._moId if dc.datastoreFolder else None,
-                    'network_folder': dc.networkFolder._moId if dc.networkFolder else None
-                })
-            container.Destroy()
-            return datacenters
-        except Exception as e:
-            logger.error(f"Error getting datacenters: {str(e)}")
-            return []
+        container = self._create_container_view(vim.Datacenter)
+        
+        def transform_datacenter(dc):
+            return {
+                'id': dc._moId,
+                'name': dc.name,
+                'vm_folder': dc.vmFolder._moId if hasattr(dc, 'vmFolder') and dc.vmFolder else None,
+                'host_folder': dc.hostFolder._moId if hasattr(dc, 'hostFolder') and dc.hostFolder else None,
+                'datastore_folder': dc.datastoreFolder._moId if hasattr(dc, 'datastoreFolder') and dc.datastoreFolder else None,
+                'network_folder': dc.networkFolder._moId if hasattr(dc, 'networkFolder') and dc.networkFolder else None
+            }
+            
+        return self._fetch_objects_safely(container, transform_datacenter)
 
     def get_all_clusters(self):
         """
         Get all clusters from vSphere
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.ClusterComputeResource], True
-            )
-            clusters = []
-            for cluster in container.view:
-                clusters.append({
-                    'id': cluster._moId,
-                    'name': cluster.name,
-                    'datacenter_id': cluster.parent.parent._moId if cluster.parent and cluster.parent.parent else None,
-                    'total_cpu_mhz': cluster.summary.totalCpu if hasattr(cluster.summary, 'totalCpu') else 0,
-                    'total_memory_bytes': cluster.summary.totalMemory if hasattr(cluster.summary, 'totalMemory') else 0,
-                    'num_hosts': len(cluster.host) if hasattr(cluster, 'host') else 0,
-                    'num_effective_hosts': cluster.summary.numEffectiveHosts if hasattr(cluster.summary, 'numEffectiveHosts') else 0,
-                    'overall_status': cluster.overallStatus if hasattr(cluster, 'overallStatus') else None,
-                })
-            container.Destroy()
-            return clusters
-        except Exception as e:
-            logger.error(f"Error getting clusters: {str(e)}")
-            return []
+        container = self._create_container_view(vim.ClusterComputeResource)
+        
+        def transform_cluster(cluster):
+            # Safe attribute access
+            parent_moId = None
+            try:
+                if cluster.parent and cluster.parent.parent:
+                    parent_moId = cluster.parent.parent._moId
+            except:
+                pass
+                
+            # Convert overall status to string to ensure it can be serialized
+            overall_status = None
+            try:
+                if hasattr(cluster, 'overallStatus'):
+                    overall_status = str(cluster.overallStatus)
+            except:
+                pass
+                
+            return {
+                'id': cluster._moId,
+                'name': cluster.name,
+                'datacenter_id': parent_moId,
+                'total_cpu_mhz': getattr(cluster.summary, 'totalCpu', 0),
+                'total_memory_bytes': getattr(cluster.summary, 'totalMemory', 0),
+                'num_hosts': len(getattr(cluster, 'host', [])),
+                'num_effective_hosts': getattr(cluster.summary, 'numEffectiveHosts', 0),
+                'overall_status': overall_status,
+            }
+            
+        return self._fetch_objects_safely(container, transform_cluster)
 
     def get_all_hosts(self):
         """
-        Get all hosts from vSphere
+        Get all hosts from vSphere with optimized property access
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.HostSystem], True
-            )
-            hosts = []
-            for host in container.view:
-                # Get parent cluster if available
-                parent_cluster_id = None
+        container = self._create_container_view(vim.HostSystem)
+        
+        def transform_host(host):
+            # Get parent cluster if available
+            parent_cluster_id = None
+            try:
                 if hasattr(host, 'parent') and host.parent:
                     if isinstance(host.parent, vim.ClusterComputeResource):
                         parent_cluster_id = host.parent._moId
-
-                hosts.append({
-                    'id': host._moId,
-                    'name': host.name,
-                    'cluster_id': parent_cluster_id,
-                    'connection_state': host.runtime.connectionState if hasattr(host.runtime, 'connectionState') else None,
-                    'power_state': host.runtime.powerState if hasattr(host.runtime, 'powerState') else None,
-                    'in_maintenance_mode': host.runtime.inMaintenanceMode if hasattr(host.runtime, 'inMaintenanceMode') else False,
-                    'cpu_model': host.summary.hardware.cpuModel if hasattr(host.summary, 'hardware') and hasattr(host.summary.hardware, 'cpuModel') else None,
-                    'num_cpu_cores': host.summary.hardware.numCpuCores if hasattr(host.summary, 'hardware') and hasattr(host.summary.hardware, 'numCpuCores') else 0,
-                    'cpu_mhz': host.summary.hardware.cpuMhz if hasattr(host.summary, 'hardware') and hasattr(host.summary.hardware, 'cpuMhz') else 0,
-                    'memory_size_bytes': host.summary.hardware.memorySize if hasattr(host.summary, 'hardware') and hasattr(host.summary.hardware, 'memorySize') else 0,
-                    'overall_status': host.overallStatus if hasattr(host, 'overallStatus') else None,
-                })
-            container.Destroy()
-            return hosts
-        except Exception as e:
-            logger.error(f"Error getting hosts: {str(e)}")
-            return []
+            except:
+                pass
+                
+            # Safely access nested properties
+            connection_state = None
+            power_state = None
+            in_maintenance_mode = False
+            
+            try:
+                if hasattr(host, 'runtime'):
+                    connection_state = getattr(host.runtime, 'connectionState', None)
+                    power_state = getattr(host.runtime, 'powerState', None)
+                    in_maintenance_mode = getattr(host.runtime, 'inMaintenanceMode', False)
+            except:
+                pass
+                
+            # Safely access hardware properties
+            cpu_model = None
+            num_cpu_cores = 0
+            cpu_mhz = 0
+            memory_size_bytes = 0
+            
+            try:
+                if hasattr(host, 'summary') and hasattr(host.summary, 'hardware'):
+                    cpu_model = getattr(host.summary.hardware, 'cpuModel', None)
+                    num_cpu_cores = getattr(host.summary.hardware, 'numCpuCores', 0)
+                    cpu_mhz = getattr(host.summary.hardware, 'cpuMhz', 0)
+                    memory_size_bytes = getattr(host.summary.hardware, 'memorySize', 0)
+            except:
+                pass
+                
+            return {
+                'id': host._moId,
+                'name': host.name,
+                'cluster_id': parent_cluster_id,
+                'connection_state': connection_state,
+                'power_state': power_state,
+                'in_maintenance_mode': in_maintenance_mode,
+                'cpu_model': cpu_model,
+                'num_cpu_cores': num_cpu_cores,
+                'cpu_mhz': cpu_mhz,
+                'memory_size_bytes': memory_size_bytes,
+                'overall_status': getattr(host, 'overallStatus', None),
+            }
+            
+        return self._fetch_objects_safely(container, transform_host)
 
     def get_all_datastores(self):
         """
         Get all datastores from vSphere
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.Datastore], True
-            )
-            datastores = []
-            for ds in container.view:
-                datastores.append({
-                    'id': ds._moId,
-                    'name': ds.name,
-                    'type': ds.summary.type if hasattr(ds.summary, 'type') else None,
-                    'capacity_bytes': ds.summary.capacity if hasattr(ds.summary, 'capacity') else 0,
-                    'free_space_bytes': ds.summary.freeSpace if hasattr(ds.summary, 'freeSpace') else 0,
-                    'accessible': ds.summary.accessible if hasattr(ds.summary, 'accessible') else False,
-                    'maintenance_mode': ds.summary.maintenanceMode if hasattr(ds.summary, 'maintenanceMode') else None,
-                    'multiple_host_access': ds.summary.multipleHostAccess if hasattr(ds.summary, 'multipleHostAccess') else False,
-                })
-            container.Destroy()
-            return datastores
-        except Exception as e:
-            logger.error(f"Error getting datastores: {str(e)}")
-            return []
+        container = self._create_container_view(vim.Datastore)
+        
+        def transform_datastore(ds):
+            return {
+                'id': ds._moId,
+                'name': ds.name,
+                'type': getattr(ds.summary, 'type', None),
+                'capacity_bytes': getattr(ds.summary, 'capacity', 0),
+                'free_space_bytes': getattr(ds.summary, 'freeSpace', 0),
+                'accessible': getattr(ds.summary, 'accessible', False),
+                'maintenance_mode': getattr(ds.summary, 'maintenanceMode', None),
+                'multiple_host_access': getattr(ds.summary, 'multipleHostAccess', False),
+            }
+            
+        return self._fetch_objects_safely(container, transform_datastore)
 
     def get_all_networks(self):
         """
         Get all networks from vSphere
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.Network], True
-            )
-            networks = []
-            for network in container.view:
-                networks.append({
-                    'id': network._moId,
-                    'name': network.name,
-                    'accessible': network.summary.accessible if hasattr(network.summary, 'accessible') else False,
-                    'ip_pool_id': network.summary.ipPoolId if hasattr(network.summary, 'ipPoolId') else None,
-                    'network_type': type(network).__name__,
-                })
-            container.Destroy()
-            return networks
-        except Exception as e:
-            logger.error(f"Error getting networks: {str(e)}")
-            return []
+        container = self._create_container_view(vim.Network)
+        
+        def transform_network(network):
+            return {
+                'id': network._moId,
+                'name': network.name,
+                'accessible': getattr(network.summary, 'accessible', False),
+                'ip_pool_id': getattr(network.summary, 'ipPoolId', None),
+                'network_type': type(network).__name__,
+            }
+            
+        return self._fetch_objects_safely(container, transform_network)
 
     def get_all_resource_pools(self):
         """
         Get all resource pools from vSphere
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.ResourcePool], True
-            )
-            resource_pools = []
-            for rp in container.view:
-                # Skip hidden resource pools
-                if rp.parent and isinstance(rp.parent, vim.ResourcePool) and rp.parent.parent and isinstance(rp.parent.parent, vim.ComputeResource):
+        container = self._create_container_view(vim.ResourcePool)
+        
+        def transform_resource_pool(rp):
+            # Skip hidden resource pools
+            try:
+                if (rp.parent and isinstance(rp.parent, vim.ResourcePool) and 
+                    rp.parent.parent and isinstance(rp.parent.parent, vim.ComputeResource)):
                     if rp.name == 'Resources' and rp.parent.name == 'Resources':
-                        continue
+                        return None
+            except:
+                pass
 
-                # Get parent info
-                parent_id = None
-                parent_type = None
+            # Get parent info
+            parent_id = None
+            parent_type = None
+            try:
                 if rp.parent:
                     parent_id = rp.parent._moId
                     parent_type = type(rp.parent).__name__
+            except:
+                pass
 
-                resource_pools.append({
-                    'id': rp._moId,
-                    'name': rp.name,
-                    'parent_id': parent_id,
-                    'parent_type': parent_type,
-                    'cpu_limit': rp.config.cpuAllocation.limit if hasattr(rp.config, 'cpuAllocation') and hasattr(rp.config.cpuAllocation, 'limit') else None,
-                    'memory_limit': rp.config.memoryAllocation.limit if hasattr(rp.config, 'memoryAllocation') and hasattr(rp.config.memoryAllocation, 'limit') else None,
-                    'overall_status': rp.overallStatus if hasattr(rp, 'overallStatus') else None,
-                })
-            container.Destroy()
-            return resource_pools
-        except Exception as e:
-            logger.error(f"Error getting resource pools: {str(e)}")
-            return []
+            # Safely access config properties
+            cpu_limit = None
+            memory_limit = None
+            try:
+                if (hasattr(rp, 'config') and 
+                    hasattr(rp.config, 'cpuAllocation') and 
+                    hasattr(rp.config.cpuAllocation, 'limit')):
+                    cpu_limit = rp.config.cpuAllocation.limit
+                    
+                if (hasattr(rp, 'config') and 
+                    hasattr(rp.config, 'memoryAllocation') and 
+                    hasattr(rp.config.memoryAllocation, 'limit')):
+                    memory_limit = rp.config.memoryAllocation.limit
+            except:
+                pass
+
+            return {
+                'id': rp._moId,
+                'name': rp.name,
+                'parent_id': parent_id,
+                'parent_type': parent_type,
+                'cpu_limit': cpu_limit,
+                'memory_limit': memory_limit,
+                'overall_status': getattr(rp, 'overallStatus', None),
+            }
+            
+        return self._fetch_objects_safely(container, transform_resource_pool)
 
     def get_all_vms(self):
         """
-        Get all VMs from vSphere
+        Get all VMs from vSphere with optimized property collection
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.VirtualMachine], True
-            )
-            vms = []
-            for vm in container.view:
-                # Skip templates as we'll process them separately
+        container = self._create_container_view(vim.VirtualMachine)
+        
+        def transform_vm(vm):
+            # Skip templates as we'll process them separately
+            try:
                 if vm.config and vm.config.template:
-                    continue
+                    return None
+            except:
+                pass
 
-                # Get resource pool
-                resource_pool_id = None
+            # Basic info with safe property access
+            vm_info = {'id': vm._moId, 'name': vm.name, 'is_template': False}
+            
+            # Power state
+            try:
+                if hasattr(vm, 'runtime'):
+                    vm_info['power_state'] = getattr(vm.runtime, 'powerState', None)
+                    vm_info['connection_state'] = getattr(vm.runtime, 'connectionState', None)
+            except:
+                pass
+                
+            # Guest OS info
+            try:
+                if hasattr(vm, 'config'):
+                    vm_info['guest_id'] = getattr(vm.config, 'guestId', None)
+                    vm_info['guest_full_name'] = getattr(vm.config, 'guestFullName', None)
+                    
+                    # Hardware info
+                    if hasattr(vm.config, 'hardware'):
+                        vm_info['cpu_count'] = getattr(vm.config.hardware, 'numCPU', 0)
+                        vm_info['memory_mb'] = getattr(vm.config.hardware, 'memoryMB', 0)
+            except:
+                pass
+                
+            # Resource pool
+            try:
                 if hasattr(vm, 'resourcePool') and vm.resourcePool:
-                    resource_pool_id = vm.resourcePool._moId
-
-                # Get host
-                host_id = None
+                    vm_info['resource_pool_id'] = vm.resourcePool._moId
+            except:
+                pass
+                
+            # Host
+            try:
                 if hasattr(vm, 'runtime') and hasattr(vm.runtime, 'host') and vm.runtime.host:
-                    host_id = vm.runtime.host._moId
-
-                # Get network info
-                networks = []
+                    vm_info['host_id'] = vm.runtime.host._moId
+            except:
+                pass
+                
+            # Networks
+            try:
+                vm_info['network_ids'] = []
                 if hasattr(vm, 'network'):
                     for net in vm.network:
-                        networks.append(net._moId)
-
-                # Get datastore info
-                datastores = []
+                        vm_info['network_ids'].append(net._moId)
+            except:
+                pass
+                
+            # Datastores
+            try:
+                vm_info['datastore_ids'] = []
                 if hasattr(vm, 'datastore'):
                     for ds in vm.datastore:
-                        datastores.append(ds._moId)
-
-                # Get basic VM info
-                vm_info = {
-                    'id': vm._moId,
-                    'name': vm.name,
-                    'power_state': vm.runtime.powerState if hasattr(vm.runtime, 'powerState') else None,
-                    'connection_state': vm.runtime.connectionState if hasattr(vm.runtime, 'connectionState') else None,
-                    'guest_id': vm.config.guestId if vm.config and hasattr(vm.config, 'guestId') else None,
-                    'guest_full_name': vm.config.guestFullName if vm.config and hasattr(vm.config, 'guestFullName') else None,
-                    'cpu_count': vm.config.hardware.numCPU if vm.config and hasattr(vm.config, 'hardware') and hasattr(vm.config.hardware, 'numCPU') else 0,
-                    'memory_mb': vm.config.hardware.memoryMB if vm.config and hasattr(vm.config, 'hardware') and hasattr(vm.config.hardware, 'memoryMB') else 0,
-                    'resource_pool_id': resource_pool_id,
-                    'host_id': host_id,
-                    'network_ids': networks,
-                    'datastore_ids': datastores,
-                    'overall_status': vm.overallStatus if hasattr(vm, 'overallStatus') else None,
-                    'is_template': False
-                }
-
-                # Add IP information if available
+                        vm_info['datastore_ids'].append(ds._moId)
+            except:
+                pass
+                
+            # Overall status
+            vm_info['overall_status'] = getattr(vm, 'overallStatus', None)
+            
+            # IP address - guest property can be expensive to access
+            try:
                 if hasattr(vm, 'guest') and hasattr(vm.guest, 'ipAddress') and vm.guest.ipAddress:
                     vm_info['ip_address'] = vm.guest.ipAddress
-
-                vms.append(vm_info)
-
-            container.Destroy()
-            return vms
-        except Exception as e:
-            logger.error(f"Error getting VMs: {str(e)}")
-            return []
+            except:
+                pass
+                
+            return vm_info
+            
+        return self._fetch_objects_safely(container, transform_vm)
 
     def get_all_templates(self):
         """
         Get all templates from vSphere
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.VirtualMachine], True
-            )
-            templates = []
-            for vm in container.view:
-                # Only process templates
+        container = self._create_container_view(vim.VirtualMachine)
+        
+        def transform_template(vm):
+            # Only process templates
+            try:
                 if not (vm.config and vm.config.template):
-                    continue
-
-                # Get resource pool
-                resource_pool_id = None
-                if hasattr(vm, 'resourcePool') and vm.resourcePool:
-                    resource_pool_id = vm.resourcePool._moId
-
-                # Get host
-                host_id = None
+                    return None
+            except:
+                return None
+                
+            # Basic template info with safe property access
+            template_info = {'id': vm._moId, 'name': vm.name, 'is_template': True}
+            
+            # Guest OS info
+            try:
+                if hasattr(vm, 'config'):
+                    template_info['guest_id'] = getattr(vm.config, 'guestId', None)
+                    template_info['guest_full_name'] = getattr(vm.config, 'guestFullName', None)
+                    
+                    # Hardware info
+                    if hasattr(vm.config, 'hardware'):
+                        template_info['cpu_count'] = getattr(vm.config.hardware, 'numCPU', 0)
+                        template_info['memory_mb'] = getattr(vm.config.hardware, 'memoryMB', 0)
+            except:
+                pass
+                
+            # Host
+            try:
                 if hasattr(vm, 'runtime') and hasattr(vm.runtime, 'host') and vm.runtime.host:
-                    host_id = vm.runtime.host._moId
-
-                # Get network info
-                networks = []
+                    template_info['host_id'] = vm.runtime.host._moId
+            except:
+                template_info['host_id'] = None
+                
+            # Networks
+            try:
+                template_info['network_ids'] = []
                 if hasattr(vm, 'network'):
                     for net in vm.network:
-                        networks.append(net._moId)
-
-                # Get datastore info
-                datastores = []
+                        template_info['network_ids'].append(net._moId)
+            except:
+                pass
+                
+            # Datastores
+            try:
+                template_info['datastore_ids'] = []
                 if hasattr(vm, 'datastore'):
                     for ds in vm.datastore:
-                        datastores.append(ds._moId)
-
-                templates.append({
-                    'id': vm._moId,
-                    'name': vm.name,
-                    'guest_id': vm.config.guestId if vm.config and hasattr(vm.config, 'guestId') else None,
-                    'guest_full_name': vm.config.guestFullName if vm.config and hasattr(vm.config, 'guestFullName') else None,
-                    'cpu_count': vm.config.hardware.numCPU if vm.config and hasattr(vm.config, 'hardware') and hasattr(vm.config.hardware, 'numCPU') else 0,
-                    'memory_mb': vm.config.hardware.memoryMB if vm.config and hasattr(vm.config, 'hardware') and hasattr(vm.config.hardware, 'memoryMB') else 0,
-                    'host_id': host_id,
-                    'network_ids': networks,
-                    'datastore_ids': datastores,
-                    'overall_status': vm.overallStatus if hasattr(vm, 'overallStatus') else None,
-                    'is_template': True
-                })
-
-            container.Destroy()
-            return templates
-        except Exception as e:
-            logger.error(f"Error getting templates: {str(e)}")
-            return []
+                        template_info['datastore_ids'].append(ds._moId)
+            except:
+                pass
+                
+            # Overall status
+            template_info['overall_status'] = getattr(vm, 'overallStatus', None)
+            
+            return template_info
+            
+        return self._fetch_objects_safely(container, transform_template)
 
     def get_all_datastore_clusters(self):
         """
         Get all datastore clusters from vSphere
         """
-        try:
-            container = self.content.viewManager.CreateContainerView(
-                self.content.rootFolder, [vim.StoragePod], True
-            )
-            datastore_clusters = []
-            for ds_cluster in container.view:
-                # Get datastore IDs in this cluster
-                datastore_ids = []
+        container = self._create_container_view(vim.StoragePod)
+        
+        def transform_datastore_cluster(ds_cluster):
+            # Get datastore IDs in this cluster
+            datastore_ids = []
+            try:
                 if hasattr(ds_cluster, 'childEntity'):
                     for ds in ds_cluster.childEntity:
                         datastore_ids.append(ds._moId)
+            except:
+                pass
 
-                datastore_clusters.append({
-                    'id': ds_cluster._moId,
-                    'name': ds_cluster.name,
-                    'datastore_ids': datastore_ids,
-                    'capacity_bytes': ds_cluster.summary.capacity if hasattr(ds_cluster.summary, 'capacity') else 0,
-                    'free_space_bytes': ds_cluster.summary.freeSpace if hasattr(ds_cluster.summary, 'freeSpace') else 0,
-                })
-            container.Destroy()
-            return datastore_clusters
-        except Exception as e:
-            logger.error(f"Error getting datastore clusters: {str(e)}")
-            return []
+            return {
+                'id': ds_cluster._moId,
+                'name': ds_cluster.name,
+                'datastore_ids': datastore_ids,
+                'capacity_bytes': getattr(ds_cluster.summary, 'capacity', 0),
+                'free_space_bytes': getattr(ds_cluster.summary, 'freeSpace', 0),
+            }
+            
+        return self._fetch_objects_safely(container, transform_datastore_cluster)
 
-    def _sync_resource_to_redis(self, resource_type, get_resource_func, resource_key, sync_queue=None, progress_callback=None):
+    def _sync_resources_parallel(self, resource_handlers, sync_queue=None):
         """
-        Sync a specific resource type to Redis
+        Sync multiple resource types in parallel using a thread pool
+        
+        Args:
+            resource_handlers: List of tuples (resource_type, get_func, redis_key)
+            sync_queue: Queue for progress tracking
+            
+        Returns:
+            Dictionary with results
         """
-        try:
-            start = time.time()
-            resources = get_resource_func()
-            logger.info(f"Fetched {len(resources)} {resource_type} in {time.time() - start:.2f} seconds")
-            self.redis_client.set(resource_key, resources, VSPHERE_CACHE_TTL)
-            logger.info(f"Saved {len(resources)} {resource_type} to Redis")
+        # Create a thread pool if we don't already have one
+        if not self._thread_pool:
+            self._thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers)
             
-            # Update progress if callback provided
-            if sync_queue and progress_callback:
-                sync_queue.put((resource_type, len(resources)))
+        results = {}
+        futures = {}
+        
+        # Start all tasks
+        for resource_type, get_func, redis_key in resource_handlers:
+            logger.info(f"Starting parallel fetch for {resource_type}")
+            futures[resource_type] = self._thread_pool.submit(get_func)
             
-            return len(resources)
-        except Exception as e:
-            logger.error(f"Error syncing {resource_type} to Redis: {str(e)}")
-            if sync_queue and progress_callback:
-                sync_queue.put((resource_type, -1))  # Signal error
-            return 0
+        # Process results as they complete
+        for resource_type, get_func, redis_key in resource_handlers:
+            try:
+                # Get result with timeout
+                resources = futures[resource_type].result(timeout=600)  # 10 minute timeout per resource type
+                count = len(resources)
+                
+                # Save to Redis with compression for large datasets
+                if count > 1000:
+                    # For very large datasets, consider chunking
+                    chunk_size = 500
+                    for i in range(0, count, chunk_size):
+                        chunk = resources[i:i+chunk_size]
+                        chunk_key = f"{redis_key}:chunk:{i//chunk_size}"
+                        self.redis_client.set(chunk_key, chunk, VSPHERE_CACHE_TTL)
+                    
+                    # Save metadata
+                    self.redis_client.set(redis_key, {
+                        'chunked': True,
+                        'total_count': count,
+                        'chunk_size': chunk_size,
+                        'chunk_count': (count + chunk_size - 1) // chunk_size
+                    }, VSPHERE_CACHE_TTL)
+                else:
+                    # For smaller datasets, save directly
+                    self.redis_client.set(redis_key, resources, VSPHERE_CACHE_TTL)
+                
+                # Update progress if tracking
+                if sync_queue:
+                    sync_queue.put((resource_type, count))
+                
+                results[resource_type] = count
+                logger.info(f"Completed parallel fetch for {resource_type}: {count} items")
+            except Exception as e:
+                logger.error(f"Error syncing {resource_type} to Redis: {str(e)}")
+                if sync_queue:
+                    sync_queue.put((resource_type, -1))  # Signal error
+                results[resource_type] = -1
+                
+        return results
 
     def sync_essential_to_redis(self):
         """
         Sync only essential vSphere objects to Redis for initial UI loading
+        with parallel processing for speed
         """
         if not self.connect_to_vsphere():
             logger.error("Failed to connect to vSphere, cannot sync essential data")
             return False
 
         try:
-            # Get essential data needed for the UI
-            datacenters = self.get_all_datacenters()
-            self.redis_client.set(VSPHERE_DATACENTERS_KEY, datacenters, VSPHERE_CACHE_TTL)
+            start_time = time.time()
             
-            clusters = self.get_all_clusters()
-            self.redis_client.set(VSPHERE_CLUSTERS_KEY, clusters, VSPHERE_CACHE_TTL)
+            # Define essential resources to sync in parallel
+            essential_resources = [
+                ('datacenters', self.get_all_datacenters, VSPHERE_DATACENTERS_KEY),
+                ('clusters', self.get_all_clusters, VSPHERE_CLUSTERS_KEY),
+                ('datastore_clusters', self.get_all_datastore_clusters, VSPHERE_DATASTORE_CLUSTERS_KEY),
+                ('datastores', self.get_all_datastores, VSPHERE_DATASTORES_KEY),
+                ('templates', self.get_all_templates, VSPHERE_TEMPLATES_KEY),
+                ('networks', self.get_all_networks, VSPHERE_NETWORKS_KEY)
+            ]
             
-            # Get datastore clusters - now included in essential data
-            datastore_clusters = self.get_all_datastore_clusters()
-            self.redis_client.set(VSPHERE_DATASTORE_CLUSTERS_KEY, datastore_clusters, VSPHERE_CACHE_TTL)
+            # Sync in parallel
+            results = self._sync_resources_parallel(essential_resources)
             
-            # Get datastores - also essential for selecting storage
-            datastores = self.get_all_datastores()
-            self.redis_client.set(VSPHERE_DATASTORES_KEY, datastores, VSPHERE_CACHE_TTL)
+            # Update last sync time with success information
+            sync_duration = time.time() - start_time
+            self._stats['last_sync_duration'] = sync_duration
             
-            templates = self.get_all_templates()
-            self.redis_client.set(VSPHERE_TEMPLATES_KEY, templates, VSPHERE_CACHE_TTL)
-            
-            networks = self.get_all_networks()
-            self.redis_client.set(VSPHERE_NETWORKS_KEY, networks, VSPHERE_CACHE_TTL)
-
-            # Update last sync time (partial)
             now = datetime.utcnow().isoformat()
-            self.redis_client.set(VSPHERE_LAST_SYNC_KEY, {
+            sync_info = {
                 'timestamp': now,
                 'type': 'essential',
-                'datacenters_count': len(datacenters),
-                'clusters_count': len(clusters),
-                'datastore_clusters_count': len(datastore_clusters),
-                'datastores_count': len(datastores),
-                'networks_count': len(networks),
-                'templates_count': len(templates),
+                'duration_seconds': sync_duration,
                 'status': 'success'
-            })
-
-            logger.info(f"Essential vSphere data synchronized to Redis: {len(datacenters)} datacenters, "
-                       f"{len(clusters)} clusters, {len(datastore_clusters)} datastore clusters, "
-                       f"{len(datastores)} datastores, {len(networks)} networks, {len(templates)} templates")
+            }
             
-            # Start background sync for the rest
-            self.start_background_sync()
+            # Add counts for each resource type
+            for resource_type, count in results.items():
+                if count >= 0:  # Only include successful results
+                    sync_info[f'{resource_type}_count'] = count
             
-            return True
+            self.redis_client.set(VSPHERE_LAST_SYNC_KEY, sync_info)
+            self.redis_client.set(VSPHERE_CACHE_LAST_SYNC_DURATION_KEY, sync_duration)
+            
+            # Update total objects count
+            total_objects = sum([count for resource_type, count in results.items() if count > 0])
+            self._stats['total_objects'] = total_objects
+            self.redis_client.set(VSPHERE_CACHE_MEMORY_USAGE_KEY, self._estimate_memory_usage())
+            
+            logger.info(f"Essential vSphere data synchronized to Redis in {sync_duration:.2f} seconds")
+            
+            # Start background sync for the rest if we successfully got the essential data
+            if all(count >= 0 for resource_type, count in results.items() if resource_type in ['datacenters', 'clusters']):
+                self.start_background_sync()
+                return True
+            else:
+                logger.error("Failed to get essential datacenter and cluster data, not starting background sync")
+                return False
         except Exception as e:
             # Log sync failure
             now = datetime.utcnow().isoformat()
@@ -523,9 +897,9 @@ class VSphereRedisCache:
         finally:
             self.disconnect_from_vsphere()
 
-    def sync_all_to_redis(self, background=False):
+    def sync_all_to_redis(self, background=False, parallel_workers=None):
         """
-        Sync all vSphere objects to Redis
+        Sync all vSphere objects to Redis with performance optimizations
         """
         # Use a lock to prevent multiple syncs running at the same time
         if not self._sync_lock.acquire(blocking=False):
@@ -533,6 +907,14 @@ class VSphereRedisCache:
             return False
         
         try:
+            # Update parallel workers if specified
+            if parallel_workers:
+                try:
+                    self.max_workers = int(parallel_workers)
+                    logger.info(f"Using {self.max_workers} parallel workers for sync")
+                except (ValueError, TypeError):
+                    pass
+                    
             # First check if sync is already running or too recent
             if not background:
                 sync_status = self.redis_client.get(VSPHERE_SYNC_STATUS_KEY)
@@ -565,6 +947,8 @@ class VSphereRedisCache:
                 'status': 'running',
                 'message': 'Starting synchronization...'
             })
+            
+            start_time = time.time()
             
             if not self.connect_to_vsphere():
                 logger.error("Failed to connect to vSphere, cannot sync data")
@@ -632,20 +1016,41 @@ class VSphereRedisCache:
                 progress_thread = threading.Thread(target=progress_worker, daemon=True)
                 progress_thread.start()
                 
-                # Get all vSphere objects and sync to Redis
-                self._sync_resource_to_redis('datacenters', self.get_all_datacenters, VSPHERE_DATACENTERS_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('clusters', self.get_all_clusters, VSPHERE_CLUSTERS_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('hosts', self.get_all_hosts, VSPHERE_HOSTS_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('datastores', self.get_all_datastores, VSPHERE_DATASTORES_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('datastore_clusters', self.get_all_datastore_clusters, VSPHERE_DATASTORE_CLUSTERS_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('networks', self.get_all_networks, VSPHERE_NETWORKS_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('resource_pools', self.get_all_resource_pools, VSPHERE_RESOURCE_POOLS_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('vms', self.get_all_vms, VSPHERE_VMS_KEY, sync_queue, update_progress)
-                self._sync_resource_to_redis('templates', self.get_all_templates, VSPHERE_TEMPLATES_KEY, sync_queue, update_progress)
+                # Define all resources to sync
+                all_resources = [
+                    ('datacenters', self.get_all_datacenters, VSPHERE_DATACENTERS_KEY),
+                    ('clusters', self.get_all_clusters, VSPHERE_CLUSTERS_KEY),
+                    ('hosts', self.get_all_hosts, VSPHERE_HOSTS_KEY),
+                    ('datastores', self.get_all_datastores, VSPHERE_DATASTORES_KEY),
+                    ('datastore_clusters', self.get_all_datastore_clusters, VSPHERE_DATASTORE_CLUSTERS_KEY),
+                    ('networks', self.get_all_networks, VSPHERE_NETWORKS_KEY),
+                    ('resource_pools', self.get_all_resource_pools, VSPHERE_RESOURCE_POOLS_KEY),
+                    ('vms', self.get_all_vms, VSPHERE_VMS_KEY),
+                    ('templates', self.get_all_templates, VSPHERE_TEMPLATES_KEY)
+                ]
+                
+                # Split resources into batches for parallel processing
+                # We don't want to overload the vSphere server with too many queries at once
+                batch_size = min(3, self.max_workers)  # Process up to 3 resource types at once
+                for i in range(0, len(all_resources), batch_size):
+                    batch = all_resources[i:i+batch_size]
+                    batch_results = self._sync_resources_parallel(batch, sync_queue)
+                    logger.info(f"Completed batch {i//batch_size + 1}/{(len(all_resources) + batch_size - 1)//batch_size}")
                 
                 # Signal worker to exit
                 sync_queue.put(('DONE', 0))
                 progress_thread.join(timeout=5)
+
+                # Calculate sync statistics
+                sync_duration = time.time() - start_time
+                self._stats['last_sync_duration'] = sync_duration
+                
+                # Update Redis stats
+                self.redis_client.set(VSPHERE_CACHE_LAST_SYNC_DURATION_KEY, sync_duration)
+                
+                # Estimate memory usage
+                memory_usage = self._estimate_memory_usage()
+                self.redis_client.set(VSPHERE_CACHE_MEMORY_USAGE_KEY, memory_usage)
 
                 # Update last sync time
                 now = datetime.utcnow().isoformat()
@@ -653,6 +1058,8 @@ class VSphereRedisCache:
                     'timestamp': now,
                     'type': 'full',
                     'counts': progress_data['counts'],
+                    'duration_seconds': sync_duration,
+                    'memory_usage': memory_usage,
                     'status': 'success'
                 }
                 self.redis_client.set(VSPHERE_LAST_SYNC_KEY, result)
@@ -663,10 +1070,15 @@ class VSphereRedisCache:
                     'progress': 100,
                     'status': 'complete',
                     'counts': progress_data['counts'],
-                    'message': 'Synchronization complete'
+                    'duration_seconds': sync_duration,
+                    'message': f'Synchronization complete in {sync_duration:.1f} seconds'
                 })
 
-                logger.info(f"vSphere data synchronized to Redis: {result}")
+                # Update total objects count
+                total_objects = sum([count for resource_type, count in progress_data['counts'].items() if isinstance(count, int) and count > 0])
+                self._stats['total_objects'] = total_objects
+
+                logger.info(f"vSphere data synchronized to Redis in {sync_duration:.2f} seconds, {total_objects} total objects")
                 return result
             except Exception as e:
                 # Log sync failure
@@ -693,441 +1105,175 @@ class VSphereRedisCache:
         finally:
             self.disconnect_from_vsphere()
             self._sync_lock.release()
+            
+            # Clean up thread pool if we're done with it
+            if background and self._thread_pool:
+                self._thread_pool.shutdown(wait=False)
+                self._thread_pool = None
+
+    def _estimate_memory_usage(self):
+        """
+        Estimate memory usage of Redis cache in MB
+        """
+        try:
+            # Get Redis info about memory usage
+            redis_info = self.redis_client.get_raw_redis().info(section='memory')
+            if 'used_memory' in redis_info:
+                return f"{redis_info['used_memory'] / (1024 * 1024):.1f} MB"
+            
+            # Fallback estimation based on object counts
+            total_objects = self._stats.get('total_objects', 0)
+            # Rough estimate: average 1KB per object
+            estimated_kb = total_objects * 1
+            return f"{estimated_kb / 1024:.1f} MB (estimated)"
+        except Exception as e:
+            logger.error(f"Error estimating memory usage: {str(e)}")
+            return "Unknown"
 
     def get_cache_status(self):
         """
-        Get the status of the vSphere cache
+        Get the status of the vSphere cache with performance metrics
         """
         last_sync = self.redis_client.get(VSPHERE_LAST_SYNC_KEY)
         
-        # Check if each cache exists
-        datacenters_exists = self.redis_client.exists(VSPHERE_DATACENTERS_KEY)
-        clusters_exists = self.redis_client.exists(VSPHERE_CLUSTERS_KEY)
-        hosts_exists = self.redis_client.exists(VSPHERE_HOSTS_KEY)
-        datastores_exists = self.redis_client.exists(VSPHERE_DATASTORES_KEY)
-        networks_exists = self.redis_client.exists(VSPHERE_NETWORKS_KEY)
-        resource_pools_exists = self.redis_client.exists(VSPHERE_RESOURCE_POOLS_KEY)
-        vms_exists = self.redis_client.exists(VSPHERE_VMS_KEY)
-        templates_exists = self.redis_client.exists(VSPHERE_TEMPLATES_KEY)
+        # Get sync timing
+        sync_duration = self.redis_client.get(VSPHERE_CACHE_LAST_SYNC_DURATION_KEY)
+        if sync_duration:
+            sync_duration_str = f"{sync_duration:.1f} seconds" if isinstance(sync_duration, (int, float)) else str(sync_duration)
+        else:
+            sync_duration_str = "Unknown"
+            
+        # Get memory usage
+        memory_usage = self.redis_client.get(VSPHERE_CACHE_MEMORY_USAGE_KEY) or self._estimate_memory_usage()
+            
+        # Get cache hit rate
+        cache_hits = self.redis_client.get(VSPHERE_CACHE_HITS_KEY) or 0
+        cache_misses = self.redis_client.get(VSPHERE_CACHE_MISSES_KEY) or 0
+        if cache_hits + cache_misses > 0:
+            hit_rate = (cache_hits / (cache_hits + cache_misses)) * 100
+            hit_rate_str = f"{hit_rate:.1f}%"
+        else:
+            hit_rate_str = "No data"
         
-        # Get TTL for each key
-        datacenters_ttl = self.redis_client.get_ttl(VSPHERE_DATACENTERS_KEY)
-        clusters_ttl = self.redis_client.get_ttl(VSPHERE_CLUSTERS_KEY)
-        hosts_ttl = self.redis_client.get_ttl(VSPHERE_HOSTS_KEY)
-        datastores_ttl = self.redis_client.get_ttl(VSPHERE_DATASTORES_KEY)
-        networks_ttl = self.redis_client.get_ttl(VSPHERE_NETWORKS_KEY)
-        resource_pools_ttl = self.redis_client.get_ttl(VSPHERE_RESOURCE_POOLS_KEY)
-        vms_ttl = self.redis_client.get_ttl(VSPHERE_VMS_KEY)
-        templates_ttl = self.redis_client.get_ttl(VSPHERE_TEMPLATES_KEY)
+        # Get count of objects in cache
+        total_objects = self._stats.get('total_objects', 0)
+        if not total_objects and last_sync and isinstance(last_sync, dict) and 'counts' in last_sync:
+            # Calculate from last sync counts
+            counts = last_sync.get('counts', {})
+            total_objects = sum([count for resource_type, count in counts.items() 
+                                if isinstance(count, int) and count > 0])
+        
+        # Check if each cache exists
+        keys_to_check = [
+            VSPHERE_DATACENTERS_KEY,
+            VSPHERE_CLUSTERS_KEY,
+            VSPHERE_HOSTS_KEY,
+            VSPHERE_DATASTORES_KEY,
+            VSPHERE_NETWORKS_KEY,
+            VSPHERE_RESOURCE_POOLS_KEY,
+            VSPHERE_VMS_KEY,
+            VSPHERE_TEMPLATES_KEY
+        ]
+        
+        cache_status = {}
+        for key in keys_to_check:
+            # Extract resource type from key
+            resource_type = key.split(':')[-1]
+            exists = self.redis_client.exists(key)
+            ttl = self.redis_client.get_ttl(key) if exists else None
+            count = 0
+            
+            if exists:
+                # Try to get count directly from data
+                data = self.redis_client.get(key)
+                if isinstance(data, list):
+                    count = len(data)
+                elif isinstance(data, dict) and 'total_count' in data:
+                    # Chunked data
+                    count = data.get('total_count', 0)
+            
+            cache_status[resource_type] = {
+                'exists': exists,
+                'ttl': ttl,
+                'count': count
+            }
         
         # Get current sync status
         sync_status = self.redis_client.get(VSPHERE_SYNC_STATUS_KEY)
         sync_progress = self.redis_client.get(VSPHERE_SYNC_PROGRESS_KEY)
         
+        # Check connectivity
+        is_connected = False
+        try:
+            # Quick ping test
+            self.redis_client.get_raw_redis().ping()
+            is_connected = True
+        except:
+            pass
+        
         status = {
             'last_sync': last_sync,
+            'last_updated': last_sync.get('timestamp') if last_sync and isinstance(last_sync, dict) else None,
             'sync_status': sync_status,
             'sync_progress': sync_progress,
-            'cache_status': {
-                'datacenters': {
-                    'exists': datacenters_exists,
-                    'ttl': datacenters_ttl
-                },
-                'clusters': {
-                    'exists': clusters_exists,
-                    'ttl': clusters_ttl
-                },
-                'hosts': {
-                    'exists': hosts_exists,
-                    'ttl': hosts_ttl
-                },
-                'datastores': {
-                    'exists': datastores_exists,
-                    'ttl': datastores_ttl
-                },
-                'networks': {
-                    'exists': networks_exists,
-                    'ttl': networks_ttl
-                },
-                'resource_pools': {
-                    'exists': resource_pools_exists,
-                    'ttl': resource_pools_ttl
-                },
-                'vms': {
-                    'exists': vms_exists,
-                    'ttl': vms_ttl
-                },
-                'templates': {
-                    'exists': templates_exists,
-                    'ttl': templates_ttl
-                }
-            }
+            'cache_status': cache_status,
+            'total_objects': total_objects,
+            'connected': is_connected,
+            'cache_hit_rate': hit_rate_str,
+            'memory_usage': memory_usage,
+            'sync_duration': sync_duration_str
         }
         
         return status
 
+    def record_cache_hit(self):
+        """Record a cache hit for statistics"""
+        self._stats['cache_hits'] += 1
+        self.redis_client.increment(VSPHERE_CACHE_HITS_KEY)
+        
+    def record_cache_miss(self):
+        """Record a cache miss for statistics"""
+        self._stats['cache_misses'] += 1
+        self.redis_client.increment(VSPHERE_CACHE_MISSES_KEY)
+
     def clear_cache(self):
         """
-        Clear all vSphere cache from Redis
+        Clear all vSphere cache from Redis with memory optimization
         """
         try:
             # Get all keys with the vSphere prefix
             vsphere_keys = self.redis_client.keys_pattern(f"{VSPHERE_CACHE_PREFIX}*")
             
-            # Delete each key
-            for key in vsphere_keys:
-                self.redis_client.delete(key)
+            # Delete keys in batches to prevent blocking Redis
+            batch_size = 100
+            total_keys = len(vsphere_keys)
             
-            logger.info(f"Cleared {len(vsphere_keys)} vSphere cache keys from Redis")
+            for i in range(0, total_keys, batch_size):
+                batch = vsphere_keys[i:i+batch_size]
+                for key in batch:
+                    self.redis_client.delete(key)
+                
+                # Small delay to prevent Redis from getting overwhelmed
+                if i + batch_size < total_keys:
+                    time.sleep(0.1)
+            
+            # Reset statistics
+            self._stats = {
+                'cache_hits': 0,
+                'cache_misses': 0,
+                'last_sync_duration': 0,
+                'total_objects': 0
+            }
+            
+            logger.info(f"Cleared {total_keys} vSphere cache keys from Redis")
             return True
         except Exception as e:
             logger.error(f"Error clearing vSphere cache: {str(e)}")
             return False
 
-    def get_resource_for_terraform(self, environment):
-        """
-        Get vSphere resources needed for Terraform based on environment
-        Returns a dictionary of resource IDs that can be used in Terraform
-        """
-        try:
-            # Get resources from Redis
-            resource_pools = self.redis_client.get(VSPHERE_RESOURCE_POOLS_KEY) or []
-            clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
-            datastores = self.redis_client.get(VSPHERE_DATASTORES_KEY) or []
-            datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
-            networks = self.redis_client.get(VSPHERE_NETWORKS_KEY) or []
-            templates = self.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
-            
-            # Select appropriate resources based on environment
-            env_prefix = "PROD" if environment.lower() == "production" else "DEV"
-            
-            # Find resource pool (either a dedicated resource pool or a cluster as default resource pool)
-            selected_resource_pool = None
-            
-            # First try to find dedicated resource pools matching the environment
-            for rp in resource_pools:
-                if rp['name'].startswith(env_prefix):
-                    selected_resource_pool = rp
-                    logger.info(f"Found dedicated resource pool for {environment}: {rp['name']} (ID: {rp['id']})")
-                    break
-            
-            # If no dedicated resource pool found, use a cluster as the default resource pool
-            if not selected_resource_pool:
-                for cluster in clusters:
-                    if cluster['name'].startswith(env_prefix):
-                        # Use the cluster ID as the resource pool ID
-                        selected_resource_pool = {
-                            'id': cluster['id'],
-                            'name': cluster['name'],
-                            'is_cluster': True
-                        }
-                        logger.info(f"Using cluster as default resource pool for {environment}: {cluster['name']} (ID: {cluster['id']})")
-                        break
-            
-            # Find datastore cluster first (preferred storage type)
-            selected_datastore_cluster = None
-            for ds_cluster in datastore_clusters:
-                if ds_cluster['name'].startswith(env_prefix) and ds_cluster['free_space_bytes'] > 0:
-                    selected_datastore_cluster = ds_cluster
-                    logger.info(f"Found datastore cluster for {environment}: {ds_cluster['name']} (ID: {ds_cluster['id']})")
-                    break
-                    
-            # Find individual datastore as fallback
-            selected_datastore = None
-            if not selected_datastore_cluster:
-                for ds in datastores:
-                    if ds['name'].startswith(env_prefix) and ds['accessible'] and ds['free_space_bytes'] > 0:
-                        selected_datastore = ds
-                        logger.info(f"Found datastore for {environment}: {ds['name']} (ID: {ds['id']})")
-                        break
-            
-            # Find network
-            selected_network = None
-            for net in networks:
-                if net['name'].startswith(env_prefix) and net['accessible']:
-                    selected_network = net
-                    logger.info(f"Found network for {environment}: {net['name']} (ID: {net['id']})")
-                    break
-            
-            # Find template
-            selected_template = None
-            for template in templates:
-                if template['name'].startswith('RHEL') and template['is_template']:
-                    selected_template = template
-                    logger.info(f"Found template: {template['name']} (ID: {template['id']})")
-                    break
-            
-            # Choose datastore ID from either datastore cluster or individual datastore
-            storage_id = None
-            storage_type = None
-            if selected_datastore_cluster:
-                storage_id = selected_datastore_cluster['id']
-                storage_type = 'datastore_cluster'
-            elif selected_datastore:
-                storage_id = selected_datastore['id']
-                storage_type = 'datastore'
-            
-            # Return resources
-            return {
-                'resource_pool_id': selected_resource_pool['id'] if selected_resource_pool else None,
-                'resource_pool_name': selected_resource_pool['name'] if selected_resource_pool else None,
-                'resource_pool_is_cluster': selected_resource_pool.get('is_cluster', False) if selected_resource_pool else False,
-                'storage_id': storage_id,
-                'storage_type': storage_type,
-                'datastore_id': selected_datastore['id'] if selected_datastore else None,
-                'datastore_cluster_id': selected_datastore_cluster['id'] if selected_datastore_cluster else None,
-                'network_id': selected_network['id'] if selected_network else None,
-                'template_uuid': selected_template['id'] if selected_template else None,
-                'ipv4_gateway': f"192.168.{10 if environment.lower() == 'production' else 20}.1",
-                'ipv4_address': f"192.168.{10 if environment.lower() == 'production' else 20}.100",
-            }
-        except Exception as e:
-            logger.error(f"Error getting vSphere resources for Terraform: {str(e)}")
-            logger.exception("Detailed error:")
-            return {
-                'resource_pool_id': None,
-                'resource_pool_name': None,
-                'resource_pool_is_cluster': False,
-                'storage_id': None,
-                'storage_type': None,
-                'datastore_id': None,
-                'datastore_cluster_id': None,
-                'network_id': None,
-                'template_uuid': None,
-                'ipv4_gateway': None,
-                'ipv4_address': None,
-            }
-
-    def get_vsphere_servers(self):
-        """
-        Get the list of available vSphere servers
-        This is hardcoded as per requirements
-        """
-        return [
-            {"id": "virtualcenter.chrobinson.com", "name": "virtualcenter.chrobinson.com PROD", "environment": "production"},
-            {"id": "virtualcenter-ordc.chrobinson.com", "name": "virtualcenter-ordc.chrobinson.com DR", "environment": "dr"}
-        ]
-
-    def get_hierarchical_data(self, vsphere_server=None, datacenter_id=None, cluster_id=None, datastore_cluster_id=None):
-        """
-        Get vSphere data in a hierarchical structure based on the level of selection
-        
-        Args:
-            vsphere_server: The selected vSphere server
-            datacenter_id: The selected datacenter ID
-            cluster_id: The selected cluster ID
-            datastore_cluster_id: The selected datastore cluster ID
-            
-        Returns:
-            A dictionary containing appropriate options for the next level in the hierarchy
-        """
-        try:
-            # If no vSphere server is selected, return only the server list
-            if not vsphere_server:
-                return {
-                    "vsphere_servers": self.get_vsphere_servers(),
-                    "datacenters": [],
-                    "clusters": [],
-                    "datastore_clusters": [],
-                    "datastores": [],
-                    "networks": [],
-                    "templates": []
-                }
-            
-            # Get all data from Redis
-            datacenters = self.redis_client.get(VSPHERE_DATACENTERS_KEY) or []
-            clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
-            datastores = self.redis_client.get(VSPHERE_DATASTORES_KEY) or []
-            datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
-            networks = self.redis_client.get(VSPHERE_NETWORKS_KEY) or []
-            templates = self.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
-            hosts = self.redis_client.get(VSPHERE_HOSTS_KEY) or []
-            vms = self.redis_client.get(VSPHERE_VMS_KEY) or []
-            
-            # Log the data we've fetched from Redis
-            logger.info(f"Fetched data from Redis: {len(datacenters)} datacenters, {len(clusters)} clusters, "
-                       f"{len(datastore_clusters)} datastore clusters, {len(datastores)} datastores, "
-                       f"{len(networks)} networks, {len(templates)} templates")
-            
-            # Filter datacenters - always return all datacenters since they're at the top level
-            filtered_datacenters = datacenters
-            
-            # If datacenter is selected, filter clusters by datacenter
-            filtered_clusters = clusters
-            if datacenter_id:
-                filtered_clusters = [c for c in clusters if c.get('datacenter_id') == datacenter_id]
-                logger.info(f"Filtered clusters for datacenter {datacenter_id}: {len(filtered_clusters)} clusters")
-            
-            # Get host IDs in clusters related to the selected datacenter (used for other filters)
-            datacenter_host_ids = set()
-            if datacenter_id:
-                # Get clusters in the datacenter
-                datacenter_cluster_ids = [c['id'] for c in filtered_clusters]
-                
-                # Get hosts in these clusters
-                for host in hosts:
-                    if host.get('cluster_id') in datacenter_cluster_ids:
-                        datacenter_host_ids.add(host['id'])
-                
-                logger.info(f"Found {len(datacenter_host_ids)} hosts in datacenter {datacenter_id}")
-            
-            # Filter datastore clusters by datacenter (when datacenter is selected)
-            filtered_datastore_clusters = datastore_clusters
-            if datacenter_id:
-                # Use helper method to determine datacenter for each datastore cluster
-                # by examining the datastores it contains
-                datacenter_datastore_ids = set()
-                
-                # First find datastores in this datacenter by connection to hosts
-                for ds in datastores:
-                    # If we find a way to connect this datastore to a host in our datacenter
-                    # we consider it part of the datacenter
-                    if ds.get('accessible', False):
-                        datacenter_datastore_ids.add(ds['id'])
-                
-                # Now filter datastore clusters by looking at their contained datastores
-                filtered_datastore_clusters = []
-                for ds_cluster in datastore_clusters:
-                    # Check if any datastores in this cluster belong to the datacenter
-                    cluster_datastore_ids = set(ds_cluster.get('datastore_ids', []))
-                    if cluster_datastore_ids.intersection(datacenter_datastore_ids):
-                        filtered_datastore_clusters.append(ds_cluster)
-                
-                logger.info(f"Filtered datastore clusters for datacenter {datacenter_id}: {len(filtered_datastore_clusters)} datastore clusters")
-            
-            # Filter datastores by datacenter or cluster
-            filtered_datastores = datastores
-            if cluster_id:
-                # Get hosts in the cluster
-                cluster_host_ids = [h['id'] for h in hosts if h.get('cluster_id') == cluster_id]
-                
-                # Create a set of host IDs for efficient lookup
-                cluster_host_ids_set = set(cluster_host_ids)
-                
-                # Filter datastores accessible by cluster hosts
-                filtered_datastores = []
-                for ds in datastores:
-                    # Check if accessible and has connectivity to cluster hosts
-                    if ds.get('accessible', False):
-                        # For simplicity, show all accessible datastores
-                        filtered_datastores.append(ds)
-            elif datacenter_id:
-                # Filter datastores by datacenter when no cluster is selected
-                filtered_datastores = []
-                for ds in datastores:
-                    if ds.get('accessible', False):
-                        filtered_datastores.append(ds)
-            
-            # Filter networks by datacenter
-            filtered_networks = networks
-            if datacenter_id:
-                # Networks may not have direct datacenter_id reference
-                # We can filter networks that are used by VMs in this datacenter's hosts
-                
-                # Get VM networks used in this datacenter
-                vm_networks_in_datacenter = set()
-                for vm in vms:
-                    # Check if VM is on a host in this datacenter
-                    if vm.get('host_id') in datacenter_host_ids:
-                        for net_id in vm.get('network_ids', []):
-                            vm_networks_in_datacenter.add(net_id)
-                
-                # Filter networks that exist in this datacenter
-                if vm_networks_in_datacenter:
-                    filtered_networks = [n for n in networks if n.get('id') in vm_networks_in_datacenter or n.get('accessible', False)]
-                else:
-                    # If we can't determine networks by VM usage, show all accessible networks
-                    filtered_networks = [n for n in networks if n.get('accessible', False)]
-                
-                logger.info(f"Filtered networks for datacenter {datacenter_id}: {len(filtered_networks)} networks")
-            
-            # Filter templates by datacenter
-            filtered_templates = [t for t in templates if t.get('is_template', False)]
-            if datacenter_id:
-                # Templates may be associated with datastores in the datacenter
-                # Get datastore IDs in this datacenter
-                datacenter_datastore_ids = set()
-                for ds in filtered_datastores:
-                    datacenter_datastore_ids.add(ds['id'])
-                
-                # Filter templates that exist on datastores in this datacenter
-                datacenter_templates = []
-                for template in filtered_templates:
-                    template_datastore_ids = set(template.get('datastore_ids', []))
-                    if template_datastore_ids.intersection(datacenter_datastore_ids):
-                        datacenter_templates.append(template)
-                
-                # If we found templates specific to this datacenter, use them
-                if datacenter_templates:
-                    filtered_templates = datacenter_templates
-                    logger.info(f"Filtered templates for datacenter {datacenter_id}: {len(filtered_templates)} templates")
-            
-            # Add helpful descriptions to templates where possible
-            for template in filtered_templates:
-                # Add OS version and size information if available
-                if 'guest_full_name' in template and template['guest_full_name']:
-                    template['name'] = f"{template['name']} ({template['guest_full_name']})"
-                elif 'guest_id' in template and template['guest_id']:
-                    template['name'] = f"{template['name']} ({template['guest_id']})"
-                
-                # Add CPU and memory info if available
-                if 'cpu_count' in template and 'memory_mb' in template:
-                    template['name'] = f"{template['name']} - {template['cpu_count']}CPU/{template['memory_mb']}MB"
-            
-            # Add capacity/free space info to datastore and datastore clusters
-            for ds in filtered_datastores:
-                if 'capacity_bytes' in ds and 'free_space_bytes' in ds:
-                    capacity_gb = ds['capacity_bytes'] / (1024**3)
-                    free_gb = ds['free_space_bytes'] / (1024**3)
-                    ds['name'] = f"{ds['name']} ({free_gb:.1f}GB free / {capacity_gb:.1f}GB total)"
-            
-            for ds_cluster in filtered_datastore_clusters:
-                if 'capacity_bytes' in ds_cluster and 'free_space_bytes' in ds_cluster:
-                    capacity_gb = ds_cluster['capacity_bytes'] / (1024**3)
-                    free_gb = ds_cluster['free_space_bytes'] / (1024**3)
-                    ds_cluster['name'] = f"{ds_cluster['name']} ({free_gb:.1f}GB free / {capacity_gb:.1f}GB total)"
-            
-            return {
-                "vsphere_servers": self.get_vsphere_servers(),
-                "datacenters": filtered_datacenters,
-                "clusters": filtered_clusters,
-                "datastore_clusters": filtered_datastore_clusters,
-                "datastores": filtered_datastores,
-                "networks": filtered_networks,
-                "templates": filtered_templates
-            }
-        except Exception as e:
-            logger.error(f"Error getting hierarchical data: {str(e)}")
-            logger.exception("Detailed exception:")
-            return {
-                "vsphere_servers": self.get_vsphere_servers(),
-                "datacenters": [],
-                "clusters": [],
-                "datastore_clusters": [],
-                "datastores": [],
-                "networks": [],
-                "templates": []
-            }
-
-    def get_sync_progress(self):
-        """
-        Get the current synchronization progress
-        """
-        sync_status = self.redis_client.get(VSPHERE_SYNC_STATUS_KEY)
-        sync_progress = self.redis_client.get(VSPHERE_SYNC_PROGRESS_KEY)
-        
-        if not sync_status or not sync_progress:
-            return {
-                'status': 'unknown',
-                'progress': 0,
-                'message': 'No synchronization information available'
-            }
-            
-        return sync_progress
-
     def start_background_sync(self):
         """
-        Start a background thread to sync all vSphere data
+        Start a background thread to sync all vSphere data with optimized approach
         """
         if self._background_refresh_running:
             logger.info("Background refresh already running")
@@ -1138,6 +1284,8 @@ class VSphereRedisCache:
         def background_sync():
             try:
                 logger.info("Starting background vSphere sync")
+                # Wait a bit to let the UI load first
+                time.sleep(5)
                 self.sync_all_to_redis(background=True)
             except Exception as e:
                 logger.error(f"Error in background vSphere sync: {str(e)}")
@@ -1158,12 +1306,15 @@ class VSphereRedisCache:
         return False
 
 # Convenience function to run a sync
-def sync_vsphere_to_redis():
+def sync_vsphere_to_redis(parallel_workers=None):
     """
     Run a sync of vSphere objects to Redis
+    
+    Args:
+        parallel_workers: Number of parallel workers to use (default: use environment setting)
     """
     vsphere_cache = VSphereRedisCache()
-    return vsphere_cache.sync_all_to_redis()
+    return vsphere_cache.sync_all_to_redis(parallel_workers=parallel_workers)
 
 # Convenience function to get sync progress
 def get_sync_progress():

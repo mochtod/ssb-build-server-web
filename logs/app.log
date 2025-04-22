@@ -1,0 +1,78 @@
+2025-04-22 16:48:15,437 - __main__ - INFO - Checking USERS_FILE path: /app/users.json
+ * Serving Flask app 'app'
+ * Debug mode: off
+2025-04-22 16:48:15,488 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5150
+ * Running on http://172.18.0.5:5150
+2025-04-22 16:48:15,488 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-04-22 16:48:20,539 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:20] "GET /login HTTP/1.1" 200 -
+2025-04-22 16:48:20,583 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:20] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-22 16:48:25,540 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:25] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-04-22 16:48:25,549 - redis_client - INFO - Redis client initialized with host=redis, port=6379, compression=enabled
+2025-04-22 16:48:25,567 - __main__ - INFO - Rendering index template with vSphere data: 1 servers available
+2025-04-22 16:48:25,567 - __main__ - INFO - Cache status: {'last_sync': None, 'last_updated': None, 'sync_status': 'running', 'sync_progress': {'timestamp': '2025-04-22T16:30:53.860295', 'started': '2025-04-22T16:30:39.773251', 'progress': 22, 'status': 'running', 'counts': {'datacenters': 5, 'clusters': 24}, 'message': 'Synced clusters: 24 items (22% complete)'}, 'cache_status': {'datacenters': {'exists': True, 'ttl': 3400, 'count': 5}, 'clusters': {'exists': True, 'ttl': 3411, 'count': 24}, 'hosts': {'exists': False, 'ttl': None, 'count': 0}, 'datastores': {'exists': True, 'ttl': 3495, 'count': 302}, 'networks': {'exists': True, 'ttl': 2837, 'count': 257}, 'resource_pools': {'exists': False, 'ttl': None, 'count': 0}, 'vms': {'exists': False, 'ttl': None, 'count': 0}, 'templates': {'exists': False, 'ttl': None, 'count': 0}}, 'total_objects': 0, 'connected': True, 'cache_hit_rate': 'No data', 'memory_usage': '1.2 MB', 'sync_duration': 'Unknown'}
+2025-04-22 16:48:25,567 - __main__ - INFO - Retrieved datastore clusters: 22 available
+2025-04-22 16:48:25,610 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:25] "GET / HTTP/1.1" 200 -
+2025-04-22 16:48:25,696 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:25] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-22 16:48:25,698 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:25] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-22 16:48:54,260 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:54] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com HTTP/1.1" 200 -
+2025-04-22 16:48:54,299 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:48:54] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com HTTP/1.1" 200 -
+2025-04-22 16:49:00,867 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:49:00] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264 HTTP/1.1" 200 -
+2025-04-22 16:49:00,885 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:49:00] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264 HTTP/1.1" 200 -
+2025-04-22 16:49:00,908 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:49:00] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264 HTTP/1.1" 200 -
+2025-04-22 16:49:06,759 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:49:06] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264&cluster_id=domain-c9891266 HTTP/1.1" 200 -
+2025-04-22 16:52:37,056 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:52:37] "GET /settings HTTP/1.1" 200 -
+2025-04-22 16:52:37,149 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:52:37] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-22 16:52:37,192 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:52:37] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-22 16:52:37,346 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:52:37] "GET /api/vsphere/servers HTTP/1.1" 200 -
+2025-04-22 16:52:37,419 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:52:37] "GET /api/vsphere-cache/status HTTP/1.1" 200 -
+2025-04-22 16:52:37,482 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:52:37] "GET /api/vsphere-cache/status HTTP/1.1" 200 -
+2025-04-22 16:52:38,385 - vsphere_redis_cache - INFO - Connected to vSphere server: virtualcenter.chrobinson.com
+2025-04-22 16:52:38,390 - vsphere_redis_cache - INFO - Starting parallel fetch for datacenters
+2025-04-22 16:52:38,392 - vsphere_redis_cache - INFO - Starting parallel fetch for clusters
+2025-04-22 16:52:38,395 - vsphere_redis_cache - INFO - Starting parallel fetch for datastore_clusters
+2025-04-22 16:52:38,397 - vsphere_redis_cache - INFO - Starting parallel fetch for datastores
+2025-04-22 16:52:38,399 - vsphere_redis_cache - INFO - Starting parallel fetch for templates
+2025-04-22 16:52:38,399 - vsphere_redis_cache - INFO - Starting parallel fetch for networks
+2025-04-22 16:52:41,059 - vsphere_redis_cache - INFO - Fetched 5 objects in 2.61 seconds
+2025-04-22 16:52:41,108 - vsphere_redis_cache - INFO - Completed parallel fetch for datacenters: 5 items
+2025-04-22 16:52:43,298 - vsphere_redis_cache - INFO - Fetched 22 objects in 4.72 seconds
+2025-04-22 16:52:50,975 - vsphere_redis_cache - INFO - Fetched 24 objects in 12.39 seconds
+2025-04-22 16:52:51,030 - vsphere_redis_cache - INFO - Completed parallel fetch for clusters: 24 items
+2025-04-22 16:52:51,048 - vsphere_redis_cache - INFO - Completed parallel fetch for datastore_clusters: 22 items
+2025-04-22 16:53:05,051 - vsphere_redis_cache - INFO - Sync already in progress, returning progress info
+2025-04-22 16:53:05,054 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:05] "POST /api/vsphere-cache/sync HTTP/1.1" 200 -
+2025-04-22 16:53:07,097 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:07] "GET /api/vsphere-cache/status HTTP/1.1" 200 -
+2025-04-22 16:53:15,379 - vsphere_redis_cache - INFO - Fetched 257 objects in 31.97 seconds
+2025-04-22 16:53:18,527 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:18] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-22 16:53:20,062 - __main__ - INFO - Rendering index template with vSphere data: 1 servers available
+2025-04-22 16:53:20,063 - __main__ - INFO - Cache status: {'last_sync': None, 'last_updated': None, 'sync_status': 'running', 'sync_progress': {'timestamp': '2025-04-22T16:30:53.860295', 'started': '2025-04-22T16:30:39.773251', 'progress': 22, 'status': 'running', 'counts': {'datacenters': 5, 'clusters': 24}, 'message': 'Synced clusters: 24 items (22% complete)'}, 'cache_status': {'datacenters': {'exists': True, 'ttl': 3561, 'count': 5}, 'clusters': {'exists': True, 'ttl': 3571, 'count': 24}, 'hosts': {'exists': False, 'ttl': None, 'count': 0}, 'datastores': {'exists': True, 'ttl': 3200, 'count': 302}, 'networks': {'exists': True, 'ttl': 2542, 'count': 257}, 'resource_pools': {'exists': False, 'ttl': None, 'count': 0}, 'vms': {'exists': False, 'ttl': None, 'count': 0}, 'templates': {'exists': False, 'ttl': None, 'count': 0}}, 'total_objects': 0, 'connected': True, 'cache_hit_rate': 'No data', 'memory_usage': '1.2 MB', 'sync_duration': 'Unknown'}
+2025-04-22 16:53:20,063 - __main__ - INFO - Retrieved datastore clusters: 22 available
+2025-04-22 16:53:20,072 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:20] "GET / HTTP/1.1" 200 -
+2025-04-22 16:53:20,134 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:20] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-22 16:53:20,137 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:20] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-22 16:53:21,534 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:21] "GET /settings HTTP/1.1" 200 -
+2025-04-22 16:53:21,627 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:21] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-22 16:53:21,648 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:21] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-22 16:53:21,697 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:21] "GET /api/vsphere/servers HTTP/1.1" 200 -
+2025-04-22 16:53:21,774 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:21] "GET /api/vsphere-cache/status HTTP/1.1" 200 -
+2025-04-22 16:53:21,906 - werkzeug - INFO - 172.18.0.1 - - [22/Apr/2025 16:53:21] "GET /api/vsphere-cache/status HTTP/1.1" 200 -
+2025-04-22 16:53:22,770 - vsphere_redis_cache - INFO - Connected to vSphere server: virtualcenter.chrobinson.com
+2025-04-22 16:53:22,771 - vsphere_redis_cache - INFO - Starting parallel fetch for datacenters
+2025-04-22 16:53:22,772 - vsphere_redis_cache - INFO - Starting parallel fetch for clusters
+2025-04-22 16:53:22,793 - vsphere_redis_cache - INFO - Starting parallel fetch for datastore_clusters
+2025-04-22 16:53:22,801 - vsphere_redis_cache - INFO - Starting parallel fetch for datastores
+2025-04-22 16:53:22,804 - vsphere_redis_cache - INFO - Starting parallel fetch for templates
+2025-04-22 16:53:22,804 - vsphere_redis_cache - INFO - Starting parallel fetch for networks
+2025-04-22 16:53:25,771 - vsphere_redis_cache - INFO - Fetched 5 objects in 2.91 seconds
+2025-04-22 16:53:25,825 - vsphere_redis_cache - INFO - Completed parallel fetch for datacenters: 5 items
+2025-04-22 16:53:28,386 - vsphere_redis_cache - INFO - Fetched 22 objects in 5.37 seconds
+2025-04-22 16:53:37,492 - vsphere_redis_cache - INFO - Fetched 24 objects in 14.52 seconds
+2025-04-22 16:53:37,537 - vsphere_redis_cache - INFO - Completed parallel fetch for clusters: 24 items
+2025-04-22 16:53:37,547 - vsphere_redis_cache - INFO - Completed parallel fetch for datastore_clusters: 22 items
+2025-04-22 16:54:05,871 - vsphere_redis_cache - INFO - Fetched 257 objects in 37.36 seconds
+2025-04-22 16:54:15,942 - vsphere_redis_cache - INFO - Fetched 302 objects in 97.35 seconds
+2025-04-22 16:54:16,000 - vsphere_redis_cache - INFO - Completed parallel fetch for datastores: 302 items
+2025-04-22 16:55:02,888 - vsphere_redis_cache - INFO - Fetched 302 objects in 99.87 seconds
+2025-04-22 16:55:02,943 - vsphere_redis_cache - INFO - Completed parallel fetch for datastores: 302 items

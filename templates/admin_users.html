@@ -6,7 +6,7 @@
     <title>User Management - RHEL9 VM Provisioning</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body class="dark-mode">
+<body>
     <div class="container">
         <header>
             <h1>User Management</h1>
@@ -15,6 +15,7 @@
                     <li><a href="{{ url_for('index') }}">Create VM</a></li>
                     <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
                     <li><a href="{{ url_for('admin_users') }}" class="active">Manage Users</a></li>
+                    <li><a href="{{ url_for('settings') }}">Settings</a></li>
                     <li><a href="{{ url_for('logout') }}">Logout</a></li>
                 </ul>
             </nav>
