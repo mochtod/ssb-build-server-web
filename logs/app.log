@@ -1,0 +1,75 @@
+2025-04-23 20:06:56,729 - __main__ - INFO - Checking USERS_FILE path: /app/users.json
+ * Serving Flask app 'app'
+ * Debug mode: off
+2025-04-23 20:06:56,776 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5150
+ * Running on http://172.18.0.5:5150
+2025-04-23 20:06:56,776 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-04-23 20:08:44,853 - redis_client - INFO - Redis client initialized with host=redis, port=6379, compression=enabled
+2025-04-23 20:08:44,993 - __main__ - INFO - Rendering index template with vSphere data: 1 servers available
+2025-04-23 20:08:44,996 - __main__ - INFO - Cache status: {'last_sync': {'timestamp': '2025-04-23T19:54:19.998286', 'type': 'full', 'counts': {'datacenters': 5, 'clusters': 23}, 'duration_seconds': 875.0203094482422, 'memory_usage': '1.2 MB', 'status': 'success'}, 'last_updated': '2025-04-23T19:54:19.998286', 'sync_status': 'complete', 'sync_progress': {'timestamp': '2025-04-23T19:54:19.998286', 'started': '2025-04-23T19:39:45.622576', 'progress': 100, 'status': 'complete', 'counts': {'datacenters': 5, 'clusters': 23}, 'duration_seconds': 875.0203094482422, 'message': 'Synchronization complete in 875.0 seconds'}, 'cache_status': {'datacenters': {'exists': True, 'ttl': 1864, 'count': 5}, 'clusters': {'exists': True, 'ttl': 1880, 'count': 23}, 'hosts': {'exists': False, 'ttl': None, 'count': 0}, 'datastores': {'exists': True, 'ttl': 2119, 'count': 303}, 'networks': {'exists': True, 'ttl': 2119, 'count': 257}, 'resource_pools': {'exists': True, 'ttl': 2135, 'count': 24}, 'vms': {'exists': False, 'ttl': None, 'count': 0}, 'templates': {'exists': True, 'ttl': 2735, 'count': 9}}, 'total_objects': 28, 'connected': True, 'cache_hit_rate': '100.0%', 'memory_usage': '1.2 MB', 'sync_duration': '875.0 seconds'}
+2025-04-23 20:08:44,996 - __main__ - INFO - Retrieved datastore clusters: 22 available
+2025-04-23 20:08:45,093 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:08:45] "GET / HTTP/1.1" 200 -
+2025-04-23 20:08:45,129 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:08:45] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-23 20:08:45,131 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:08:45] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-23 20:08:59,735 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: None, Cluster: None
+2025-04-23 20:08:59,736 - root - INFO - Redis connection status: True
+2025-04-23 20:08:59,736 - root - INFO - Total datacenters in cache: 5
+2025-04-23 20:08:59,737 - root - INFO - Total clusters in cache: 23
+2025-04-23 20:08:59,740 - root - INFO - Returned datacenters: 5
+2025-04-23 20:08:59,740 - root - INFO - Returned clusters: 23
+2025-04-23 20:08:59,742 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:08:59] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com HTTP/1.1" 200 -
+2025-04-23 20:08:59,759 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: None, Cluster: None
+2025-04-23 20:08:59,760 - root - INFO - Redis connection status: True
+2025-04-23 20:08:59,760 - root - INFO - Total datacenters in cache: 5
+2025-04-23 20:08:59,760 - root - INFO - Total clusters in cache: 23
+2025-04-23 20:08:59,762 - root - INFO - Returned datacenters: 5
+2025-04-23 20:08:59,762 - root - INFO - Returned clusters: 23
+2025-04-23 20:08:59,764 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:08:59] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com HTTP/1.1" 200 -
+2025-04-23 20:09:05,462 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: datacenter-264, Cluster: None
+2025-04-23 20:09:05,463 - root - INFO - Redis connection status: True
+2025-04-23 20:09:05,463 - root - INFO - Total datacenters in cache: 5
+2025-04-23 20:09:05,464 - root - INFO - Total clusters in cache: 23
+2025-04-23 20:09:05,464 - root - INFO - Clusters for datacenter 'datacenter-264': 5
+2025-04-23 20:09:05,467 - vsphere_redis_cache - INFO - Filtering clusters for datacenter_id: datacenter-264
+2025-04-23 20:09:05,467 - vsphere_redis_cache - INFO - Found 5 clusters out of 23 for datacenter datacenter-264
+2025-04-23 20:09:05,467 - root - INFO - Returned datacenters: 5
+2025-04-23 20:09:05,468 - root - INFO - Returned clusters: 5
+2025-04-23 20:09:05,470 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:05] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264 HTTP/1.1" 200 -
+2025-04-23 20:09:05,475 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: datacenter-264, Cluster: None
+2025-04-23 20:09:05,476 - root - INFO - Redis connection status: True
+2025-04-23 20:09:05,476 - root - INFO - Total datacenters in cache: 5
+2025-04-23 20:09:05,477 - root - INFO - Total clusters in cache: 23
+2025-04-23 20:09:05,477 - root - INFO - Clusters for datacenter 'datacenter-264': 5
+2025-04-23 20:09:05,479 - vsphere_redis_cache - INFO - Filtering clusters for datacenter_id: datacenter-264
+2025-04-23 20:09:05,480 - vsphere_redis_cache - INFO - Found 5 clusters out of 23 for datacenter datacenter-264
+2025-04-23 20:09:05,481 - root - INFO - Returned datacenters: 5
+2025-04-23 20:09:05,481 - root - INFO - Returned clusters: 5
+2025-04-23 20:09:05,483 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:05] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264 HTTP/1.1" 200 -
+2025-04-23 20:09:05,488 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: datacenter-264, Cluster: None
+2025-04-23 20:09:05,488 - root - INFO - Redis connection status: True
+2025-04-23 20:09:05,489 - root - INFO - Total datacenters in cache: 5
+2025-04-23 20:09:05,489 - root - INFO - Total clusters in cache: 23
+2025-04-23 20:09:05,489 - root - INFO - Clusters for datacenter 'datacenter-264': 5
+2025-04-23 20:09:05,492 - vsphere_redis_cache - INFO - Filtering clusters for datacenter_id: datacenter-264
+2025-04-23 20:09:05,492 - vsphere_redis_cache - INFO - Found 5 clusters out of 23 for datacenter datacenter-264
+2025-04-23 20:09:05,492 - root - INFO - Returned datacenters: 5
+2025-04-23 20:09:05,492 - root - INFO - Returned clusters: 5
+2025-04-23 20:09:05,494 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:05] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264 HTTP/1.1" 200 -
+2025-04-23 20:09:10,657 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: datacenter-264, Cluster: domain-c9891266
+2025-04-23 20:09:10,657 - root - INFO - Redis connection status: True
+2025-04-23 20:09:10,658 - root - INFO - Total datacenters in cache: 5
+2025-04-23 20:09:10,658 - root - INFO - Total clusters in cache: 23
+2025-04-23 20:09:10,658 - root - INFO - Clusters for datacenter 'datacenter-264': 5
+2025-04-23 20:09:10,661 - vsphere_redis_cache - INFO - Filtering clusters for datacenter_id: datacenter-264
+2025-04-23 20:09:10,661 - vsphere_redis_cache - INFO - Found 5 clusters out of 23 for datacenter datacenter-264
+2025-04-23 20:09:10,662 - vsphere_redis_cache - INFO - No cluster-specific datastore clusters found for domain-c9891266, returning all datastore clusters
+2025-04-23 20:09:10,664 - root - INFO - Returned datacenters: 5
+2025-04-23 20:09:10,664 - root - INFO - Returned clusters: 5
+2025-04-23 20:09:10,666 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:10] "GET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com&datacenter_id=datacenter-264&cluster_id=domain-c9891266 HTTP/1.1" 200 -
+2025-04-23 20:09:35,245 - __main__ - INFO - Generated machine_inputs.tfvars for lin2dv2-ssb
+2025-04-23 20:09:35,246 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:35] "[32mPOST /submit HTTP/1.1[0m" 302 -
+2025-04-23 20:09:35,335 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:35] "GET /config/ba569570_20250423200935 HTTP/1.1" 200 -
+2025-04-23 20:09:35,371 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:35] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-23 20:09:35,373 - werkzeug - INFO - 172.18.0.1 - - [23/Apr/2025 20:09:35] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -

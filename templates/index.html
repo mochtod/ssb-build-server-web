@@ -9,11 +9,11 @@
 <body>
     <div class="container">
         <header>
-            <h1>RHEL9 VM Provisioning</h1>
+            <h1>VM Provisioning</h1>
             <nav>
                 <ul>
                     <li><a href="{{ url_for('index') }}" class="active">Create VM</a></li>
-                    <li><a href="{{ url_for('list_configs') }}">View Configurations</a></li>
+                    <li><a href="{{ url_for('list_configs') }}">View Builds</a></li>
                     {% if user_role == 'admin' %}
                     <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
                     {% endif %}
@@ -67,18 +67,9 @@
                     <div class="form-section" id="vsphere-section">
                         <h3>vSphere Configuration</h3>
                         
-                        <!-- Display loading indicator -->
-                        <div id="vsphere-loading" class="loading-indicator">
-                            <div class="spinner"></div>
-                            <p>Loading vSphere data... <span id="loading-detail">Initializing</span></p>
-                            <div class="progress-container">
-                                <div class="progress-bar" id="loading-progress-bar"></div>
-                            </div>
-                        </div>
-                        
                         <div id="vsphere-error-message" class="alert alert-error" style="display: none;">
-                            Error loading vSphere data. <button id="retry-vsphere-load" class="btn-small">Retry</button>
-                            <button id="use-cached-data" class="btn-small">Use Cached Data</button>
+                            Error loading cached data. <button id="retry-vsphere-load" class="btn-small">Retry</button>
+                            <button id="use-cached-data" class="btn-small">Use Backup Cache</button>
                         </div>
                         
                         <div class="form-row">
