@@ -146,7 +146,6 @@ class VSphereRedisCache:
             clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
             
             datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
-            result['datastore_clusters'] = datastore_clusters
             
             datastores = self.redis_client.get(VSPHERE_DATASTORES_KEY) or []
             result['datastores'] = datastores
@@ -180,14 +179,29 @@ class VSphereRedisCache:
                 # If no datacenter filter, return all clusters
                 result['clusters'] = clusters
             
-            # Filter by cluster if specified
+            # Filter datastore clusters by cluster if specified
             if cluster_id:
-                result['hosts'] = [h for h in self.redis_client.get(VSPHERE_HOSTS_KEY) or [] 
-                                   if h.get('cluster_id') == cluster_id]
+                # Get hosts in the specified cluster
+                hosts = [h for h in self.redis_client.get(VSPHERE_HOSTS_KEY) or [] 
+                         if h.get('cluster_id') == cluster_id]
+                result['hosts'] = hosts
                 
-                # Filter datastore clusters if a cluster is selected
-                result['datastore_clusters'] = [ds for ds in datastore_clusters 
-                                             if ds.get('cluster_id') == cluster_id]
+                # Filter datastore clusters for this cluster
+                # First check if datastore_clusters have cluster_id field
+                cluster_specific_datastore_clusters = [ds for ds in datastore_clusters 
+                                                  if ds.get('cluster_id') == cluster_id]
+                
+                # If we don't have any cluster-specific datastore clusters, return all datastore clusters
+                # This ensures the dropdown is always populated
+                if not cluster_specific_datastore_clusters:
+                    logger.info(f"No cluster-specific datastore clusters found for {cluster_id}, returning all datastore clusters")
+                    result['datastore_clusters'] = datastore_clusters
+                else:
+                    result['datastore_clusters'] = cluster_specific_datastore_clusters
+                    logger.info(f"Found {len(cluster_specific_datastore_clusters)} datastore clusters for cluster {cluster_id}")
+            else:
+                # If no cluster filter, return all datastore clusters
+                result['datastore_clusters'] = datastore_clusters
             
             # Add stats for monitoring
             if datacenter_id:
