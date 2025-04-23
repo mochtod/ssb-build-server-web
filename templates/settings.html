@@ -204,6 +204,14 @@
                             <p>Cache synchronization status: <span id="sync-status">Unknown</span></p>
                         </div>
                         
+                        <!-- Added sync progress bar -->
+                        <div class="sync-progress-container" id="sync-progress-container" style="display: none;">
+                            <p id="sync-progress-message">Syncing data...</p>
+                            <div class="progress-container">
+                                <div class="progress-bar" id="sync-progress-bar"></div>
+                            </div>
+                        </div>
+                        
                         <div class="cache-actions">
                             <button id="sync-essential-cache" class="btn">Sync Essential Data</button>
                             <button id="sync-full-cache" class="btn btn-primary">Sync All Data</button>
@@ -274,6 +282,14 @@
             const statusElement = document.getElementById('cache-status-display');
             statusElement.innerHTML = '<span class="status-badge planning">Syncing resource data...</span>';
             
+            // Show progress bar
+            const progressContainer = document.getElementById('sync-progress-container');
+            const progressBar = document.getElementById('sync-progress-bar');
+            const progressMessage = document.getElementById('sync-progress-message');
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressMessage.textContent = 'Syncing data...';
+            
             fetch('/api/vsphere-cache/sync', {
                 method: 'POST',
                 body: JSON.stringify({
@@ -287,14 +303,24 @@
                 .then(data => {
                     if (data.success) {
                         statusElement.innerHTML = `<span class="status-badge completed">${data.message}</span>`;
+                        progressBar.style.width = '100%';
+                        progressMessage.textContent = 'Sync completed';
                         // Refresh the status after a short delay
                         setTimeout(fetchCacheStatus, 2000);
                     } else {
                         statusElement.innerHTML = `<span class="status-badge failed">Error: ${data.error}</span>`;
+                        progressMessage.textContent = 'Sync failed';
                     }
                 })
                 .catch(error => {
                     statusElement.innerHTML = `<span class="status-badge failed">Connection Error: ${error.message}</span>`;
+                    progressMessage.textContent = 'Sync failed';
+                })
+                .finally(() => {
+                    // Hide progress bar after a short delay
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                    }, 3000);
                 });
         }
         

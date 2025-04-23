@@ -58,6 +58,12 @@ let datastoreLoadingStatus;
 let networkLoadingStatus;
 let templateLoadingStatus;
 
+// Debug configuration
+const debugConfig = {
+    enabled: true,  // Set to true to enable debug logs
+    verboseVSphere: true
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded - initializing application");
     
@@ -77,8 +83,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="debug-content" id="debug-content"></div>
             `;
-            document.querySelector('.card').appendChild(debugPanel);
+            
+            // Append to the end of main content instead of first card
+            const mainElement = document.querySelector('main');
+            if (mainElement) {
+                mainElement.appendChild(debugPanel);
+            } else {
+                // Fallback to appending to first card if main not found
+                const firstCard = document.querySelector('.card');
+                if (firstCard) {
+                    firstCard.appendChild(debugPanel);
+                }
+            }
         }
+        
+        // Only show debug messages when debug is enabled
+        if (!debugConfig.enabled) return;
         
         // Add message to debug content
         const debugContent = document.getElementById('debug-content');
@@ -98,11 +118,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializePlanStatusCheck();
     initializeTheme();
 
-    // Initialize vSphere elements
-    addDebugMessage("Looking for vSphere section...");
+    // Check if we're on the Create VM page (index.html) by looking for vSphere section
     vsphereSection = document.getElementById('vsphere-section');
     
-    // Check if we found the vsphere section
+    // Only initialize vSphere elements if we're on the Create VM page
     if (vsphereSection) {
         addDebugMessage("Found vSphere section, initializing elements...");
         
@@ -133,13 +152,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize the menus
         addDebugMessage("Initializing vSphere menus and loading data...");
         initializeVSphereMenus();
-    } else {
-        addDebugMessage("ERROR: vSphere section not found in DOM!");
-        console.error("vSphere section not found in DOM");
-        
-        // Try to create the section if it doesn't exist
-        addDebugMessage("Attempting to create vSphere section...");
-        createVSphereSection();
+    } else if (debugConfig.verboseVSphere) {
+        // Only log this message when verbose vSphere debugging is enabled
+        addDebugMessage("vSphere section not found - not initializing vSphere elements on this page");
     }
 });
 
@@ -633,8 +648,9 @@ function loadCachedVSphereData() {
     const loadingDetail = document.getElementById('loading-detail');
     loadingDetail.textContent = 'Loading cached data...';
 
-    // Fetch servers from cache
-    fetch('/api/vsphere/servers')
+    // Fetch from hierarchical endpoint instead of servers-specific endpoint
+    // This ensures we're getting data directly from Redis cache
+    fetch('/api/vsphere/hierarchical')
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error: ${response.status}`);
@@ -642,21 +658,32 @@ function loadCachedVSphereData() {
             return response.json();
         })
         .then(data => {
-            if (data.success && data.data && data.data.vsphere_servers) {
+            if (data.success && data.data) {
                 // Hide the main loading indicator
                 vsphereLoading.style.display = 'none';
                 
-                // Populate the server dropdown
-                populateSelect(vsphereServerSelect, data.data.vsphere_servers);
-                setLoadingStatus(serverLoadingStatus, 'Server list loaded', 'success');
+                // Populate the server dropdown if servers data exists
+                if (data.data.vsphere_servers) {
+                    populateSelect(vsphereServerSelect, data.data.vsphere_servers);
+                    setLoadingStatus(serverLoadingStatus, 'Server list loaded', 'success');
+                    
+                    // Enable server dropdown
+                    vsphereServerSelect.disabled = false;
+                }
+                else {
+                    // Fallback to default servers if none returned
+                    const defaultServers = [
+                        { id: "virtualcenter.chrobinson.com", name: "virtualcenter.chrobinson.com PROD" }
+                    ];
+                    populateSelect(vsphereServerSelect, defaultServers);
+                    vsphereServerSelect.disabled = false;
+                    setLoadingStatus(serverLoadingStatus, 'Using default server list', 'warning');
+                }
                 
-                // Enable server dropdown
-                vsphereServerSelect.disabled = false;
-                
-                // Check cache status
+                // Check cache status to see if we need a background sync
                 return fetch('/api/vsphere-cache/status');
             } else {
-                throw new Error(data.error || 'No vSphere servers found');
+                throw new Error(data.error || 'No vSphere data found in cache');
             }
         })
         .then(response => {
@@ -669,9 +696,9 @@ function loadCachedVSphereData() {
             if (data.success && data.status) {
                 // Check if essential data is cached
                 const cacheStatus = data.status.cache_status;
-                const datacentersExist = cacheStatus.datacenters.exists;
-                const clustersExist = cacheStatus.clusters.exists;
-                const templatesExist = cacheStatus.templates.exists;
+                const datacentersExist = cacheStatus && cacheStatus.datacenters && cacheStatus.datacenters.exists;
+                const clustersExist = cacheStatus && cacheStatus.clusters && cacheStatus.clusters.exists;
+                const templatesExist = cacheStatus && cacheStatus.templates && cacheStatus.templates.exists;
                 
                 // If essential data is missing, initiate a background sync
                 if (!datacentersExist || !clustersExist || !templatesExist) {
@@ -688,6 +715,14 @@ function loadCachedVSphereData() {
             vsphereErrorMessage.style.display = 'block';
             vsphereErrorMessage.textContent = `Error loading vSphere data: ${error.message}`;
             setLoadingStatus(serverLoadingStatus, 'Failed to load servers', 'error');
+            
+            // Even in case of error, still populate with default server
+            const defaultServers = [
+                { id: "virtualcenter.chrobinson.com", name: "virtualcenter.chrobinson.com PROD" }
+            ];
+            populateSelect(vsphereServerSelect, defaultServers);
+            vsphereServerSelect.disabled = false;
+            setLoadingStatus(serverLoadingStatus, 'Using default server list', 'warning');
         });
 }
 
@@ -814,8 +849,19 @@ function loadDatacentersForServer(server) {
     datacenterSelect.disabled = true;
     setLoadingStatus(datacenterLoadingStatus, 'Loading datacenters...', 'loading');
     
+    // Log for debugging
+    if (debugConfig.enabled) {
+        console.log(`Loading datacenters for server: ${server}`);
+    }
+    
     // Fetch datacenters
-    fetch(`/api/vsphere/hierarchical?vsphere_server=${encodeURIComponent(server)}`)
+    const apiUrl = `/api/vsphere/hierarchical?vsphere_server=${encodeURIComponent(server)}`;
+    
+    if (debugConfig.enabled) {
+        console.log(`Fetch URL: ${apiUrl}`);
+    }
+    
+    fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error: ${response.status}`);
@@ -823,7 +869,17 @@ function loadDatacentersForServer(server) {
             return response.json();
         })
         .then(data => {
-            if (data.success && data.data && data.data.datacenters) {
+            // Debug: Log response data
+            if (debugConfig.enabled) {
+                console.log('API Response:', data);
+                console.log(`Received datacenters: ${data.data && data.data.datacenters ? data.data.datacenters.length : 0}`);
+                
+                if (data.data && data.data.datacenters) {
+                    console.log(`First few datacenters:`, data.data.datacenters.slice(0, 3));
+                }
+            }
+            
+            if (data.success && data.data && data.data.datacenters && data.data.datacenters.length > 0) {
                 // Populate dropdown
                 populateSelect(datacenterSelect, data.data.datacenters);
                 datacenterSelect.disabled = false;
@@ -832,12 +888,47 @@ function loadDatacentersForServer(server) {
                 // Also load templates as they depend on server
                 loadTemplatesForServer(server);
             } else {
-                throw new Error(data.error || 'No datacenters found');
+                // No datacenters found or empty array
+                if (debugConfig.enabled) {
+                    console.warn(`No datacenters found for server ${server}`);
+                    if (data.data) {
+                        console.warn('Data returned:', data.data);
+                    }
+                }
+                
+                datacenterSelect.innerHTML = '<option value="">No datacenters found</option>';
+                datacenterSelect.disabled = true;
+                setLoadingStatus(datacenterLoadingStatus, 'No datacenters found', 'warning');
+                
+                // Show error message with retry button
+                vsphereErrorMessage.style.display = 'block';
+                vsphereErrorMessage.innerHTML = `No datacenters found for server ${server}. Please check Redis cache. <button id="retry-vsphere-load" class="btn-small">Retry</button>`;
+                
+                // Re-attach retry event listener
+                document.getElementById('retry-vsphere-load').addEventListener('click', function() {
+                    vsphereErrorMessage.style.display = 'none';
+                    triggerEssentialSync();
+                });
             }
         })
         .catch(error => {
             console.error('Error loading datacenters:', error);
             setLoadingStatus(datacenterLoadingStatus, 'Failed to load datacenters', 'error');
+            
+            // Debug: Log the error details
+            if (debugConfig.enabled) {
+                console.error('Datacenter loading error details:', error);
+            }
+            
+            // Show error message with retry button
+            vsphereErrorMessage.style.display = 'block';
+            vsphereErrorMessage.innerHTML = `Error loading datacenters: ${error.message}. <button id="retry-vsphere-load" class="btn-small">Retry</button>`;
+            
+            // Re-attach retry event listener
+            document.getElementById('retry-vsphere-load').addEventListener('click', function() {
+                vsphereErrorMessage.style.display = 'none';
+                triggerEssentialSync();
+            });
         });
 }
 
@@ -852,8 +943,19 @@ function loadClustersForDatacenter(server, datacenter) {
     clusterSelect.disabled = true;
     setLoadingStatus(clusterLoadingStatus, 'Loading clusters...', 'loading');
     
+    // Debug: Log request parameters
+    if (debugConfig.enabled) {
+        console.log(`Loading clusters for datacenter ${datacenter} on server ${server}`);
+    }
+    
     // Fetch clusters
-    fetch(`/api/vsphere/hierarchical?vsphere_server=${encodeURIComponent(server)}&datacenter_id=${encodeURIComponent(datacenter)}`)
+    const apiUrl = `/api/vsphere/hierarchical?vsphere_server=${encodeURIComponent(server)}&datacenter_id=${encodeURIComponent(datacenter)}`;
+    
+    if (debugConfig.enabled) {
+        console.log(`Fetch URL: ${apiUrl}`);
+    }
+    
+    fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error: ${response.status}`);
@@ -861,18 +963,41 @@ function loadClustersForDatacenter(server, datacenter) {
             return response.json();
         })
         .then(data => {
-            if (data.success && data.data && data.data.clusters) {
+            // Debug: Log response data
+            if (debugConfig.enabled) {
+                console.log('API Response:', data);
+                console.log(`Received clusters: ${data.data.clusters ? data.data.clusters.length : 0}`);
+            }
+            
+            if (data.success && data.data && data.data.clusters && data.data.clusters.length > 0) {
                 // Populate dropdown
                 populateSelect(clusterSelect, data.data.clusters);
                 clusterSelect.disabled = false;
                 setLoadingStatus(clusterLoadingStatus, 'Clusters loaded', 'success');
             } else {
-                throw new Error(data.error || 'No clusters found');
+                // No clusters found or empty array
+                if (debugConfig.enabled) {
+                    console.warn(`No clusters found for datacenter ${datacenter}`);
+                    if (data.data && Array.isArray(data.data.clusters)) {
+                        console.warn('Empty clusters array returned');
+                    } else {
+                        console.warn('Invalid clusters data structure:', data.data ? data.data.clusters : 'undefined');
+                    }
+                }
+                
+                clusterSelect.innerHTML = '<option value="">No clusters found</option>';
+                clusterSelect.disabled = true;
+                setLoadingStatus(clusterLoadingStatus, 'No clusters found', 'warning');
             }
         })
         .catch(error => {
             console.error('Error loading clusters:', error);
             setLoadingStatus(clusterLoadingStatus, 'Failed to load clusters', 'error');
+            
+            // Debug: Log the error details
+            if (debugConfig.enabled) {
+                console.error('Cluster loading error details:', error);
+            }
         });
 }
 

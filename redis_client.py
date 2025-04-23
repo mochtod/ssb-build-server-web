@@ -287,15 +287,27 @@ class RedisClient:
         try:
             # Use SCAN instead of KEYS for production with large datasets
             all_keys = []
-            cursor = '0'
-            while cursor != 0:
-                cursor, keys = self.client.scan(cursor=cursor, match=pattern, count=1000)
+            cursor = 0  # Start with integer 0
+            while True:
+                # Convert cursor to string for Redis scan operation
+                str_cursor = str(cursor)
+                cursor, keys = self.client.scan(cursor=str_cursor, match=pattern, count=1000)
+                
+                # The cursor might be returned as bytes or integer, handle both cases
+                if isinstance(cursor, bytes):
+                    cursor = cursor.decode('utf-8')
+                
+                # Convert cursor to integer for comparison
+                cursor = int(cursor)
+                
+                # Add keys to our result list
                 all_keys.extend(keys)
                 
                 # Convert bytes to strings if needed
                 all_keys = [k.decode('utf-8') if isinstance(k, bytes) else k for k in all_keys]
                 
-                if cursor == '0' or cursor == 0:
+                # Break when cursor is 0 (scan complete)
+                if cursor == 0:
                     break
                     
             return all_keys

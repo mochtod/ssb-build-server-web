@@ -144,7 +144,6 @@ class VSphereRedisCache:
             result['datacenters'] = datacenters
             
             clusters = self.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
-            result['clusters'] = clusters
             
             datastore_clusters = self.redis_client.get(VSPHERE_DATASTORE_CLUSTERS_KEY) or []
             result['datastore_clusters'] = datastore_clusters
@@ -160,12 +159,39 @@ class VSphereRedisCache:
             
             # Filter by datacenter if specified
             if datacenter_id:
-                result['clusters'] = [c for c in clusters if c.get('datacenter_id') == datacenter_id]
+                # Debug the filtering process
+                logger.info(f"Filtering clusters for datacenter_id: {datacenter_id}")
+                
+                # Count before filtering
+                total_clusters = len(clusters)
+                
+                # Filter clusters by datacenter_id
+                filtered_clusters = [c for c in clusters if c.get('datacenter_id') == datacenter_id]
+                
+                # Log filtering results for debugging
+                logger.info(f"Found {len(filtered_clusters)} clusters out of {total_clusters} for datacenter {datacenter_id}")
+                
+                # Log the first few clusters and their datacenter_id for debugging
+                for i, cluster in enumerate(clusters[:5]):
+                    logger.debug(f"Cluster #{i}: {cluster.get('name')}, datacenter_id: {cluster.get('datacenter_id')}")
+                
+                result['clusters'] = filtered_clusters
+            else:
+                # If no datacenter filter, return all clusters
+                result['clusters'] = clusters
             
             # Filter by cluster if specified
             if cluster_id:
                 result['hosts'] = [h for h in self.redis_client.get(VSPHERE_HOSTS_KEY) or [] 
                                    if h.get('cluster_id') == cluster_id]
+                
+                # Filter datastore clusters if a cluster is selected
+                result['datastore_clusters'] = [ds for ds in datastore_clusters 
+                                             if ds.get('cluster_id') == cluster_id]
+            
+            # Add stats for monitoring
+            if datacenter_id:
+                self.record_cache_hit()
             
             return result
         except Exception as e:
@@ -410,10 +436,25 @@ class VSphereRedisCache:
             # Safe attribute access
             parent_moId = None
             try:
-                if cluster.parent and cluster.parent.parent:
-                    parent_moId = cluster.parent.parent._moId
-            except:
-                pass
+                # Correctly get the datacenter parent ID
+                if hasattr(cluster, 'parent') and cluster.parent:
+                    # If directly in a datacenter
+                    if isinstance(cluster.parent, vim.Datacenter):
+                        parent_moId = cluster.parent._moId
+                    # If in a folder under a datacenter
+                    elif hasattr(cluster.parent, 'parent') and cluster.parent.parent:
+                        if isinstance(cluster.parent.parent, vim.Datacenter):
+                            parent_moId = cluster.parent.parent._moId
+                        # Handle nested folders case
+                        elif (hasattr(cluster.parent.parent, 'parent') and 
+                              cluster.parent.parent.parent and 
+                              isinstance(cluster.parent.parent.parent, vim.Datacenter)):
+                            parent_moId = cluster.parent.parent.parent._moId
+                
+                # Log the parent relationship for debugging
+                logger.debug(f"Cluster: {cluster.name}, Parent MoID: {parent_moId}")
+            except Exception as e:
+                logger.error(f"Error getting datacenter ID for cluster {cluster.name}: {str(e)}")
                 
             # Convert overall status to string to ensure it can be serialized
             overall_status = None
@@ -480,6 +521,14 @@ class VSphereRedisCache:
             except:
                 pass
                 
+            # Convert overall status to string to ensure it can be serialized
+            overall_status = None
+            try:
+                if hasattr(host, 'overallStatus'):
+                    overall_status = str(host.overallStatus)
+            except Exception as e:
+                logger.debug(f"Error converting overall status for host {host.name}: {str(e)}")
+                
             return {
                 'id': host._moId,
                 'name': host.name,
@@ -491,7 +540,7 @@ class VSphereRedisCache:
                 'num_cpu_cores': num_cpu_cores,
                 'cpu_mhz': cpu_mhz,
                 'memory_size_bytes': memory_size_bytes,
-                'overall_status': getattr(host, 'overallStatus', None),
+                'overall_status': overall_status,
             }
             
         return self._fetch_objects_safely(container, transform_host)
@@ -575,6 +624,14 @@ class VSphereRedisCache:
             except:
                 pass
 
+            # Convert overall status to string to ensure it can be serialized
+            overall_status = None
+            try:
+                if hasattr(rp, 'overallStatus'):
+                    overall_status = str(rp.overallStatus)
+            except Exception as e:
+                logger.debug(f"Error converting overall status for resource pool {rp.name}: {str(e)}")
+
             return {
                 'id': rp._moId,
                 'name': rp.name,
@@ -582,7 +639,7 @@ class VSphereRedisCache:
                 'parent_type': parent_type,
                 'cpu_limit': cpu_limit,
                 'memory_limit': memory_limit,
-                'overall_status': getattr(rp, 'overallStatus', None),
+                'overall_status': overall_status,
             }
             
         return self._fetch_objects_safely(container, transform_resource_pool)
@@ -726,8 +783,15 @@ class VSphereRedisCache:
             except:
                 pass
                 
-            # Overall status
-            template_info['overall_status'] = getattr(vm, 'overallStatus', None)
+            # Convert overall status to string to ensure it can be serialized
+            overall_status = None
+            try:
+                if hasattr(vm, 'overallStatus'):
+                    overall_status = str(vm.overallStatus)
+            except Exception as e:
+                logger.debug(f"Error converting overall status for template {vm.name}: {str(e)}")
+                
+            template_info['overall_status'] = overall_status
             
             return template_info
             
@@ -1149,6 +1213,18 @@ class VSphereRedisCache:
         # Get cache hit rate
         cache_hits = self.redis_client.get(VSPHERE_CACHE_HITS_KEY) or 0
         cache_misses = self.redis_client.get(VSPHERE_CACHE_MISSES_KEY) or 0
+        
+        # Ensure values are integers before adding them
+        try:
+            cache_hits = int(cache_hits)
+        except (TypeError, ValueError):
+            cache_hits = 0
+            
+        try:
+            cache_misses = int(cache_misses)
+        except (TypeError, ValueError):
+            cache_misses = 0
+            
         if cache_hits + cache_misses > 0:
             hit_rate = (cache_hits / (cache_hits + cache_misses)) * 100
             hit_rate_str = f"{hit_rate:.1f}%"

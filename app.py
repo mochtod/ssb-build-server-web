@@ -1345,7 +1345,48 @@ def get_vsphere_hierarchical_data():
         cluster_id = request.args.get('cluster_id')
         datastore_cluster_id = request.args.get('datastore_cluster_id')
         
+        # Add more detailed logging for debugging
+        logging.info(f"Hierarchical API request - Server: {vsphere_server}, Datacenter: {datacenter_id}, Cluster: {cluster_id}")
+        
         cache = VSphereRedisCache()
+        
+        # Log Redis connection status
+        logging.info(f"Redis connection status: {cache.redis_client.ping()}")
+        
+        # Check if datacenters exist in cache - use imported constants instead of class attributes
+        from vsphere_redis_cache import VSPHERE_DATACENTERS_KEY, VSPHERE_CLUSTERS_KEY
+        
+        all_datacenters = cache.redis_client.get(VSPHERE_DATACENTERS_KEY)
+        logging.info(f"Total datacenters in cache: {len(all_datacenters) if all_datacenters else 0}")
+        
+        # If we're requesting a specific server but no datacenters are found, this might indicate a Redis cache issue
+        if vsphere_server and (not all_datacenters or len(all_datacenters) == 0):
+            logging.warning(f"No datacenters found for server {vsphere_server} - Redis cache may need refreshing")
+            # Try to trigger an essential sync
+            try:
+                from vsphere_redis_cache import sync_essential_to_redis
+                success = sync_essential_to_redis()
+                logging.info(f"Emergency essential sync triggered: {'Success' if success else 'Failed'}")
+                # Refresh the datacenter list after sync
+                all_datacenters = cache.redis_client.get(VSPHERE_DATACENTERS_KEY)
+                logging.info(f"After sync - Total datacenters in cache: {len(all_datacenters) if all_datacenters else 0}")
+            except Exception as sync_err:
+                logging.error(f"Failed to trigger emergency sync: {str(sync_err)}")
+        
+        # Before filtering, check if clusters exist in cache
+        all_clusters = cache.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
+        logging.info(f"Total clusters in cache: {len(all_clusters)}")
+        
+        if datacenter_id and all_clusters:
+            # Log cluster datacenter relationships for debugging
+            datacenter_clusters = [c for c in all_clusters if c.get('datacenter_id') == datacenter_id]
+            logging.info(f"Clusters for datacenter '{datacenter_id}': {len(datacenter_clusters)}")
+            if len(datacenter_clusters) == 0:
+                # Log sample of clusters to check datacenter_id field
+                sample_size = min(5, len(all_clusters))
+                logging.info(f"Sample of {sample_size} clusters with datacenter_id: {[(c.get('name'), c.get('datacenter_id')) for c in all_clusters[:sample_size]]}")
+        
+        # Get hierarchical data with filtering
         hierarchical_data = cache.get_hierarchical_data(
             vsphere_server=vsphere_server,
             datacenter_id=datacenter_id,
@@ -1353,12 +1394,21 @@ def get_vsphere_hierarchical_data():
             datastore_cluster_id=datastore_cluster_id
         )
         
+        # Add the vsphere_servers list to the response to ensure it's always available
+        if 'vsphere_servers' not in hierarchical_data:
+            hierarchical_data['vsphere_servers'] = cache.get_vsphere_servers()
+        
+        # Log the result size
+        logging.info(f"Returned datacenters: {len(hierarchical_data.get('datacenters', []))}")
+        logging.info(f"Returned clusters: {len(hierarchical_data.get('clusters', []))}")
+        
         return jsonify({
             'success': True,
             'data': hierarchical_data
         })
     except Exception as e:
         logging.error(f"Error getting vSphere hierarchical data: {str(e)}")
+        logging.exception("Detailed exception information:")
         return jsonify({
             'success': False,
             'error': str(e)
