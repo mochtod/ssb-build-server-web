@@ -91,6 +91,8 @@ class VSphereRedisCache:
             'last_sync_duration': 0,
             'total_objects': 0
         }
+        # Store a local copy of the SSL verification setting
+        self._verify_ssl = VSPHERE_VERIFY_SSL
         
     def get_vsphere_servers(self):
         """
@@ -350,13 +352,15 @@ class VSphereRedisCache:
             logger.error("vSphere password (VSPHERE_PASSWORD) is not configured")
             return False
         
+        logger.info(f"Attempting to connect to vSphere server: {VSPHERE_HOST} with user: {VSPHERE_USER}")
+        
         for attempt in range(1, max_retries + 1):
             try:
                 # SSL context setup for self-signed certificates
                 context = None
                 if VSPHERE_USE_SSL:
                     context = ssl.create_default_context()
-                    if not VSPHERE_VERIFY_SSL:
+                    if not self._verify_ssl:
                         # Disable SSL verification completely for self-signed certificates
                         context.check_hostname = False
                         context.verify_mode = ssl.CERT_NONE
@@ -365,15 +369,14 @@ class VSphereRedisCache:
                         context.check_hostname = True
                         context.verify_mode = ssl.CERT_REQUIRED
                     
-                    logger.info(f"SSL context created with verify_mode: {context.verify_mode}, verify_ssl: {VSPHERE_VERIFY_SSL}")
+                    logger.info(f"SSL context created with verify_mode: {context.verify_mode}, verify_ssl: {self._verify_ssl}")
                 
                 # Set socket timeout to prevent hanging connections
                 socket.setdefaulttimeout(30)
                 
                 # Attempt connection
-                logger.info(f"Connecting to vSphere server {VSPHERE_HOST}:{VSPHERE_PORT} with SSL: {VSPHERE_USE_SSL}, Verify SSL: {VSPHERE_VERIFY_SSL}")
+                logger.info(f"Connecting to vSphere server {VSPHERE_HOST}:{VSPHERE_PORT} with SSL: {VSPHERE_USE_SSL}, Verify SSL: {self._verify_ssl}")
                 
-                # Handle self-signed certificates case even with verification enabled
                 try:
                     self.vsphere_conn = connect.SmartConnect(
                         host=VSPHERE_HOST,
@@ -383,26 +386,21 @@ class VSphereRedisCache:
                         sslContext=context
                     )
                 except ssl.SSLCertVerificationError as ssl_err:
-                    # If SSL verification fails and looks like a self-signed certificate issue
-                    if "certificate verify failed" in str(ssl_err) and VSPHERE_VERIFY_SSL:
-                        logger.warning(f"SSL certificate verification failed: {str(ssl_err)}. Retrying with verification disabled...")
-                        # Create a new context with verification disabled
-                        fallback_context = ssl.create_default_context()
-                        fallback_context.check_hostname = False
-                        fallback_context.verify_mode = ssl.CERT_NONE
-                        
-                        # Retry connection with verification disabled
-                        self.vsphere_conn = connect.SmartConnect(
-                            host=VSPHERE_HOST,
-                            user=VSPHERE_USER,
-                            pwd=VSPHERE_PASSWORD,
-                            port=VSPHERE_PORT,
-                            sslContext=fallback_context
-                        )
-                        logger.info("Connected successfully with SSL verification disabled")
-                    else:
-                        # Re-raise if it's not a certificate verification issue
-                        raise
+                    logger.warning(f"SSL certificate verification failed: {str(ssl_err)}. Retrying with verification disabled...")
+                    # Create a new context with verification disabled
+                    fallback_context = ssl.create_default_context()
+                    fallback_context.check_hostname = False
+                    fallback_context.verify_mode = ssl.CERT_NONE
+                    
+                    # Retry connection with verification disabled
+                    self.vsphere_conn = connect.SmartConnect(
+                        host=VSPHERE_HOST,
+                        user=VSPHERE_USER,
+                        pwd=VSPHERE_PASSWORD,
+                        port=VSPHERE_PORT,
+                        sslContext=fallback_context
+                    )
+                    logger.info("Connected successfully with SSL verification disabled")
                 
                 if not self.vsphere_conn:
                     raise Exception("Failed to connect to vSphere - connection is None")
@@ -430,11 +428,10 @@ class VSphereRedisCache:
                 # Handle SSL-specific errors
                 logger.error(f"SSL Error connecting to vSphere (attempt {attempt}/{max_retries}): {str(e)}")
                 
-                if "certificate verify failed" in str(e) and VSPHERE_VERIFY_SSL and attempt < max_retries:
+                if "certificate verify failed" in str(e).lower() and self._verify_ssl and attempt < max_retries:
                     logger.warning(f"SSL certificate verification failed. This might be due to a self-signed certificate.")
                     # Try with verification disabled on the next attempt
-                    global VSPHERE_VERIFY_SSL
-                    VSPHERE_VERIFY_SSL = False
+                    self._verify_ssl = False
                     logger.info("Setting VSPHERE_VERIFY_SSL=false for next attempt to bypass verification")
                 
                 if attempt < max_retries:
@@ -443,6 +440,16 @@ class VSphereRedisCache:
                     retry_delay *= 2  # Exponential backoff
                 else:
                     logger.error(f"Failed to connect to vSphere after {max_retries} attempts")
+                    return False
+            except socket.gaierror as e:
+                # Handle DNS resolution errors
+                logger.error(f"DNS resolution error for vSphere host '{VSPHERE_HOST}': {str(e)}")
+                if attempt < max_retries:
+                    logger.info(f"Retrying connection in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                else:
+                    logger.error(f"Failed to resolve vSphere host after {max_retries} attempts")
                     return False
             except Exception as e:
                 logger.error(f"Error connecting to vSphere (attempt {attempt}/{max_retries}): {str(e)}")
@@ -455,9 +462,9 @@ class VSphereRedisCache:
                     return False
                 
                 # Check for certificate verification problems and handle dynamically
-                if "certificate verify failed" in str(e).lower() and VSPHERE_VERIFY_SSL:
+                if "certificate verify failed" in str(e).lower() and self._verify_ssl:
                     logger.warning("Certificate verification failed. Trying with verification disabled...")
-                    VSPHERE_VERIFY_SSL = False
+                    self._verify_ssl = False
                 
                 if attempt < max_retries:
                     logger.info(f"Retrying connection in {retry_delay} seconds...")
