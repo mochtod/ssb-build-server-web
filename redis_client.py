@@ -19,8 +19,8 @@ logger = logging.getLogger('redis_client')
 load_dotenv()
 
 # Redis configuration with default values
-REDIS_HOST = os.environ.get('REDIS_HOST', 'redis')  # Default to 'redis' service name in docker-compose
-REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')  # Using localhost to connect to Docker container from Windows
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))    # Port that Docker exposes to the host machine
 REDIS_DB = int(os.environ.get('REDIS_DB', 0))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
 REDIS_CACHE_TTL = int(os.environ.get('REDIS_CACHE_TTL', 3600))  # Default TTL: 1 hour

@@ -723,6 +723,68 @@ additional-disk .form-row {
   margin: 5px 0;
 }
 
+/* Connection status panel styles */
+.connection-status-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  background-color: var(--input-bg);
+  border-radius: 4px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+}
+
+.status-badge.unknown {
+  background-color: rgba(108, 117, 125, 0.2);
+  color: var(--text-muted);
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+.status-badge.success {
+  background-color: rgba(40, 167, 69, 0.2);
+  color: var(--success-color);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.status-badge.error {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: var(--error-color);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.status-badge.working {
+  background-color: rgba(74, 109, 167, 0.2);
+  color: var(--primary-color);
+  border: 1px solid rgba(74, 109, 167, 0.3);
+  position: relative;
+  padding-left: 24px;
+}
+
+.status-badge.working::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+/* Spinner animation for status badge */
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
 @media (max-width: 768px) {
   header {
     flex-direction: column;

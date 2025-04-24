@@ -14,7 +14,7 @@ from functools import wraps
 from git import Repo
 from git.exc import GitCommandError
 import logging
-from vsphere_redis_cache import VSphereRedisCache, sync_vsphere_to_redis
+from vsphere_redis_cache import VSphereRedisCache, sync_vsphere_to_redis, VSPHERE_DATACENTERS_KEY, VSPHERE_TEMPLATES_KEY
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dev_key_for_development_only')
@@ -1189,12 +1189,49 @@ def get_vsphere_hierarchical_data():
         
         cache = VSphereRedisCache()
         
-        # Log Redis connection status
-        logging.info(f"Redis connection status: {cache.redis_client.ping()}")
-        
-        # Check if datacenters exist in cache - use imported constants instead of class attributes
-        from vsphere_redis_cache import VSPHERE_DATACENTERS_KEY, VSPHERE_CLUSTERS_KEY
-        
+        # First verify Redis connection
+        redis_connected = False
+        redis_error = None
+        try:
+            redis_connected = cache.redis_client.ping()
+            logging.info(f"Redis connection status: {redis_connected}")
+        except Exception as redis_err:
+            redis_error = str(redis_err)
+            logging.error(f"Redis connection error: {redis_error}")
+            
+        # First check vSphere connection directly
+        vsphere_connected = False
+        vsphere_error = None
+        if not vsphere_server:
+            vsphere_server = os.environ.get('VSPHERE_SERVER', '')
+            
+        if vsphere_server:
+            try:
+                # Test vSphere connection
+                vsphere_connected = cache.connect_to_vsphere()
+                if vsphere_connected:
+                    cache.disconnect_from_vsphere()
+                else:
+                    vsphere_error = "Failed to connect to vSphere server"
+            except Exception as vsphere_err:
+                vsphere_error = str(vsphere_err)
+                logging.error(f"vSphere connection error: {vsphere_error}")
+        else:
+            vsphere_error = "vSphere server not specified"
+            
+        # If both Redis and vSphere connections fail, return a detailed error
+        if not redis_connected and not vsphere_connected:
+            return jsonify({
+                'success': False,
+                'error': 'Connection Error',
+                'details': {
+                    'redis_error': redis_error,
+                    'vsphere_error': vsphere_error,
+                    'message': 'Cannot connect to Redis cache or vSphere server. Please verify your server connection and Redis service are running.'
+                }
+            }), 500
+            
+        # Check if datacenters exist in cache
         all_datacenters = cache.redis_client.get(VSPHERE_DATACENTERS_KEY)
         logging.info(f"Total datacenters in cache: {len(all_datacenters) if all_datacenters else 0}")
         
@@ -1209,48 +1246,125 @@ def get_vsphere_hierarchical_data():
                 # Refresh the datacenter list after sync
                 all_datacenters = cache.redis_client.get(VSPHERE_DATACENTERS_KEY)
                 logging.info(f"After sync - Total datacenters in cache: {len(all_datacenters) if all_datacenters else 0}")
+                
+                # If still no datacenters, return error with troubleshooting info
+                if not all_datacenters or len(all_datacenters) == 0:
+                    # Return detailed error information instead of dummy data
+                    logging.error("No datacenter data found even after sync attempt")
+                    return jsonify({
+                        'success': False,
+                        'error': 'No Datacenter Data',
+                        'details': {
+                            'redis_status': 'Connected but no data' if redis_connected else f'Connection error: {redis_error}',
+                            'vsphere_status': 'Connected but no data' if vsphere_connected else f'Connection error: {vsphere_error}',
+                            'message': 'No datacenter data found in cache or from vSphere. Please check your vSphere connection and sync settings.',
+                            'troubleshooting': [
+                                '1. Verify your vSphere server is reachable and credentials are correct',
+                                '2. Check if Redis is running (docker-compose ps)',
+                                '3. Try manually triggering a sync (docker-compose restart vsphere-sync)',
+                                '4. Check logs for detailed error messages (docker-compose logs)'
+                            ]
+                        }
+                    }), 404
             except Exception as sync_err:
                 logging.error(f"Failed to trigger emergency sync: {str(sync_err)}")
-        
-        # Before filtering, check if clusters exist in cache
-        all_clusters = cache.redis_client.get(VSPHERE_CLUSTERS_KEY) or []
-        logging.info(f"Total clusters in cache: {len(all_clusters)}")
-        
-        if datacenter_id and all_clusters:
-            # Log cluster datacenter relationships for debugging
-            datacenter_clusters = [c for c in all_clusters if c.get('datacenter_id') == datacenter_id]
-            logging.info(f"Clusters for datacenter '{datacenter_id}': {len(datacenter_clusters)}")
-            if len(datacenter_clusters) == 0:
-                # Log sample of clusters to check datacenter_id field
-                sample_size = min(5, len(all_clusters))
-                logging.info(f"Sample of {sample_size} clusters with datacenter_id: {[(c.get('name'), c.get('datacenter_id')) for c in all_clusters[:sample_size]]}")
-        
-        # Get hierarchical data with filtering
-        hierarchical_data = cache.get_hierarchical_data(
-            vsphere_server=vsphere_server,
-            datacenter_id=datacenter_id,
-            cluster_id=cluster_id,
-            datastore_cluster_id=datastore_cluster_id
-        )
-        
-        # Add the vsphere_servers list to the response to ensure it's always available
-        if 'vsphere_servers' not in hierarchical_data:
-            hierarchical_data['vsphere_servers'] = cache.get_vsphere_servers()
-        
-        # Log the result size
-        logging.info(f"Returned datacenters: {len(hierarchical_data.get('datacenters', []))}")
-        logging.info(f"Returned clusters: {len(hierarchical_data.get('clusters', []))}")
-        
-        return jsonify({
-            'success': True,
-            'data': hierarchical_data
-        })
+                # Return a structured error response
+                return jsonify({
+                    'success': False,
+                    'error': 'Sync Failure',
+                    'details': {
+                        'message': f"Failed to sync vSphere data: {str(sync_err)}",
+                        'redis_status': 'Connected' if redis_connected else f'Connection error: {redis_error}',
+                        'vsphere_status': 'Connected' if vsphere_connected else f'Connection error: {vsphere_error}',
+                        'troubleshooting': [
+                            '1. Verify Redis is running (docker-compose ps)',
+                            '2. Check vSphere credentials in your .env file',
+                            '3. Verify vSphere server is reachable from your environment',
+                            '4. Check network connectivity and firewall settings'
+                        ]
+                    }
+                }), 500
+                
+        # Get hierarchical data
+        try:
+            hierarchical_data = cache.get_hierarchical_data(
+                vsphere_server=vsphere_server,
+                datacenter_id=datacenter_id,
+                cluster_id=cluster_id,
+                datastore_cluster_id=datastore_cluster_id
+            )
+            
+            # Add the vsphere_servers list to the response
+            if 'vsphere_servers' not in hierarchical_data:
+                hierarchical_data['vsphere_servers'] = cache.get_vsphere_servers()
+            
+            # Check if we have real templates or fallbacks
+            templates = hierarchical_data.get('templates', [])
+            has_fallback_templates = any(
+                t.get('id', '').startswith('vm-fallback-') or 
+                'fallback' in t.get('name', '').lower() 
+                for t in templates
+            )
+            
+            if has_fallback_templates:
+                # If using fallback templates, include a warning but don't provide the templates
+                return jsonify({
+                    'success': False,
+                    'error': 'Placeholder Templates',
+                    'details': {
+                        'message': 'The templates returned are placeholder values that cannot be used for real deployments.',
+                        'redis_status': 'Connected' if redis_connected else f'Connection error: {redis_error}',
+                        'vsphere_status': 'Connected' if vsphere_connected else f'Connection error: {vsphere_error}',
+                        'troubleshooting': [
+                            '1. Verify your vSphere connection settings in .env file',
+                            '2. Make sure Redis is running (docker-compose ps)',
+                            '3. Restart the vsphere-sync service to refresh the template cache (docker-compose restart vsphere-sync)',
+                            '4. Check if your vSphere environment has templates available'
+                        ]
+                    }
+                }), 503  # Service Unavailable
+                
+            # Log the result size
+            logging.info(f"Returned datacenters: {len(hierarchical_data.get('datacenters', []))}")
+            logging.info(f"Returned clusters: {len(hierarchical_data.get('clusters', []))}")
+            logging.info(f"Returned templates: {len(hierarchical_data.get('templates', []))}")
+            
+            return jsonify({
+                'success': True,
+                'data': hierarchical_data
+            })
+        except Exception as hier_err:
+            logging.error(f"Error retrieving hierarchical data: {str(hier_err)}")
+            # Return structured error response
+            return jsonify({
+                'success': False,
+                'error': 'Data Retrieval Error',
+                'details': {
+                    'message': f"Error retrieving hierarchical data: {str(hier_err)}",
+                    'redis_status': 'Connected' if redis_connected else f'Connection error: {redis_error}',
+                    'vsphere_status': 'Connected' if vsphere_connected else f'Connection error: {vsphere_error}',
+                    'troubleshooting': [
+                        '1. Try refreshing the page',
+                        '2. Verify Redis and vSphere connections',
+                        '3. Check application logs for more details'
+                    ]
+                }
+            }), 500
     except Exception as e:
         logging.error(f"Error getting vSphere hierarchical data: {str(e)}")
         logging.exception("Detailed exception information:")
+        # Return structured error
         return jsonify({
             'success': False,
-            'error': str(e)
+            'error': 'Server Error',
+            'details': {
+                'message': str(e),
+                'troubleshooting': [
+                    '1. Check your server connection',
+                    '2. Verify Redis is running',
+                    '3. Examine server logs for detailed error messages'
+                ]
+            }
         }), 500
 
 @app.route('/api/vsphere/servers', methods=['GET'])
@@ -1363,74 +1477,569 @@ def update_env_settings():
     Update application environment settings (.env file)
     """
     try:
-        # Get form data
-        config_dir = request.form.get('config_dir')
-        terraform_dir = request.form.get('terraform_dir')
-        users_file = request.form.get('users_file')
-        git_repo_url = request.form.get('git_repo_url')
-        git_username = request.form.get('git_username')
-        git_token = request.form.get('git_token')
-        atlantis_url = request.form.get('atlantis_url')
-        atlantis_token = request.form.get('atlantis_token')
-        flask_secret_key = request.form.get('flask_secret_key')
-        vsphere_server = request.form.get('vsphere_server')
-        vsphere_port = request.form.get('vsphere_port')
-        vsphere_user = request.form.get('vsphere_user')
-        vsphere_password = request.form.get('vsphere_password')
-        vsphere_use_ssl = request.form.get('vsphere_use_ssl')
+        # Get current settings
+        current_settings = load_env_settings()
         
-        # Validate input
-        if not config_dir or not terraform_dir or not users_file:
-            flash('Configuration directory, Terraform directory, and Users file path are required', 'error')
-            return redirect(url_for('settings'))
+        # Update settings from form data
+        form_settings = {}
         
-        # Validate vSphere settings
-        if vsphere_server and not vsphere_user:
-            flash('vSphere Username is required when Server is specified', 'error')
-            return redirect(url_for('settings'))
+        # Server configuration
+        form_settings['CONFIG_DIR'] = request.form.get('config_dir', current_settings.get('CONFIG_DIR', '/app/configs'))
+        form_settings['TERRAFORM_DIR'] = request.form.get('terraform_dir', current_settings.get('TERRAFORM_DIR', '/app/terraform'))
+        form_settings['USERS_FILE'] = request.form.get('users_file', current_settings.get('USERS_FILE', '/app/users.json'))
         
-        # Create or update .env file
-        env_content = f"""# Application Environment Settings
-# Updated on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-
-# Configuration paths
-CONFIG_DIR={config_dir}
-TERRAFORM_DIR={terraform_dir}
-USERS_FILE={users_file}
-
-# GitHub and Atlantis integration
-GIT_REPO_URL={git_repo_url}
-GIT_USERNAME={git_username}
-GIT_TOKEN={git_token}
-ATLANTIS_URL={atlantis_url}
-ATLANTIS_TOKEN={atlantis_token}
-
-# Application security
-FLASK_SECRET_KEY={flask_secret_key if flask_secret_key else 'dev_key_for_development_only'}
-
-# vSphere connection settings
-VSPHERE_SERVER={vsphere_server}
-VSPHERE_PORT={vsphere_port}
-VSPHERE_USER={vsphere_user}
-VSPHERE_PASSWORD={vsphere_password}
-VSPHERE_USE_SSL={vsphere_use_ssl}
-"""
+        # Application security
+        form_settings['FLASK_SECRET_KEY'] = request.form.get('flask_secret_key', current_settings.get('FLASK_SECRET_KEY', ''))
+        if not form_settings['FLASK_SECRET_KEY']:
+            # Generate a random secret key if none provided
+            import secrets
+            form_settings['FLASK_SECRET_KEY'] = secrets.token_hex(32)
+            
+        # vSphere connection settings
+        form_settings['VSPHERE_SERVER'] = request.form.get('vsphere_server', current_settings.get('VSPHERE_SERVER', ''))
+        form_settings['VSPHERE_PORT'] = request.form.get('vsphere_port', current_settings.get('VSPHERE_PORT', '443'))
+        form_settings['VSPHERE_USER'] = request.form.get('vsphere_user', current_settings.get('VSPHERE_USER', ''))
+        form_settings['VSPHERE_PASSWORD'] = request.form.get('vsphere_password', current_settings.get('VSPHERE_PASSWORD', ''))
+        form_settings['VSPHERE_USE_SSL'] = request.form.get('vsphere_use_ssl', current_settings.get('VSPHERE_USE_SSL', 'true'))
+        form_settings['VSPHERE_VERIFY_SSL'] = request.form.get('vsphere_verify_ssl', current_settings.get('VSPHERE_VERIFY_SSL', 'false'))
         
-        # Write .env file
-        with open('.env', 'w') as f:
-            f.write(env_content)
+        # NetBox integration settings
+        form_settings['NETBOX_URL'] = request.form.get('netbox_url', current_settings.get('NETBOX_URL', ''))
+        form_settings['NETBOX_TOKEN'] = request.form.get('netbox_token', current_settings.get('NETBOX_TOKEN', ''))
+        form_settings['NETBOX_VERIFY_SSL'] = request.form.get('netbox_verify_ssl', current_settings.get('NETBOX_VERIFY_SSL', 'false'))
         
-        # Create directories if they don't exist
-        os.makedirs(config_dir, exist_ok=True)
-        os.makedirs(terraform_dir, exist_ok=True)
+        # Redis configuration
+        form_settings['REDIS_HOST'] = request.form.get('redis_host', current_settings.get('REDIS_HOST', 'localhost'))
+        form_settings['REDIS_PORT'] = request.form.get('redis_port', current_settings.get('REDIS_PORT', '6379'))
+        form_settings['REDIS_PASSWORD'] = request.form.get('redis_password', current_settings.get('REDIS_PASSWORD', ''))
+        form_settings['REDIS_CACHE_TTL'] = request.form.get('redis_cache_ttl', current_settings.get('REDIS_CACHE_TTL', '3600'))
         
-        flash('Environment settings updated successfully. Restart the application for changes to take effect.', 'success')
+        # Keep existing settings not in the form
+        for key, value in current_settings.items():
+            if key not in form_settings:
+                form_settings[key] = value
+        
+        # Save updated settings
+        if save_env_settings(form_settings):
+            flash('Environment settings updated successfully.', 'success')
+            
+            # Reload environment variables for the current app instance
+            from dotenv import load_dotenv
+            load_dotenv(override=True)
+            
+        else:
+            flash('Error saving environment settings.', 'error')
+        
         return redirect(url_for('settings'))
-    
+        
     except Exception as e:
-        logger.exception(f"Error updating environment settings: {str(e)}")
+        logging.error(f"Error updating environment settings: {str(e)}")
         flash(f'Error updating environment settings: {str(e)}', 'error')
         return redirect(url_for('settings'))
+
+@app.route('/api/vsphere/templates', methods=['GET'])
+def get_vsphere_templates():
+    """
+    API endpoint to get VM templates from the Redis cache
+    This helps debug template availability issues and provides a dedicated endpoint
+    """
+    try:
+        # Initialize VSphereRedisCache to access Redis data
+        vsphere_cache = VSphereRedisCache()
+        
+        # Get parameters from query string
+        vsphere_server = request.args.get('vsphere_server')
+        datacenter_id = request.args.get('datacenter_id')
+        
+        # Get templates from Redis cache
+        templates = vsphere_cache.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
+        
+        # Log template count and first few templates for debugging
+        template_count = len(templates) 
+        logger.info(f"API retrieved {template_count} templates from Redis cache")
+        
+        # Log first 3 templates for debugging
+        for i, template in enumerate(templates[:3]):
+            logger.info(f"Template {i+1}: {template.get('name')} (ID: {template.get('id')})")
+            
+        # Filter by datacenter if specified
+        if datacenter_id:
+            datacenter_templates = [t for t in templates if t.get('datacenter_id') == datacenter_id]
+            if datacenter_templates:
+                logger.info(f"Filtered to {len(datacenter_templates)} templates for datacenter {datacenter_id}")
+                templates = datacenter_templates
+            else:
+                logger.info(f"No templates found specifically for datacenter {datacenter_id}, returning all templates")
+        
+        # Even if no templates found, ensure we return fallback templates
+        if not templates:
+            logger.warning("No templates found in Redis, adding fallback templates")
+            templates = [
+                {
+                    'id': 'vm-fallback-rhel9',
+                    'name': 'rhel9-template (fallback)',
+                    'is_template': True,
+                    'guest_id': 'rhel9_64Guest',
+                    'guest_full_name': 'Red Hat Enterprise Linux 9 (64-bit)'
+                },
+                {
+                    'id': 'vm-fallback-win',
+                    'name': 'windows-template (fallback)',
+                    'is_template': True,
+                    'guest_id': 'windows2019srv_64Guest',
+                    'guest_full_name': 'Windows Server 2019 (64-bit)'
+                }
+            ]
+        
+        return jsonify({
+            'success': True,
+            'templates': templates,
+            'count': len(templates),
+            'filtered_by_datacenter': bool(datacenter_id)
+        })
+    except Exception as e:
+        logger.exception(f"Error getting vSphere templates: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Connection testing API endpoints
+@app.route('/api/test-connection/vsphere', methods=['POST'])
+@login_required
+def test_vsphere_connection():
+    """Test the connection to vSphere using provided credentials"""
+    try:
+        data = request.json
+        logging.info("Testing vSphere connection with provided settings")
+        
+        # Extract connection parameters
+        server = data.get('server')
+        port = int(data.get('port', 443))
+        username = data.get('username')
+        password = data.get('password')
+        use_ssl = data.get('use_ssl', 'true').lower() == 'true'
+        verify_ssl = data.get('verify_ssl', 'false').lower() == 'true'
+        
+        # Validate required parameters
+        if not server or not username or not password:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required parameters: server, username, and password are required'
+            }), 400
+        
+        # Import necessary modules
+        try:
+            import ssl
+            from pyVim import connect
+            from pyVmomi import vim
+        except ImportError as e:
+            return jsonify({
+                'success': False,
+                'error': f'Required Python modules not installed: {str(e)}'
+            }), 500
+        
+        # Create SSL context if using SSL
+        context = None
+        if use_ssl:
+            context = ssl.create_default_context()
+            if not verify_ssl:
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+        
+        # Handle Windows domain-style username (domain\username)
+        if '\\' in username:
+            # Escape backslash for vSphere API
+            username = username.replace('\\', '\\\\')
+        
+        # Try to connect to vSphere
+        try:
+            vsphere_conn = connect.SmartConnect(
+                host=server,
+                user=username,
+                pwd=password,
+                port=port,
+                sslContext=context
+            )
+            
+            if not vsphere_conn:
+                return jsonify({
+                    'success': False,
+                    'error': 'Failed to connect to vSphere - connection returned None'
+                }), 500
+            
+            # Get information about the vSphere environment
+            content = vsphere_conn.RetrieveContent()
+            about_info = content.about
+            
+            # Disconnect
+            connect.Disconnect(vsphere_conn)
+            
+            # Return success with vSphere details
+            return jsonify({
+                'success': True,
+                'message': f'Connected to {about_info.fullName}',
+                'details': {
+                    'version': about_info.version,
+                    'build': about_info.build,
+                    'api_version': about_info.apiVersion,
+                    'name': about_info.name,
+                    'vendor': about_info.vendor
+                }
+            })
+        except vim.fault.InvalidLogin as e:
+            # Specifically handle authentication failures with a clear message
+            return jsonify({
+                'success': False,
+                'error': f'Authentication failed: Cannot complete login due to an incorrect user name or password.',
+                'troubleshooting': [
+                    '1. Verify your username and password are correct',
+                    '2. For domain accounts, make sure to use the format: domain\\username',
+                    '3. Check if your account is locked or has expired',
+                    '4. Verify this account has access to vSphere'
+                ]
+            }), 401
+        except vim.fault.HostConnectFault as e:
+            # Handle host connection issues
+            return jsonify({
+                'success': False,
+                'error': f'Host connection error: {str(e)}',
+                'troubleshooting': [
+                    '1. Verify the vSphere host address is correct',
+                    '2. Check if the host is reachable on your network',
+                    '3. Verify the port number (default is 443)',
+                    '4. Check firewall settings between this server and vSphere'
+                ]
+            }), 500
+        except Exception as e:
+            error_str = str(e).lower()
+            if "login" in error_str and ("incorrect" in error_str or "failed" in error_str or "invalid" in error_str):
+                # Additional handling for login errors that may not use the specific vim.fault.InvalidLogin exception
+                return jsonify({
+                    'success': False,
+                    'error': f'Authentication failed: {str(e)}',
+                    'troubleshooting': [
+                        '1. Verify your username and password are correct',
+                        '2. For domain accounts, make sure to use the format: domain\\username',
+                        '3. Check if your account is locked or has expired',
+                        '4. Verify this account has access to vSphere'
+                    ]
+                }), 401
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': f'vSphere connection error: {str(e)}'
+                }), 500
+            
+    except Exception as e:
+        logging.error(f"Error testing vSphere connection: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Server error: {str(e)}'
+        }), 500
+
+@app.route('/api/test-connection/netbox', methods=['POST'])
+@login_required
+def test_netbox_connection():
+    """Test the connection to NetBox using provided credentials"""
+    try:
+        data = request.json
+        logging.info("Testing NetBox connection with provided settings")
+        
+        # Extract connection parameters
+        url = data.get('url')
+        token = data.get('token')
+        verify_ssl = data.get('verify_ssl', 'true').lower() == 'true'
+        
+        # Validate required parameters
+        if not url or not token:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required parameters: url and token are required'
+            }), 400
+        
+        # Ensure URL has a trailing slash if needed
+        if not url.endswith('/'):
+            url = url + '/'
+        
+        # Import requests module
+        try:
+            import requests
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'Python requests module not installed'
+            }), 500
+        
+        # Set up headers for NetBox API
+        headers = {
+            'Authorization': f'Token {token}',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+        
+        # Try to connect to NetBox and get status
+        try:
+            # Use a simple API endpoint that should always be available
+            # First try the status endpoint (if available)
+            response = requests.get(
+                f"{url}status/", 
+                headers=headers, 
+                verify=verify_ssl,
+                timeout=10
+            )
+            
+            if response.status_code != 200:
+                # If status endpoint fails, try the main API endpoint
+                response = requests.get(
+                    url, 
+                    headers=headers, 
+                    verify=verify_ssl,
+                    timeout=10
+                )
+            
+            # Check response
+            if response.status_code == 200:
+                response_data = response.json()
+                
+                # Extract version if available
+                version = "Unknown"
+                if 'netbox-version' in response.headers:
+                    version = response.headers['netbox-version']
+                elif 'version' in response_data:
+                    version = response_data['version']
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Connected to NetBox {version}',
+                    'details': {
+                        'version': version,
+                        'api_endpoints': list(response_data.keys()) if isinstance(response_data, dict) else []
+                    }
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': f'NetBox connection failed with status code {response.status_code}: {response.text}'
+                }), 500
+                
+        except requests.exceptions.SSLError:
+            return jsonify({
+                'success': False,
+                'error': 'SSL Certificate validation failed. Try setting "Verify SSL" to No.'
+            }), 500
+        except requests.exceptions.RequestException as e:
+            return jsonify({
+                'success': False,
+                'error': f'NetBox connection error: {str(e)}'
+            }), 500
+            
+    except Exception as e:
+        logging.error(f"Error testing NetBox connection: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Server error: {str(e)}'
+        }), 500
+
+@app.route('/api/test-connection/redis', methods=['POST'])
+@login_required
+def test_redis_connection():
+    """Test the connection to Redis using provided credentials"""
+    try:
+        data = request.json
+        logging.info("Testing Redis connection with provided settings")
+        
+        # Extract connection parameters
+        host = data.get('host')
+        port = int(data.get('port', 6379))
+        password = data.get('password')
+        
+        # Validate required parameters
+        if not host:
+            return jsonify({
+                'success': False,
+                'error': 'Missing required parameter: host'
+            }), 400
+        
+        # Import Redis module
+        try:
+            import redis
+        except ImportError:
+            return jsonify({
+                'success': False,
+                'error': 'Python redis module not installed'
+            }), 500
+        
+        # Try to connect to Redis and ping
+        try:
+            # Create connection
+            if password and password.strip():
+                r = redis.Redis(host=host, port=port, password=password, socket_timeout=5)
+            else:
+                r = redis.Redis(host=host, port=port, socket_timeout=5)
+            
+            # Test connection with ping
+            if r.ping():
+                # Get some Redis server info
+                info = r.info()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'Connected to Redis {info.get("redis_version", "Unknown version")}',
+                    'details': {
+                        'version': info.get('redis_version', 'Unknown'),
+                        'uptime_in_days': info.get('uptime_in_days', 0),
+                        'memory_used': info.get('used_memory_human', 'Unknown'),
+                        'total_connections': info.get('total_connections_received', 0)
+                    }
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Redis connection succeeded but ping failed'
+                }), 500
+        except redis.exceptions.AuthenticationError:
+            return jsonify({
+                'success': False,
+                'error': 'Redis authentication failed. Check your password.'
+            }), 500
+        except redis.exceptions.ConnectionError as e:
+            return jsonify({
+                'success': False,
+                'error': f'Redis connection error: {str(e)}'
+            }), 500
+            
+    except Exception as e:
+        logging.error(f"Error testing Redis connection: {str(e)}")
+        return jsonify({
+            'success': False,
+                'error': f'Server error: {str(e)}'
+        }), 500
+
+@app.route('/restart-application', methods=['POST'])
+@login_required
+@role_required(ROLE_ADMIN)
+def restart_application():
+    """
+    Restart the Flask application to apply environment variable changes
+    """
+    try:
+        # We'll implement a "soft restart" by sending a signal to the main process
+        # This approach avoids disrupting active users
+        
+        # First, save any pending changes to ensure they're applied after restart
+        if request.json and 'save_changes' in request.json and request.json['save_changes']:
+            # Reload .env file to apply recent changes
+            from dotenv import load_dotenv
+            load_dotenv(override=True)
+            logging.info("Reloaded environment variables from .env file")
+        
+        # Log the restart request
+        logging.info("Application restart requested by admin user: {}".format(session.get('username')))
+        
+        # For Docker environments, we'll just inform the user that they need to restart the container
+        # In a production environment, this could trigger a process manager to restart the app
+        
+        return jsonify({
+            'success': True,
+            'message': 'Environment variables reloaded. Some changes may require a container restart to take full effect.',
+            'restart_required': True
+        })
+    except Exception as e:
+        logging.error(f"Error restarting application: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+def load_env_settings():
+    """
+    Load environment variables from .env file and return them as a dictionary
+    """
+    env_settings = {}
+    
+    # First try to load from .env file
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    # Skip comments and empty lines
+                    if line and not line.startswith('#'):
+                        # Parse key-value pairs
+                        if '=' in line:
+                            key, value = line.split('=', 1)
+                            env_settings[key.strip()] = value.strip()
+        except Exception as e:
+            logging.error(f"Error reading .env file: {str(e)}")
+    
+    # Fill any missing values from environment
+    for key, value in os.environ.items():
+        if key not in env_settings:
+            env_settings[key] = value
+    
+    return env_settings
+
+def save_env_settings(env_settings):
+    """
+    Save environment variables to .env file
+    """
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    
+    try:
+        # Create backup of existing .env file
+        if os.path.exists(env_path):
+            backup_path = f"{env_path}.bak"
+            shutil.copy2(env_path, backup_path)
+            logging.info(f"Created backup of .env file at {backup_path}")
+        
+        # Write updated .env file
+        with open(env_path, 'w') as f:
+            f.write(f"# Environment settings - Updated on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            
+            # Group settings by category
+            categories = {
+                "Flask Application": ["FLASK_SECRET_KEY", "DEBUG"],
+                "Application Directories": ["CONFIG_DIR", "TERRAFORM_DIR", "USERS_FILE", "VM_WORKSPACE_DIR"],
+                "vSphere Connection": ["VSPHERE_SERVER", "VSPHERE_USER", "VSPHERE_PASSWORD", "VSPHERE_PORT", 
+                                      "VSPHERE_USE_SSL", "VSPHERE_VERIFY_SSL"],
+                "NetBox Integration": ["NETBOX_URL", "NETBOX_TOKEN", "NETBOX_VERIFY_SSL"],
+                "Redis Configuration": ["REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD", "REDIS_CACHE_TTL",
+                                      "REDIS_USE_COMPRESSION", "REDIS_CONNECTION_POOL_SIZE"],
+                "Timeouts": ["TIMEOUT", "VSPHERE_SYNC_COOLDOWN", "VSPHERE_REFRESH_INTERVAL"],
+                "Terraform Configuration": ["TF_VAR_vsphere_server", "TF_VAR_vsphere_user", "TF_VAR_vsphere_password", 
+                                          "TF_CLI_ARGS_apply", "TF_IN_AUTOMATION", "TERRAFORM_CONTAINER"]
+            }
+            
+            # Other settings not in any category
+            other_settings = set(env_settings.keys())
+            for category, keys in categories.items():
+                for key in keys:
+                    if key in env_settings:
+                        other_settings.discard(key)
+            
+            # Write settings by category
+            for category, keys in categories.items():
+                category_keys = [key for key in keys if key in env_settings]
+                if category_keys:
+                    f.write(f"# {category}\n")
+                    for key in category_keys:
+                        f.write(f"{key}={env_settings[key]}\n")
+                    f.write("\n")
+            
+            # Write other settings
+            if other_settings:
+                f.write("# Other Settings\n")
+                for key in sorted(other_settings):
+                    f.write(f"{key}={env_settings[key]}\n")
+        
+        logging.info(f"Successfully saved environment settings to {env_path}")
+        return True
+    except Exception as e:
+        logging.error(f"Error saving environment settings: {str(e)}")
+        return False
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5150)

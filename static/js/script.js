@@ -1101,15 +1101,125 @@ function loadTemplatesForServer(server) {
 }
 
 /**
- * Load templates for a selected datacenter
+ * Load templates for a selected datacenter with improved error handling
  */
 function loadTemplatesForDatacenter(server, datacenter) {
     // Set loading state
     templateSelect.disabled = true;
     setLoadingStatus(templateLoadingStatus, 'Loading templates for datacenter...', 'loading');
     
+    // Add debug logging
+    console.log(`Loading templates for datacenter ${datacenter} on server ${server}`);
+    
     // Fetch templates filtered for this datacenter
     fetch(`/api/vsphere/hierarchical?vsphere_server=${encodeURIComponent(server)}&datacenter_id=${encodeURIComponent(datacenter)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Check if there's a warning in the data (this means fallbacks were used)
+            if (data.warning) {
+                // Show the warning in the UI instead of silently using fallbacks
+                vsphereErrorMessage.style.display = 'block';
+                vsphereErrorMessage.innerHTML = `Warning: ${data.warning}<br>
+                    <button id="retry-vsphere-load" class="btn-small">Retry</button>`;
+                
+                // Re-attach retry event listener
+                document.getElementById('retry-vsphere-load').addEventListener('click', function() {
+                    vsphereErrorMessage.style.display = 'none';
+                    triggerEssentialSync();
+                });
+            }
+            
+            if (data.success && data.data) {
+                // Log template data for debugging
+                console.log(`Received ${data.data.templates ? data.data.templates.length : 0} templates`);
+                
+                if (data.data.templates && data.data.templates.length > 0) {
+                    // Check if these are fallback templates by inspecting IDs
+                    const hasFallbackTemplates = data.data.templates.some(t => 
+                        t.id.includes('fallback') || t.name.includes('fallback'));
+                    
+                    if (hasFallbackTemplates) {
+                        // Alert the user that these are fallback templates that won't work for real deployments
+                        setLoadingStatus(templateLoadingStatus, 
+                            'WARNING: Using placeholder templates (not deployable)', 'error');
+                        
+                        // Show an error message
+                        vsphereErrorMessage.style.display = 'block';
+                        vsphereErrorMessage.innerHTML = `Error: The templates returned are placeholder values that cannot be used for real deployments. 
+                            This usually indicates a connection issue with vSphere or Redis cache.<br>
+                            <button id="retry-vsphere-load" class="btn-small">Retry</button>`;
+                        
+                        // Re-attach retry event listener
+                        document.getElementById('retry-vsphere-load').addEventListener('click', function() {
+                            vsphereErrorMessage.style.display = 'none';
+                            triggerEssentialSync();
+                        });
+                    } else {
+                        // Real templates found, populate the dropdown
+                        populateSelect(templateSelect, data.data.templates);
+                        templateSelect.disabled = false;
+                        setLoadingStatus(templateLoadingStatus, 'Templates loaded for datacenter', 'success');
+                        
+                        // Auto-select RHEL9 template if available
+                        autoSelectRhel9Template();
+                    }
+                } else {
+                    // No templates found - show error
+                    setLoadingStatus(templateLoadingStatus, 'Error: No templates found for this datacenter', 'error');
+                    templateSelect.disabled = true;
+                    
+                    // Show error message with more info
+                    vsphereErrorMessage.style.display = 'block';
+                    vsphereErrorMessage.innerHTML = `Error: No templates found for datacenter "${datacenter}". 
+                        This could indicate a configuration issue or that templates haven't been synchronized.<br>
+                        <button id="retry-vsphere-load" class="btn-small">Retry with full sync</button>`;
+                    
+                    // Re-attach retry event listener
+                    document.getElementById('retry-vsphere-load').addEventListener('click', function() {
+                        vsphereErrorMessage.style.display = 'none';
+                        triggerEssentialSync();
+                    });
+                }
+            } else {
+                throw new Error(data.error || 'No templates found for this datacenter');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading templates for datacenter:', error);
+            setLoadingStatus(templateLoadingStatus, `Error: ${error.message}`, 'error');
+            
+            // Show detailed error message
+            vsphereErrorMessage.style.display = 'block';
+            vsphereErrorMessage.innerHTML = `Failed to load templates: ${error.message}<br>
+                <p>This is likely due to one of the following issues:</p>
+                <ul>
+                    <li>vSphere server is unreachable</li>
+                    <li>Redis cache is not running or reachable</li>
+                    <li>Template cache has not been populated</li>
+                </ul>
+                <button id="retry-vsphere-load" class="btn-small">Retry with full sync</button>`;
+            
+            // Re-attach retry event listener
+            document.getElementById('retry-vsphere-load').addEventListener('click', function() {
+                vsphereErrorMessage.style.display = 'none';
+                triggerEssentialSync();
+            });
+        });
+}
+
+/**
+ * Load all templates as a fallback when datacenter-specific templates aren't available
+ */
+function loadAllTemplates(server) {
+    setLoadingStatus(templateLoadingStatus, 'Loading all templates...', 'loading');
+    
+    // Fetch all templates without datacenter filter
+    fetch(`/api/vsphere/hierarchical?vsphere_server=${encodeURIComponent(server)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error: ${response.status}`);
@@ -1117,34 +1227,93 @@ function loadTemplatesForDatacenter(server, datacenter) {
             return response.json();
         })
         .then(data => {
-            if (data.success && data.data && data.data.templates) {
+            if (data.success && data.data && data.data.templates && data.data.templates.length > 0) {
+                console.log(`Loaded ${data.data.templates.length} templates as fallback`);
                 // Populate dropdown
                 populateSelect(templateSelect, data.data.templates);
                 templateSelect.disabled = false;
-                setLoadingStatus(templateLoadingStatus, 'Templates loaded for datacenter', 'success');
+                setLoadingStatus(templateLoadingStatus, 'All templates loaded', 'success');
                 
                 // Auto-select RHEL9 template if available
                 autoSelectRhel9Template();
             } else {
-                throw new Error(data.error || 'No templates found for this datacenter');
+                // If still no templates, create static fallback templates
+                console.warn("No templates found at all, using static fallbacks");
+                const fallbackTemplates = [
+                    { id: 'vm-fallback-rhel9', name: 'rhel9-template (fallback)' },
+                    { id: 'vm-fallback-win', name: 'windows-template (fallback)' }
+                ];
+                populateSelect(templateSelect, fallbackTemplates);
+                templateSelect.disabled = false;
+                setLoadingStatus(templateLoadingStatus, 'Using fallback templates', 'warning');
+                
+                // Auto-select RHEL9 template
+                for (let i = 0; i < templateSelect.options.length; i++) {
+                    if (templateSelect.options[i].text.toLowerCase().includes('rhel9')) {
+                        templateSelect.selectedIndex = i;
+                        break;
+                    }
+                }
             }
         })
         .catch(error => {
-            console.error('Error loading templates for datacenter:', error);
-            setLoadingStatus(templateLoadingStatus, 'Failed to load templates', 'error');
+            console.error('Error loading all templates:', error);
+            setLoadingStatus(templateLoadingStatus, 'Failed to load any templates', 'error');
+            
+            // Add fallback templates directly to the dropdown in case of complete failure
+            const fallbackTemplates = [
+                { id: 'vm-fallback-rhel9', name: 'rhel9-template (fallback)' },
+                { id: 'vm-fallback-win', name: 'windows-template (fallback)' }
+            ];
+            populateSelect(templateSelect, fallbackTemplates);
+            templateSelect.disabled = false;
         });
 }
 
 /**
- * Auto-select RHEL9 template if available
+ * Auto-select RHEL9 template if available (improved with fuzzy matching)
  */
 function autoSelectRhel9Template() {
+    // Check if we have any templates first
+    if (templateSelect.options.length <= 1) {
+        console.log("No templates to auto-select");
+        return;
+    }
+    
+    // First try to find exact match containing "rhel9"
     for (let i = 0; i < templateSelect.options.length; i++) {
-        const option = templateSelect.options[i];
-        if (option.text.toLowerCase().includes('rhel9')) {
+        const optionText = templateSelect.options[i].text.toLowerCase();
+        if (optionText.includes('rhel9')) {
             templateSelect.selectedIndex = i;
-            break;
+            console.log(`Auto-selected RHEL9 template: ${templateSelect.options[i].text}`);
+            return;
         }
+    }
+    
+    // If no exact match, try variations like "rhel" and "9"
+    for (let i = 0; i < templateSelect.options.length; i++) {
+        const optionText = templateSelect.options[i].text.toLowerCase();
+        if (optionText.includes('rhel') && optionText.includes('9')) {
+            templateSelect.selectedIndex = i;
+            console.log(`Auto-selected RHEL template: ${templateSelect.options[i].text}`);
+            return;
+        }
+    }
+    
+    // If still no match, try just "rhel"
+    for (let i = 0; i < templateSelect.options.length; i++) {
+        const optionText = templateSelect.options[i].text.toLowerCase();
+        if (optionText.includes('rhel')) {
+            templateSelect.selectedIndex = i;
+            console.log(`Auto-selected generic RHEL template: ${templateSelect.options[i].text}`);
+            return;
+        }
+    }
+    
+    // If all else fails, select the first option after the placeholder
+    if (templateSelect.options.length > 1) {
+        templateSelect.selectedIndex = 1;
+        console.log(`Selected first available template: ${templateSelect.options[1].text}`);
     }
 }
 
@@ -1169,7 +1338,10 @@ function setLoadingStatus(element, message, status = 'default') {
  * Populate select dropdown from an array of objects
  */
 function populateSelect(selectElement, options, valueKey = 'id', textKey = 'name') {
-    if (!selectElement) return;
+    if (!selectElement) {
+        console.error("Cannot populate select: element is null or undefined");
+        return;
+    }
     
     // Save current selection if any
     const currentValue = selectElement.value;
@@ -1186,20 +1358,43 @@ function populateSelect(selectElement, options, valueKey = 'id', textKey = 'name
         noDataOption.text = "No data available";
         noDataOption.disabled = true;
         selectElement.appendChild(noDataOption);
+        console.warn(`No options provided for select: ${selectElement.id || 'unnamed'}`);
         return;
     }
     
+    console.log(`Populating ${selectElement.id} with ${options.length} options`);
+    
     // Add new options
     options.forEach(option => {
+        if (!option) {
+            console.warn("Null or undefined option encountered in populateSelect");
+            return; // Skip this iteration
+        }
+        
+        const optionValue = option[valueKey];
+        const optionText = option[textKey];
+        
+        if (optionValue === undefined || optionValue === null) {
+            console.warn(`Option missing ${valueKey} value:`, option);
+            return; // Skip this iteration
+        }
+        
         const optionElement = document.createElement('option');
-        optionElement.value = option[valueKey] || '';
-        optionElement.text = option[textKey] || 'Unnamed';
+        optionElement.value = optionValue;
+        optionElement.text = optionText || 'Unnamed';
         selectElement.appendChild(optionElement);
     });
     
     // Try to restore previous selection
     if (currentValue) {
-        selectElement.value = currentValue;
+        // Check if the current value still exists in the options
+        const valueExists = Array.from(selectElement.options).some(opt => opt.value === currentValue);
+        if (valueExists) {
+            selectElement.value = currentValue;
+            console.log(`Restored previous selection: ${currentValue} in ${selectElement.id}`);
+        } else {
+            console.log(`Previous selection ${currentValue} no longer exists in ${selectElement.id}`);
+        }
     }
 }
 

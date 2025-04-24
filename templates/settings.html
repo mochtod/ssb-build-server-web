@@ -167,9 +167,128 @@
                         </div>
                     </div>
                     
+                    <div class="form-section">
+                        <h3>vSphere Connection Settings</h3>
+                        <div class="connection-status-panel">
+                            <div class="status-indicator" id="vsphere-status-indicator">
+                                <span class="status-badge unknown">Unknown</span>
+                            </div>
+                            <button type="button" id="test-vsphere-connection" class="btn btn-small">Test Connection</button>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vsphere_server">vSphere Server:</label>
+                                <input type="text" id="vsphere_server" name="vsphere_server" value="{{ env_settings.get('VSPHERE_SERVER', '') }}">
+                                <small>vCenter Server address (FQDN or IP)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="vsphere_port">vSphere Port:</label>
+                                <input type="text" id="vsphere_port" name="vsphere_port" value="{{ env_settings.get('VSPHERE_PORT', '443') }}">
+                                <small>Port for vCenter Server (default: 443)</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vsphere_user">vSphere Username:</label>
+                                <input type="text" id="vsphere_user" name="vsphere_user" value="{{ env_settings.get('VSPHERE_USER', '') }}">
+                                <small>Username for vSphere authentication (domain\username format)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="vsphere_password">vSphere Password:</label>
+                                <input type="password" id="vsphere_password" name="vsphere_password" value="{{ env_settings.get('VSPHERE_PASSWORD', '') }}">
+                                <small>Password for vSphere authentication</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vsphere_use_ssl">Use SSL:</label>
+                                <select id="vsphere_use_ssl" name="vsphere_use_ssl">
+                                    <option value="true" {% if env_settings.get('VSPHERE_USE_SSL', 'true').lower() == 'true' %}selected{% endif %}>Yes</option>
+                                    <option value="false" {% if env_settings.get('VSPHERE_USE_SSL', 'true').lower() == 'false' %}selected{% endif %}>No</option>
+                                </select>
+                                <small>Use SSL for vSphere connection</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="vsphere_verify_ssl">Verify SSL:</label>
+                                <select id="vsphere_verify_ssl" name="vsphere_verify_ssl">
+                                    <option value="true" {% if env_settings.get('VSPHERE_VERIFY_SSL', 'false').lower() == 'true' %}selected{% endif %}>Yes</option>
+                                    <option value="false" {% if env_settings.get('VSPHERE_VERIFY_SSL', 'false').lower() == 'false' %}selected{% endif %}>No</option>
+                                </select>
+                                <small>Verify SSL certificates (disable for self-signed certs)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>NetBox Connection Settings</h3>
+                        <div class="connection-status-panel">
+                            <div class="status-indicator" id="netbox-status-indicator">
+                                <span class="status-badge unknown">Unknown</span>
+                            </div>
+                            <button type="button" id="test-netbox-connection" class="btn btn-small">Test Connection</button>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="netbox_url">NetBox URL:</label>
+                                <input type="text" id="netbox_url" name="netbox_url" value="{{ env_settings.get('NETBOX_URL', '') }}">
+                                <small>NetBox API URL (e.g., https://netbox.example.com/api)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="netbox_token">NetBox API Token:</label>
+                                <input type="password" id="netbox_token" name="netbox_token" value="{{ env_settings.get('NETBOX_TOKEN', '') }}">
+                                <small>API token for NetBox authentication</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="netbox_verify_ssl">Verify SSL:</label>
+                                <select id="netbox_verify_ssl" name="netbox_verify_ssl">
+                                    <option value="true" {% if env_settings.get('NETBOX_VERIFY_SSL', 'true').lower() == 'true' %}selected{% endif %}>Yes</option>
+                                    <option value="false" {% if env_settings.get('NETBOX_VERIFY_SSL', 'true').lower() == 'false' %}selected{% endif %}>No</option>
+                                </select>
+                                <small>Verify SSL certificates for NetBox API (disable for self-signed certs)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>Redis Configuration</h3>
+                        <div class="connection-status-panel">
+                            <div class="status-indicator" id="redis-status-indicator">
+                                <span class="status-badge unknown">Unknown</span>
+                            </div>
+                            <button type="button" id="test-redis-connection" class="btn btn-small">Test Connection</button>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="redis_host">Redis Host:</label>
+                                <input type="text" id="redis_host" name="redis_host" value="{{ env_settings.get('REDIS_HOST', 'localhost') }}">
+                                <small>Redis server hostname or IP address</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="redis_port">Redis Port:</label>
+                                <input type="text" id="redis_port" name="redis_port" value="{{ env_settings.get('REDIS_PORT', '6379') }}">
+                                <small>Redis server port (default: 6379)</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="redis_password">Redis Password:</label>
+                                <input type="password" id="redis_password" name="redis_password" value="{{ env_settings.get('REDIS_PASSWORD', '') }}">
+                                <small>Redis password (leave empty if not required)</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="redis_cache_ttl">Cache TTL (seconds):</label>
+                                <input type="number" id="redis_cache_ttl" name="redis_cache_ttl" value="{{ env_settings.get('REDIS_CACHE_TTL', '3600') }}">
+                                <small>Time to live for cached data (default: 3600s)</small>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Save Environment Settings</button>
                         <button type="reset" class="btn">Reset</button>
+                        <button type="button" id="restart-application" class="btn btn-warning">Save & Restart Application</button>
                     </div>
                 </form>
             </div>
@@ -251,6 +370,14 @@
             
             // Set up clear button
             document.getElementById('clear-resource-cache').addEventListener('click', clearResourceCache);
+            
+            // Auto-test connections after a short delay
+            setTimeout(function() {
+                // Test all connections with current settings
+                testVsphereConnection();
+                testNetboxConnection();
+                testRedisConnection();
+            }, 1500); // Small delay to let page load completely
         });
         
         function fetchCacheStatus() {
@@ -348,6 +475,198 @@
                 .catch(error => {
                     statusElement.innerHTML = `<span class="status-badge failed">Connection Error: ${error.message}</span>`;
                 });
+        }
+        
+        // Connection testing scripts
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up connection test buttons
+            document.getElementById('test-vsphere-connection').addEventListener('click', function() {
+                testVsphereConnection();
+            });
+            
+            document.getElementById('test-netbox-connection').addEventListener('click', function() {
+                testNetboxConnection();
+            });
+            
+            document.getElementById('test-redis-connection').addEventListener('click', function() {
+                testRedisConnection();
+            });
+        });
+        
+        function testVsphereConnection() {
+            updateConnectionStatus('vsphere', 'working', 'Testing connection...');
+            
+            // Get current form values
+            const server = document.getElementById('vsphere_server').value;
+            const port = document.getElementById('vsphere_port').value;
+            const username = document.getElementById('vsphere_user').value;
+            const password = document.getElementById('vsphere_password').value;
+            const useSSL = document.getElementById('vsphere_use_ssl').value;
+            const verifySSL = document.getElementById('vsphere_verify_ssl').value;
+            
+            // Validate required fields
+            if (!server || !username || !password) {
+                updateConnectionStatus('vsphere', 'error', 'Missing required fields (server, username, password)');
+                return;
+            }
+            
+            fetch('/api/test-connection/vsphere', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    server: server,
+                    port: port,
+                    username: username,
+                    password: password,
+                    use_ssl: useSSL,
+                    verify_ssl: verifySSL
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateConnectionStatus('vsphere', 'success', `Connected successfully: ${data.message}`);
+                } else {
+                    updateConnectionStatus('vsphere', 'error', `Connection failed: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                updateConnectionStatus('vsphere', 'error', `Error: ${error.message}`);
+            });
+        }
+        
+        function testNetboxConnection() {
+            updateConnectionStatus('netbox', 'working', 'Testing connection...');
+            
+            // Get current form values
+            const url = document.getElementById('netbox_url').value;
+            const token = document.getElementById('netbox_token').value;
+            const verifySSL = document.getElementById('netbox_verify_ssl').value;
+            
+            // Validate required fields
+            if (!url || !token) {
+                updateConnectionStatus('netbox', 'error', 'Missing required fields (URL, API token)');
+                return;
+            }
+            
+            fetch('/api/test-connection/netbox', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    url: url,
+                    token: token,
+                    verify_ssl: verifySSL
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateConnectionStatus('netbox', 'success', `Connected successfully: ${data.message}`);
+                } else {
+                    updateConnectionStatus('netbox', 'error', `Connection failed: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                updateConnectionStatus('netbox', 'error', `Error: ${error.message}`);
+            });
+        }
+        
+        function testRedisConnection() {
+            updateConnectionStatus('redis', 'working', 'Testing connection...');
+            
+            // Get current form values
+            const host = document.getElementById('redis_host').value;
+            const port = document.getElementById('redis_port').value;
+            const password = document.getElementById('redis_password').value;
+            
+            // Validate required fields
+            if (!host || !port) {
+                updateConnectionStatus('redis', 'error', 'Missing required fields (host, port)');
+                return;
+            }
+            
+            fetch('/api/test-connection/redis', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    host: host,
+                    port: port,
+                    password: password || ''
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateConnectionStatus('redis', 'success', `Connected successfully: ${data.message}`);
+                } else {
+                    updateConnectionStatus('redis', 'error', `Connection failed: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                updateConnectionStatus('redis', 'error', `Error: ${error.message}`);
+            });
+        }
+        
+        function updateConnectionStatus(service, status, message) {
+            const indicator = document.getElementById(`${service}-status-indicator`);
+            const statusBadge = indicator.querySelector('.status-badge');
+            
+            // Remove all existing status classes
+            statusBadge.classList.remove('unknown', 'working', 'success', 'error');
+            
+            // Add new status class
+            statusBadge.classList.add(status);
+            
+            // Update text
+            statusBadge.textContent = message || status.charAt(0).toUpperCase() + status.slice(1);
+        }
+        
+        // Add event listener for the restart application button
+        document.getElementById('restart-application').addEventListener('click', function() {
+            if (confirm('Are you sure you want to save settings and restart the application? This may briefly interrupt service.')) {
+                // First save form data via standard form submission
+                document.querySelector('form').submit();
+                
+                // Then restart the application
+                setTimeout(function() {
+                    restartApplication();
+                }, 1500); // Allow time for form submission to complete
+            }
+        });
+        
+        function restartApplication() {
+            fetch('/restart-application', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    save_changes: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    alert(`${data.message} The page will now refresh.`);
+                    
+                    // Refresh the page after a short delay
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    alert(`Error restarting application: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                alert(`Error: ${error.message}`);
+            });
         }
     </script>
     {% endif %}
