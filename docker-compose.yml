@@ -24,9 +24,15 @@ services:
       - DEBUG=True
       - FLASK_ENV=development
       - LOG_LEVEL=DEBUG
-      # Terraform integration (instead of Atlantis)
-      - TERRAFORM_CONTAINER=terraform
+      # Terraform integration - now using local terraform installation
       - TIMEOUT=120
+      # vSphere provider credentials for Terraform
+      - TF_VAR_vsphere_server=${VSPHERE_SERVER}
+      - TF_VAR_vsphere_user=${VSPHERE_USER}
+      - TF_VAR_vsphere_password=${VSPHERE_PASSWORD}
+      # Terraform auto-approve settings
+      - TF_CLI_ARGS_apply=-auto-approve
+      - TF_IN_AUTOMATION=true
       # Redis integration
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -39,7 +45,6 @@ services:
       - VSPHERE_PORT=${VSPHERE_PORT:-443}
       - VSPHERE_USE_SSL=${VSPHERE_USE_SSL:-true}
     depends_on:
-      - terraform
       - redis
     networks:
       - app-network
@@ -47,25 +52,6 @@ services:
     # Added command to increase logging
     command: >
       sh -c "python -u app.py 2>&1 | tee /app/logs/app.log"
-
-  terraform:
-    image: hashicorp/terraform:1.4.6
-    volumes:
-      - ./terraform:/terraform
-      - ./vm-workspace:/terraform/vm-workspace  # Mount the VM workspace for terraform operations
-    environment:
-      # vSphere provider credentials
-      - TF_VAR_vsphere_server=${VSPHERE_SERVER}
-      - TF_VAR_vsphere_user=${VSPHERE_USER}
-      - TF_VAR_vsphere_password=${VSPHERE_PASSWORD}
-      # Terraform auto-approve settings
-      - TF_CLI_ARGS_apply=-auto-approve
-      - TF_IN_AUTOMATION=true
-    entrypoint: ["tail", "-f", "/dev/null"]  # Keep container running
-    user: root
-    networks:
-      - app-network
-    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
