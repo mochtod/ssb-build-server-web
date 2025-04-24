@@ -11,9 +11,11 @@ services:
       - ./app.py:/app/app.py
       - ./vsphere_redis_cache.py:/app/vsphere_redis_cache.py
       - ./redis_client.py:/app/redis_client.py
+      - ./terraform_executor.py:/app/terraform_executor.py  # Add volume mount for terraform_executor.py
       - ./templates:/app/templates
       - ./static:/app/static
       - ./logs:/app/logs
+      - ./vm-workspace:/app/vm-workspace  # Make sure VM workspace is mounted
     environment:
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-change_this_to_a_random_secure_key}
       - CONFIG_DIR=/app/configs
@@ -22,17 +24,22 @@ services:
       - DEBUG=True
       - FLASK_ENV=development
       - LOG_LEVEL=DEBUG
-      # Atlantis integration
-      - ATLANTIS_URL=http://atlantis:4141
-      - ATLANTIS_TOKEN=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
+      # Terraform integration (instead of Atlantis)
+      - TERRAFORM_CONTAINER=terraform
       - TIMEOUT=120
       # Redis integration
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
       - REDIS_CACHE_TTL=${REDIS_CACHE_TTL:-3600}
+      # Pass vSphere environment variables to the web container
+      - VSPHERE_SERVER=${VSPHERE_SERVER}
+      - VSPHERE_USER=${VSPHERE_USER}
+      - VSPHERE_PASSWORD=${VSPHERE_PASSWORD}
+      - VSPHERE_PORT=${VSPHERE_PORT:-443}
+      - VSPHERE_USE_SSL=${VSPHERE_USE_SSL:-true}
     depends_on:
-      - atlantis
+      - terraform
       - redis
     networks:
       - app-network
@@ -41,47 +48,20 @@ services:
     command: >
       sh -c "python -u app.py 2>&1 | tee /app/logs/app.log"
 
-  atlantis:
-    image: ghcr.io/runatlantis/atlantis:latest
-    ports:
-      - "4141:4141"
-    environment:
-      - ATLANTIS_PORT=4141
-      - ATLANTIS_ATLANTIS_URL=http://atlantis:4141
-      # GitHub repository configuration
-      - ATLANTIS_REPO_ALLOWLIST=github.com/${GITHUB_USER:-your-username}/*
-      - ATLANTIS_ENABLE_POLICY_CHECKS=false
-      - ATLANTIS_AUTOPLAN_FILE_LIST=*.tf,*.tfvars
-      - ATLANTIS_WRITE_GIT_CREDS=true
-      - ATLANTIS_REPO_CONFIG=/etc/atlantis/repo-config.yaml
-      - ATLANTIS_API_SECRET=${ATLANTIS_TOKEN:-your-atlantis-api-secret}
-      # GitHub webhook configuration
-      - ATLANTIS_GH_WEBHOOK_SECRET=${GH_WEBHOOK_SECRET:-your-webhook-secret}
-      # GitHub authentication
-      - ATLANTIS_GH_USER=${GITHUB_USER:-your-github-username}
-      - ATLANTIS_GH_TOKEN=${GITHUB_TOKEN:-your-github-personal-access-token}
-      # Additional configuration
-      - ATLANTIS_ALLOW_REPO_CONFIG=true
-      - ATLANTIS_ENABLE_DIFF_MARKDOWN_FORMAT=true
-      - ATLANTIS_HIDE_PREV_PLAN_COMMENTS=true
-      # Project directory configuration
-      - ATLANTIS_DATA_DIR=/tmp
-      - ATLANTIS_PROJECT_DIR=/terraform
-      - ATLANTIS_DEFAULT_TF_VERSION=1.0.0
-    command: [
-      "server", 
-      "--disable-repo-locking", 
-      "--repo-config=/etc/atlantis/repo-config.yaml", 
-      "--atlantis-url=http://atlantis:4141", 
-      "--gh-user=${GITHUB_USER:-your-github-username}",
-      "--gh-token=${GITHUB_TOKEN:-your-github-personal-access-token}",
-      "--repo-allowlist=github.com/${GITHUB_USER:-your-username}/*",
-      "--web-basic-auth=false",
-      "--tf-download=true"
-    ]
+  terraform:
+    image: hashicorp/terraform:1.4.6
     volumes:
-      - ./atlantis-config:/etc/atlantis
       - ./terraform:/terraform
+      - ./vm-workspace:/terraform/vm-workspace  # Mount the VM workspace for terraform operations
+    environment:
+      # vSphere provider credentials
+      - TF_VAR_vsphere_server=${VSPHERE_SERVER}
+      - TF_VAR_vsphere_user=${VSPHERE_USER}
+      - TF_VAR_vsphere_password=${VSPHERE_PASSWORD}
+      # Terraform auto-approve settings
+      - TF_CLI_ARGS_apply=-auto-approve
+      - TF_IN_AUTOMATION=true
+    entrypoint: ["tail", "-f", "/dev/null"]  # Keep container running
     user: root
     networks:
       - app-network
@@ -98,10 +78,7 @@ services:
       --appendonly yes
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru
-      --loglevel warning
-      --save 900 1
-      --save 300 10
-      --save 60 10000
+      --loglevel notice
     restart: unless-stopped
     networks:
       - app-network
@@ -118,6 +95,8 @@ services:
       # Use specific volume mounts instead of mounting the entire directory
       - ./configs:/app/configs
       - ./terraform:/app/terraform
+      - ./vsphere_redis_cache.py:/app/vsphere_redis_cache.py
+      - ./redis_client.py:/app/redis_client.py
     environment:
       # vSphere connection settings
       - VSPHERE_SERVER=${VSPHERE_SERVER}
@@ -125,6 +104,7 @@ services:
       - VSPHERE_PASSWORD=${VSPHERE_PASSWORD}
       - VSPHERE_PORT=${VSPHERE_PORT:-443}
       - VSPHERE_USE_SSL=${VSPHERE_USE_SSL:-true}
+      - VSPHERE_VERIFY_SSL=${VSPHERE_VERIFY_SSL:-false}
       # Redis connection settings
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -146,5 +126,5 @@ networks:
 volumes:
   configs:
   terraform:
-  atlantis-data:
-  redis-data:  # Persistent storage for Redis data
+  redis-data:
+    driver: local

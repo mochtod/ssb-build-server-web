@@ -2,11 +2,18 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install Git, curl, and system dependencies
+# Install Git, curl, unzip and system dependencies
 RUN apt-get update && \
-    apt-get install -y git curl && \
+    apt-get install -y git curl unzip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Terraform
+RUN curl -fsSL https://releases.hashicorp.com/terraform/1.4.6/terraform_1.4.6_linux_amd64.zip -o terraform.zip && \
+    unzip terraform.zip && \
+    mv terraform /usr/local/bin/ && \
+    rm terraform.zip && \
+    terraform --version
 
 # Copy requirements first for better caching
 COPY requirements.txt .

@@ -32,6 +32,7 @@ VSPHERE_USER = os.environ.get('VSPHERE_USER', '')
 VSPHERE_PASSWORD = os.environ.get('VSPHERE_PASSWORD', '')
 VSPHERE_PORT = int(os.environ.get('VSPHERE_PORT', 443))
 VSPHERE_USE_SSL = os.environ.get('VSPHERE_USE_SSL', 'true').lower() == 'true'
+VSPHERE_VERIFY_SSL = os.environ.get('VSPHERE_VERIFY_SSL', 'true').lower() == 'true'
 
 # Redis keys and cache settings
 VSPHERE_CACHE_PREFIX = 'vsphere:'
@@ -154,7 +155,30 @@ class VSphereRedisCache:
             result['networks'] = networks
             
             templates = self.redis_client.get(VSPHERE_TEMPLATES_KEY) or []
-            result['templates'] = templates
+            
+            # Log template count for debugging
+            logger.info(f"Retrieved {len(templates)} templates from Redis cache")
+            
+            # Filter templates by datacenter if specified
+            if datacenter_id:
+                # Filter templates by datacenter_id if we have that relationship
+                datacenter_templates = [t for t in templates if t.get('datacenter_id') == datacenter_id]
+                
+                # If we found templates for this datacenter, use them
+                if datacenter_templates:
+                    logger.info(f"Found {len(datacenter_templates)} templates for datacenter {datacenter_id}")
+                    result['templates'] = datacenter_templates
+                else:
+                    # Otherwise return all templates
+                    logger.info(f"No templates found for datacenter {datacenter_id}, returning all {len(templates)} templates")
+                    result['templates'] = templates
+            else:
+                # If no datacenter filter, return all templates
+                result['templates'] = templates
+                
+            # Log the first few templates for debugging
+            for i, template in enumerate(result['templates'][:3]):
+                logger.info(f"Template {i+1} in result: {template.get('name')} (ID: {template.get('id')})")
             
             # Filter by datacenter if specified
             if datacenter_id:
@@ -320,12 +344,15 @@ class VSphereRedisCache:
                 if VSPHERE_USE_SSL:
                     context = ssl.create_default_context()
                     context.check_hostname = False
-                    context.verify_mode = ssl.CERT_NONE
+                    if not VSPHERE_VERIFY_SSL:
+                        context.verify_mode = ssl.CERT_NONE
+                    logger.info(f"SSL context created with verify_mode: {context.verify_mode}, verify_ssl: {VSPHERE_VERIFY_SSL}")
                 
                 # Set socket timeout to prevent hanging connections
                 socket.setdefaulttimeout(30)
                 
                 # Attempt connection
+                logger.info(f"Connecting to vSphere server {VSPHERE_HOST}:{VSPHERE_PORT} with SSL: {VSPHERE_USE_SSL}, Verify SSL: {VSPHERE_VERIFY_SSL}")
                 self.vsphere_conn = connect.SmartConnect(
                     host=VSPHERE_HOST,
                     user=VSPHERE_USER,
@@ -751,65 +778,104 @@ class VSphereRedisCache:
         def transform_template(vm):
             # Only process templates
             try:
-                if not (vm.config and vm.config.template):
+                # First, check if vm.config exists before trying to access template attribute
+                if not hasattr(vm, 'config') or vm.config is None:
                     return None
-            except:
-                return None
-                
-            # Basic template info with safe property access
-            template_info = {'id': vm._moId, 'name': vm.name, 'is_template': True}
-            
-            # Guest OS info
-            try:
-                if hasattr(vm, 'config'):
-                    template_info['guest_id'] = getattr(vm.config, 'guestId', None)
-                    template_info['guest_full_name'] = getattr(vm.config, 'guestFullName', None)
                     
-                    # Hardware info
+                # Check if the template attribute exists and is True
+                if not hasattr(vm.config, 'template') or not vm.config.template:
+                    return None
+                    
+                # Now we know this is a template and vm.config exists
+                template_info = {'id': vm._moId, 'name': vm.name, 'is_template': True}
+                
+                # Guest OS info - safely access all properties with explicit attribute checks
+                try:
+                    if hasattr(vm.config, 'guestId'):
+                        template_info['guest_id'] = vm.config.guestId
+                    if hasattr(vm.config, 'guestFullName'):
+                        template_info['guest_full_name'] = vm.config.guestFullName
+                    
+                    # Hardware info - check before accessing deeper attributes
                     if hasattr(vm.config, 'hardware'):
-                        template_info['cpu_count'] = getattr(vm.config.hardware, 'numCPU', 0)
-                        template_info['memory_mb'] = getattr(vm.config.hardware, 'memoryMB', 0)
-            except:
-                pass
+                        hw = vm.config.hardware
+                        if hasattr(hw, 'numCPU'):
+                            template_info['cpu_count'] = hw.numCPU
+                        if hasattr(hw, 'memoryMB'):
+                            template_info['memory_mb'] = hw.memoryMB
+                except Exception as e:
+                    logger.debug(f"Error getting guest info for template {vm.name}: {str(e)}")
                 
-            # Host
-            try:
-                if hasattr(vm, 'runtime') and hasattr(vm.runtime, 'host') and vm.runtime.host:
-                    template_info['host_id'] = vm.runtime.host._moId
-            except:
-                template_info['host_id'] = None
+                # Host information - with safe access
+                try:
+                    if hasattr(vm, 'runtime') and hasattr(vm.runtime, 'host') and vm.runtime.host:
+                        template_info['host_id'] = vm.runtime.host._moId
+                except Exception as e:
+                    logger.debug(f"Error getting host for template {vm.name}: {str(e)}")
+                    template_info['host_id'] = None
                 
-            # Networks
-            try:
-                template_info['network_ids'] = []
-                if hasattr(vm, 'network'):
-                    for net in vm.network:
-                        template_info['network_ids'].append(net._moId)
-            except:
-                pass
+                # Networks - with explicit existence checks
+                try:
+                    template_info['network_ids'] = []
+                    if hasattr(vm, 'network'):
+                        for net in vm.network:
+                            template_info['network_ids'].append(net._moId)
+                except Exception as e:
+                    logger.debug(f"Error getting networks for template {vm.name}: {str(e)}")
                 
-            # Datastores
-            try:
-                template_info['datastore_ids'] = []
-                if hasattr(vm, 'datastore'):
-                    for ds in vm.datastore:
-                        template_info['datastore_ids'].append(ds._moId)
-            except:
-                pass
+                # Datastores - with explicit existence checks
+                try:
+                    template_info['datastore_ids'] = []
+                    if hasattr(vm, 'datastore'):
+                        for ds in vm.datastore:
+                            template_info['datastore_ids'].append(ds._moId)
+                except Exception as e:
+                    logger.debug(f"Error getting datastores for template {vm.name}: {str(e)}")
                 
-            # Convert overall status to string to ensure it can be serialized
-            overall_status = None
-            try:
-                if hasattr(vm, 'overallStatus'):
-                    overall_status = str(vm.overallStatus)
+                # Overall status - safe conversion to string
+                try:
+                    if hasattr(vm, 'overallStatus'):
+                        template_info['overall_status'] = str(vm.overallStatus)
+                    else:
+                        template_info['overall_status'] = None
+                except Exception as e:
+                    logger.debug(f"Error getting overall status for template {vm.name}: {str(e)}")
+                    template_info['overall_status'] = None
+                
+                # Datacenter information - using safe traversal
+                try:
+                    if hasattr(vm, 'parent'):
+                        current = vm.parent
+                        datacenter = None
+                        while current:
+                            if isinstance(current, vim.Datacenter):
+                                datacenter = current
+                                break
+                            if hasattr(current, 'parent'):
+                                current = current.parent
+                            else:
+                                break
+                        
+                        if datacenter:
+                            template_info['datacenter_id'] = datacenter._moId
+                            template_info['datacenter_name'] = datacenter.name
+                except Exception as e:
+                    logger.debug(f"Error getting datacenter for template {vm.name}: {str(e)}")
+                
+                return template_info
             except Exception as e:
-                logger.debug(f"Error converting overall status for template {vm.name}: {str(e)}")
-                
-            template_info['overall_status'] = overall_status
-            
-            return template_info
-            
-        return self._fetch_objects_safely(container, transform_template)
+                # Log any errors but continue processing other templates
+                logger.warning(f"Error processing potential template {getattr(vm, 'name', 'unknown')}: {str(e)}")
+                return None
+        
+        templates = self._fetch_objects_safely(container, transform_template)
+        logger.info(f"Found {len(templates)} templates in vSphere")
+        
+        # Log some details about found templates for debugging
+        for i, template in enumerate(templates[:5]):  # Log first 5 templates
+            logger.info(f"Template {i+1}: {template.get('name')} (ID: {template.get('id')})")
+        
+        return templates
 
     def get_all_datastore_clusters(self):
         """

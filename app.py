@@ -26,7 +26,7 @@ USERS_FILE = os.environ.get('USERS_FILE', 'users.json')
 GIT_REPO_URL = os.environ.get('GIT_REPO_URL', 'https://github.com/your-org/terraform-repo.git')
 GIT_USERNAME = os.environ.get('GIT_USERNAME', '')
 GIT_TOKEN = os.environ.get('GIT_TOKEN', '')
-ATLANTIS_URL = os.environ.get('ATLANTIS_URL', 'https://atlantis.chrobinson.com')
+ATLANTIS_URL = os.environ.get('ATLANTIS_URL', 'http://localhost:4141')
 ATLANTIS_TOKEN = os.environ.get('ATLANTIS_TOKEN', '')
 
 # Ensure directories exist
@@ -451,7 +451,7 @@ def plan_config(request_id, timestamp):
             json.dump(config_data, f, indent=2)
         
         # Call Atlantis API to run plan
-        plan_result = run_atlantis_plan(config_data, tf_directory)
+        plan_result = run_terraform_plan(config_data, tf_directory)
         
         if plan_result and plan_result.get('status') == 'success':
             # Update config with plan info
@@ -588,7 +588,7 @@ def build_config(request_id, timestamp):
         tf_directory = os.path.join(TERRAFORM_DIR, f"{request_id}_{timestamp}")
         
         # Call Atlantis API to apply plan
-        build_result = apply_atlantis_plan(config_data, tf_directory)
+        build_result = apply_terraform_plan(config_data, tf_directory)
         
         if build_result and build_result.get('status') == 'success':
             # Update config with build info
@@ -628,7 +628,7 @@ def show_build_receipt(request_id, timestamp):
             config_data = json.load(f)
         
         return render_template(
-            'build_receipt.html',
+            'build_reciept.html',  # Fix: Use the existing misspelled template name
             config=config_data,
             request_id=request_id,
             timestamp=timestamp,
@@ -636,7 +636,7 @@ def show_build_receipt(request_id, timestamp):
         )
     except Exception as e:
         flash(f'Error loading build receipt: {str(e)}', 'error')
-        return redirect(url_for('configs'))
+        return redirect(url_for('list_configs'))  # Fix: Use the correct endpoint name 'list_configs' instead of 'configs'
 
 @app.route('/admin/users')
 @role_required(ROLE_ADMIN)
@@ -662,8 +662,11 @@ def add_user():
         flash('Username already exists', 'error')
         return redirect(url_for('admin_users'))
     
+    # Use bcrypt for better password security
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
     users[username] = {
-        'password': password,
+        'password': hashed_password,
         'role': role,
         'name': name
     }
@@ -674,9 +677,16 @@ def add_user():
     flash(f'User {username} added successfully', 'success')
     return redirect(url_for('admin_users'))
 
-def run_atlantis_plan(config_data, tf_directory):
-    """Run a Terraform plan in Atlantis"""
+def run_terraform_plan(config_data, tf_directory):
+    """Run a Terraform plan directly using terraform_executor instead of Atlantis"""
     try:
+        # Import our terraform executor functions
+        from terraform_executor import run_terraform_plan as run_tf_plan
+        
+        # Get request ID and timestamp from config data
+        request_id = config_data['request_id']
+        timestamp = config_data['timestamp']
+        
         # Get vSphere resources from Redis cache
         logger.info(f"Retrieving vSphere resources for environment: {config_data['environment']}")
         vsphere_cache = VSphereRedisCache()
@@ -738,133 +748,27 @@ def run_atlantis_plan(config_data, tf_directory):
             logger.exception("Detailed error:")
             # Continue with plan even if we couldn't update machine_inputs.tfvars
         
-        # Read the Terraform files
-        tf_files = {}
-        for filename in os.listdir(tf_directory):
-            if filename.endswith('.tf') or filename.endswith('.tfvars'):
-                file_path = os.path.join(tf_directory, filename)
-                with open(file_path, 'r') as f:
-                    tf_files[filename] = f.read()
+        # Call our terraform executor to run the plan
+        plan_result = run_tf_plan(request_id, timestamp, config_data, tf_directory)
         
-        # Get the directory name for the Terraform files
-        tf_dir_name = os.path.basename(tf_directory)
-        
-        # Prepare the Atlantis payload for the file-based setup
-        atlantis_payload = {
-            # Required fields for Atlantis API even in file-based mode
-            'repo': {
-                'owner': 'fake',
-                'name': 'terraform-repo',
-                'clone_url': 'https://github.com/fake/terraform-repo.git'
-            },
-            'pull_request': {
-                'num': 1,  # Dummy value
-                'branch': 'main',
-                'author': config_data['build_owner']
-            },
-            'head_commit': 'abcd1234',  # Dummy commit hash
-            'pull_num': 1,  # Dummy value
-            'pull_author': config_data['build_owner'],
-            'repo_rel_dir': tf_dir_name,
+        if plan_result['status'] == 'success':
+            # Add plan URL to the result
+            plan_result['atlantis_url'] = f"/terraform_plan/{plan_result['plan_id']}"
             
-            # Project information
-            'workspace': config_data['environment'],
-            'project_name': config_data['server_name'],
-            
-            # Terraform content
-            'terraform_files': tf_files,
-            
-            # Operation settings
-            'plan_only': True,  # Only run plan, don't apply
-            'comment': f"VM Provisioning Plan: {config_data['server_name']}",
-            'user': config_data['build_owner'],
-            'verbose': True
-        }
-        
-        # Call Atlantis API to plan
-        headers = {
-            'Content-Type': 'application/json',
-            'X-Atlantis-Token': ATLANTIS_TOKEN
-        }
-        
-        logger.info(f"Sending plan request to Atlantis for {config_data['server_name']}")
-        response = requests.post(f"{ATLANTIS_URL}/api/plan", json=atlantis_payload, headers=headers)
-        
-        if response.status_code != 200:
-            error_message = f"Failed to trigger Atlantis plan: {response.text}"
-            logger.error(error_message)
+            return {
+                'status': 'success',
+                'atlantis_url': plan_result['atlantis_url'],
+                'plan_log': plan_result['plan_log'],
+                'plan_id': plan_result['plan_id'],
+                'workspace': plan_result['workspace_id'],
+                'workspace_id': plan_result['workspace_id'],
+                'details': plan_result
+            }
+        else:
             return {
                 'status': 'error',
-                'message': error_message
+                'message': plan_result['message']
             }
-        
-        plan_response = response.json()
-        plan_id = plan_response.get('plan_id')
-        
-        if not plan_id:
-            error_message = "No plan ID returned from Atlantis"
-            logger.error(error_message)
-            return {
-                'status': 'error',
-                'message': error_message
-            }
-            
-        logger.info(f"Successfully initiated Atlantis plan with ID: {plan_id}")
-        
-        # Wait for plan to complete and fetch the results
-        plan_url = f"{ATLANTIS_URL}/plan/{plan_id}"
-        
-        # In a real system, you'd poll for plan completion
-        # For simplicity, we'll just return the plan ID here
-        
-        # Generate plan log
-        storage_description = ""
-        if vsphere_resources.get('storage_type') == 'datastore_cluster':
-            storage_description = f"Datastore Cluster: {vsphere_resources['datastore_cluster_id'] or 'Not found - will cause failure'}"
-        else:
-            storage_description = f"Datastore: {vsphere_resources['datastore_id'] or 'Not found - will cause failure'}"
-            
-        resource_pool_description = ""
-        if vsphere_resources.get('resource_pool_is_cluster', False):
-            resource_pool_description = f"Cluster as Resource Pool: {vsphere_resources.get('resource_pool_name')} ({vsphere_resources['resource_pool_id'] or 'Not found - will cause failure'})"
-        else:
-            resource_pool_description = f"Resource Pool: {vsphere_resources['resource_pool_id'] or 'Not found - will cause failure'}"
-            
-        plan_log = f"""
-Terraform Plan Output:
-----------------------
-Plan ID: {plan_id}
-Environment: {config_data['environment']}
-Server: {config_data['server_name']}
-Planned Resources:
-- {config_data['quantity']} virtual machines
-- {len(config_data['additional_disks'])} additional disks
-
-This plan will:
-- Create {config_data['quantity']} new VM(s)
-- Configure networking and storage
-- Register VMs with Ansible
-
-vSphere Resources:
-- {resource_pool_description}
-- {storage_description}
-- Network: {vsphere_resources['network_id'] or 'Not found - will cause failure'}
-- Template: {vsphere_resources['template_uuid'] or 'Not found - will cause failure'}
-
-Atlantis Plan URL: {plan_url}
-        """
-        
-        return {
-            'status': 'success',
-            'atlantis_url': plan_url,
-            'plan_log': plan_log,
-            'plan_id': plan_id,
-            'details': {
-                'workspace': config_data['environment'],
-                'resources': f"{config_data['quantity']} VMs"
-            }
-        }
-        
     except Exception as e:
         logger.exception(f"Error running Terraform plan: {str(e)}")
         return {
@@ -872,100 +776,35 @@ Atlantis Plan URL: {plan_url}
             'message': f"Error running Terraform plan: {str(e)}"
         }
 
-def apply_atlantis_plan(config_data, tf_directory):
-    """Apply a Terraform plan in Atlantis"""
+def apply_terraform_plan(config_data, tf_directory):
+    """Apply a Terraform plan directly using terraform_executor instead of Atlantis"""
     try:
-        plan_id = config_data.get('plan_id')
+        # Import our terraform executor functions
+        from terraform_executor import apply_terraform_plan as apply_tf_plan
         
-        if not plan_id:
-            error_message = 'No plan ID found in configuration'
-            logger.error(error_message)
+        # Get request ID and timestamp from config data
+        request_id = config_data['request_id']
+        timestamp = config_data['timestamp']
+        
+        # Call our terraform executor to apply the plan
+        apply_result = apply_tf_plan(request_id, timestamp, config_data, tf_directory)
+        
+        if apply_result['status'] == 'success':
+            return {
+                'status': 'success',
+                'build_url': apply_result['build_url'],
+                'build_receipt': apply_result['build_receipt'],
+                'details': {
+                    'apply_id': apply_result['apply_id'],
+                    'workspace': apply_result['workspace'],
+                    'instructions': "Your Terraform apply has been initiated. Your VMs are being created now."
+                }
+            }
+        else:
             return {
                 'status': 'error',
-                'message': error_message
+                'message': apply_result['message']
             }
-        
-        # Get the directory name for the Terraform files
-        tf_dir_name = os.path.basename(tf_directory)
-        
-        # Prepare the Atlantis payload for the file-based setup
-        atlantis_payload = {
-            # Required fields for Atlantis API even in file-based mode
-            'repo': {
-                'owner': 'fake',
-                'name': 'terraform-repo',
-                'clone_url': 'https://github.com/fake/terraform-repo.git'
-            },
-            'pull_num': 1,  # Dummy value
-            'pull_author': config_data['build_owner'],
-            'repo_rel_dir': tf_dir_name,
-            'plan_id': plan_id,
-            'comment': f"Applying approved VM config: {config_data['server_name']}",
-            'user': config_data['build_owner'],
-            'workspace': config_data['environment'],
-            'project_name': config_data['server_name'],
-            'verbose': True
-        }
-        
-        # Call Atlantis API to apply
-        headers = {
-            'Content-Type': 'application/json',
-            'X-Atlantis-Token': ATLANTIS_TOKEN
-        }
-        
-        logger.info(f"Sending apply request to Atlantis for {config_data['server_name']} with plan ID: {plan_id}")
-        response = requests.post(f"{ATLANTIS_URL}/api/apply", json=atlantis_payload, headers=headers)
-        
-        if response.status_code != 200:
-            error_message = f"Failed to trigger Atlantis apply: {response.text}"
-            logger.error(error_message)
-            return {
-                'status': 'error',
-                'message': error_message
-            }
-        
-        apply_response = response.json()
-        apply_id = apply_response.get('apply_id')
-        
-        if not apply_id:
-            error_message = "No apply ID returned from Atlantis"
-            logger.error(error_message)
-            return {
-                'status': 'error',
-                'message': error_message
-            }
-            
-        logger.info(f"Successfully initiated Atlantis apply with ID: {apply_id}")
-        
-        # Generate build receipt
-        build_url = f"{ATLANTIS_URL}/apply/{apply_id}"
-        text_receipt = f"""
-VM BUILD RECEIPT
----------------
-Request ID: {config_data['request_id']}
-Server Name: {config_data['server_name']}
-Quantity: {config_data['quantity']}
-Apply ID: {apply_id}
-Workspace: {config_data['environment']}
-Approved By: {config_data.get('approved_by', 'Unknown')}
-
-NEXT STEPS:
-1. Monitor the Terraform apply at {build_url}
-2. Wait for deployment to complete
-3. VMs will be automatically registered with Ansible
-        """
-        
-        return {
-            'status': 'success',
-            'build_url': build_url,
-            'build_receipt': text_receipt,
-            'details': {
-                'apply_id': apply_id,
-                'workspace': config_data['environment'],
-                'instructions': "Your Atlantis apply has been initiated. Monitor the build progress at the URL above."
-            }
-        }
-        
     except Exception as e:
         logger.exception(f"Error applying Terraform plan: {str(e)}")
         return {
