@@ -56,6 +56,7 @@ VSPHERE_CACHE_MEMORY_USAGE_KEY = f'{VSPHERE_CACHE_PREFIX}stats:memory_usage'
 # New keys for partial loading
 VSPHERE_SYNC_STATUS_KEY = f'{VSPHERE_CACHE_PREFIX}sync_status'
 VSPHERE_SYNC_PROGRESS_KEY = f'{VSPHERE_CACHE_PREFIX}sync_progress'
+VSPHERE_SERVERS_KEY = f'{VSPHERE_CACHE_PREFIX}servers'
 
 # Cache TTL in seconds (default: 1 hour)
 VSPHERE_CACHE_TTL = int(os.environ.get('VSPHERE_CACHE_TTL', 3600))
@@ -91,34 +92,45 @@ class VSphereRedisCache:
             'last_sync_duration': 0,
             'total_objects': 0
         }
-        # Store a local copy of the SSL verification setting
-        self._verify_ssl = VSPHERE_VERIFY_SSL
+        # Store SSL verification setting from config or environment
+        self._verify_ssl = os.environ.get('VSPHERE_VERIFY_SSL', 'true').lower() == 'true'
         
     def get_vsphere_servers(self):
         """
-        Get the list of available vSphere servers
+        Get the list of available vSphere servers from Redis cache
         Returns a list of dictionaries with server information
         """
         try:
-            # Check if we have vSphere server information in Redis
+            # First check Redis cache for server information
+            cached_servers = self.redis_client.get(VSPHERE_SERVERS_KEY)
+            if cached_servers:
+                return cached_servers
+            
+            # Check environment variables as fallback
             vsphere_server = os.environ.get('VSPHERE_SERVER', '')
             
             # If VSPHERE_SERVER environment variable is set, return it
             if vsphere_server:
-                return [{
+                server_info = [{
                     'id': vsphere_server,
                     'name': vsphere_server,
                     'status': 'configured'
                 }]
+                # Cache it for next time
+                self.redis_client.set(VSPHERE_SERVERS_KEY, server_info)
+                return server_info
             
             # Default fallback value if nothing is configured
-            return [{
+            default_server = [{
                 'id': 'virtualcenter.chrobinson.com',
                 'name': 'vSphere Server',
                 'status': 'default'
             }]
+            # Cache the default as well
+            self.redis_client.set(VSPHERE_SERVERS_KEY, default_server)
+            return default_server
         except Exception as e:
-            logger.error(f"Error getting vSphere servers: {str(e)}")
+            logger.error(f"Error getting vSphere servers from cache: {str(e)}")
             # Return a default server if we can't get the server list
             return [{
                 'id': 'virtualcenter.chrobinson.com',
@@ -335,24 +347,48 @@ class VSphereRedisCache:
     def connect_to_vsphere(self):
         """
         Connect to vSphere server with improved error handling and retry logic
+        Returns tuple: (success_bool, error_message)
         """
         max_retries = 3
         retry_delay = 5  # seconds
         
         # Validate credentials are available before attempting connection
         if not VSPHERE_HOST or not VSPHERE_HOST.strip():
-            logger.error("vSphere server address (VSPHERE_SERVER) is not configured")
-            return False
+            error_msg = "vSphere server address (VSPHERE_SERVER) is not configured"
+            logger.error(error_msg)
+            return False, error_msg
             
         if not VSPHERE_USER or not VSPHERE_USER.strip():
-            logger.error("vSphere username (VSPHERE_USER) is not configured")
-            return False
+            error_msg = "vSphere username (VSPHERE_USER) is not configured"
+            logger.error(error_msg)
+            return False, error_msg
             
         if not VSPHERE_PASSWORD:
-            logger.error("vSphere password (VSPHERE_PASSWORD) is not configured")
-            return False
+            error_msg = "vSphere password (VSPHERE_PASSWORD) is not configured"
+            logger.error(error_msg)
+            return False, error_msg
         
-        logger.info(f"Attempting to connect to vSphere server: {VSPHERE_HOST} with user: {VSPHERE_USER}")
+        # Prepare username for authentication
+        username = VSPHERE_USER
+        
+        # Handle Windows domain username formats based on format detection
+        if '\\' in username:
+            # For Windows domain accounts, make sure the format is correct
+            if not username.startswith('\\\\') and username.count('\\') == 1:
+                domain, user = username.split('\\')
+                logger.info(f"Using Windows domain account format: {domain}\\{user}")
+            else:
+                logger.info(f"Using provided Windows domain format: {username}")
+        elif '/' in username:
+            # Alternative domain/username format 
+            logger.info(f"Using alternative domain format with forward slash: {username}")
+        elif '@' in username:
+            # UPN format (user@domain.com)
+            logger.info(f"Using UPN format for authentication: {username}")
+        else:
+            logger.info(f"Using standard username format: {username}")
+        
+        logger.info(f"Attempting to connect to vSphere server: {VSPHERE_HOST} with user: {username}")
         
         for attempt in range(1, max_retries + 1):
             try:
@@ -374,13 +410,13 @@ class VSphereRedisCache:
                 # Set socket timeout to prevent hanging connections
                 socket.setdefaulttimeout(30)
                 
-                # Attempt connection
+                # Attempt connection - log exact connection parameters for debugging
                 logger.info(f"Connecting to vSphere server {VSPHERE_HOST}:{VSPHERE_PORT} with SSL: {VSPHERE_USE_SSL}, Verify SSL: {self._verify_ssl}")
                 
                 try:
                     self.vsphere_conn = connect.SmartConnect(
                         host=VSPHERE_HOST,
-                        user=VSPHERE_USER,
+                        user=username,
                         pwd=VSPHERE_PASSWORD,
                         port=VSPHERE_PORT,
                         sslContext=context
@@ -395,7 +431,7 @@ class VSphereRedisCache:
                     # Retry connection with verification disabled
                     self.vsphere_conn = connect.SmartConnect(
                         host=VSPHERE_HOST,
-                        user=VSPHERE_USER,
+                        user=username,
                         pwd=VSPHERE_PASSWORD,
                         port=VSPHERE_PORT,
                         sslContext=fallback_context
@@ -403,30 +439,51 @@ class VSphereRedisCache:
                     logger.info("Connected successfully with SSL verification disabled")
                 
                 if not self.vsphere_conn:
-                    raise Exception("Failed to connect to vSphere - connection is None")
+                    error_msg = "Failed to connect to vSphere - connection is None"
+                    raise Exception(error_msg)
                     
                 self.content = self.vsphere_conn.RetrieveContent()
                 logger.info(f"Connected to vSphere server: {VSPHERE_HOST}")
-                return True
+                return True, ""
+                
             except vim.fault.InvalidLogin as e:
                 # Handle authentication errors specifically
-                error_msg = f"vSphere authentication failed: Invalid username or password for user '{VSPHERE_USER}' on server '{VSPHERE_HOST}'"
+                error_msg = f"vSphere authentication failed: Invalid username or password for user '{username}' on server '{VSPHERE_HOST}'"
                 logger.error(error_msg)
-                # No point in retrying with the same credentials
-                return False
+                
+                # If using domain format, try alternative formats before giving up
+                if '\\' in username and attempt == 1:
+                    # Try with just the username part without domain
+                    domain, user = username.split('\\')
+                    username = user
+                    logger.info(f"Authentication failed with domain format. Retrying with just username: {username}")
+                    continue
+                elif '@' not in username and '\\' not in username and '/' not in username and attempt == 1:
+                    # Try adding domain prefix if using simple username
+                    original_username = username
+                    username = f"chr\\{username}"
+                    logger.info(f"Authentication failed with simple username. Retrying with domain format: {username}")
+                    continue
+                
+                # No point in retrying with the same credentials after trying common format variations
+                return False, error_msg
+                
             except vim.fault.HostConnectFault as e:
                 # Handle connection issues
-                logger.error(f"Unable to connect to vSphere host: {str(e)}")
+                error_msg = f"Unable to connect to vSphere host: {str(e)}"
+                logger.error(error_msg)
                 if attempt < max_retries:
                     logger.info(f"Retrying connection in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                     retry_delay *= 2  # Exponential backoff
                 else:
                     logger.error(f"Failed to connect to vSphere host after {max_retries} attempts")
-                    return False
+                    return False, error_msg
+                    
             except ssl.SSLError as e:
                 # Handle SSL-specific errors
-                logger.error(f"SSL Error connecting to vSphere (attempt {attempt}/{max_retries}): {str(e)}")
+                error_msg = f"SSL Error connecting to vSphere (attempt {attempt}/{max_retries}): {str(e)}"
+                logger.error(error_msg)
                 
                 if "certificate verify failed" in str(e).lower() and self._verify_ssl and attempt < max_retries:
                     logger.warning(f"SSL certificate verification failed. This might be due to a self-signed certificate.")
@@ -440,26 +497,45 @@ class VSphereRedisCache:
                     retry_delay *= 2  # Exponential backoff
                 else:
                     logger.error(f"Failed to connect to vSphere after {max_retries} attempts")
-                    return False
+                    return False, error_msg
+                    
             except socket.gaierror as e:
                 # Handle DNS resolution errors
-                logger.error(f"DNS resolution error for vSphere host '{VSPHERE_HOST}': {str(e)}")
+                error_msg = f"DNS resolution error for vSphere host '{VSPHERE_HOST}': {str(e)}"
+                logger.error(error_msg)
                 if attempt < max_retries:
                     logger.info(f"Retrying connection in {retry_delay} seconds...")
                     time.sleep(retry_delay)
                     retry_delay *= 2
                 else:
                     logger.error(f"Failed to resolve vSphere host after {max_retries} attempts")
-                    return False
+                    return False, error_msg
+                    
             except Exception as e:
-                logger.error(f"Error connecting to vSphere (attempt {attempt}/{max_retries}): {str(e)}")
+                error_msg = f"Error connecting to vSphere (attempt {attempt}/{max_retries}): {str(e)}"
+                logger.error(error_msg)
                 
                 # Check if the error message contains authentication-related keywords
                 error_str = str(e).lower()
                 if "login" in error_str and ("incorrect" in error_str or "failed" in error_str or "invalid" in error_str):
                     logger.error(f"vSphere authentication failed: {str(e)}")
-                    # No point in retrying with the same credentials
-                    return False
+                    
+                    # Try alternative username formats before giving up
+                    if '\\' in username and attempt == 1:
+                        # Try with just the username part
+                        domain, user = username.split('\\')
+                        username = user
+                        logger.info(f"Authentication failed with domain format. Retrying with just username: {username}")
+                        continue
+                    elif '@' not in username and '\\' not in username and '/' not in username and attempt == 1:
+                        # Try domain prefix for simple username
+                        original_username = username
+                        username = f"chr\\{username}"
+                        logger.info(f"Authentication failed with simple username. Retrying with domain format: {username}")
+                        continue
+                    
+                    # No point in retrying with the same credentials after trying variations
+                    return False, error_msg
                 
                 # Check for certificate verification problems and handle dynamically
                 if "certificate verify failed" in str(e).lower() and self._verify_ssl:
@@ -472,9 +548,10 @@ class VSphereRedisCache:
                     retry_delay *= 2  # Exponential backoff
                 else:
                     logger.error(f"Failed to connect to vSphere after {max_retries} attempts")
-                    return False
+                    return False, error_msg
         
-        return False
+        # Should not reach here, but just in case
+        return False, "Failed to connect to vSphere after exhausting all retry attempts"
 
     def disconnect_from_vsphere(self):
         """
@@ -868,6 +945,7 @@ class VSphereRedisCache:
     def get_all_templates(self):
         """
         Get all templates from vSphere with improved error handling and logging
+        Also enhances datacenter association to fix template discovery issues
         """
         container = self._create_container_view(vim.VirtualMachine)
         
@@ -939,8 +1017,10 @@ class VSphereRedisCache:
                     template_info['overall_status'] = None
                 
                 # Datacenter information - using safe traversal
+                # This is a critical section for fixing template-to-datacenter association
                 try:
                     if hasattr(vm, 'parent'):
+                        # First attempt: Direct traversal to find datacenter
                         current = vm.parent
                         datacenter = None
                         while current:
@@ -955,6 +1035,40 @@ class VSphereRedisCache:
                         if datacenter:
                             template_info['datacenter_id'] = datacenter._moId
                             template_info['datacenter_name'] = datacenter.name
+                            logger.debug(f"Found datacenter {datacenter.name} ({datacenter._moId}) for template {vm.name}")
+                        else:
+                            # Second attempt: Look at the template's folder path
+                            try:
+                                path_parts = vm.parent.name.split('/')
+                                # Check if any of the path parts match known datacenter names
+                                datacenters = self.redis_client.get(VSPHERE_DATACENTERS_KEY) or []
+                                for dc in datacenters:
+                                    if dc['name'] in path_parts:
+                                        template_info['datacenter_id'] = dc['id']
+                                        template_info['datacenter_name'] = dc['name']
+                                        logger.debug(f"Found datacenter {dc['name']} from folder path for template {vm.name}")
+                                        break
+                            except Exception as path_err:
+                                logger.debug(f"Error parsing folder path for template {vm.name}: {str(path_err)}")
+                                
+                        # Third attempt: If we still don't have a datacenter, use the first host's datacenter
+                        if 'datacenter_id' not in template_info and hasattr(vm, 'runtime') and \
+                           hasattr(vm.runtime, 'host') and vm.runtime.host:
+                            try:
+                                host = vm.runtime.host
+                                current = host.parent
+                                while current:
+                                    if isinstance(current, vim.Datacenter):
+                                        template_info['datacenter_id'] = current._moId
+                                        template_info['datacenter_name'] = current.name
+                                        logger.debug(f"Found datacenter {current.name} from host for template {vm.name}")
+                                        break
+                                    if hasattr(current, 'parent'):
+                                        current = current.parent
+                                    else:
+                                        break
+                            except Exception as host_err:
+                                logger.debug(f"Error finding datacenter from host for template {vm.name}: {str(host_err)}")
                 except Exception as e:
                     logger.debug(f"Error getting datacenter for template {vm.name}: {str(e)}")
                 
@@ -991,32 +1105,66 @@ class VSphereRedisCache:
         
         # Log some details about found templates for debugging
         for i, template in enumerate(templates[:5]):  # Log first 5 templates
-            logger.info(f"Template {i+1}: {template.get('name')} (ID: {template.get('id')})")
+            logger.info(f"Template {i+1}: {template.get('name')} (ID: {template.get('id')}, Datacenter: {template.get('datacenter_id', 'Unknown')})")
+        
+        # Check if we need to fix datacenter associations for templates
+        templates_missing_datacenter = [t for t in templates if 'datacenter_id' not in t]
+        if templates_missing_datacenter:
+            logger.warning(f"{len(templates_missing_datacenter)} templates missing datacenter association, attempting to fix")
+            
+            # Get all datacenters
+            datacenters = self.redis_client.get(VSPHERE_DATACENTERS_KEY) or []
+            if datacenters:
+                for template in templates_missing_datacenter:
+                    # Assign to the first datacenter as a fallback
+                    # This ensures templates are always associated with at least one datacenter
+                    if datacenters:
+                        template['datacenter_id'] = datacenters[0]['id']
+                        template['datacenter_name'] = datacenters[0]['name']
+                        logger.info(f"Associated template {template['name']} with default datacenter {datacenters[0]['name']}")
         
         # If no templates found or fewer than expected, add fallback templates for testing
         if len(templates) < 2:
             logger.warning(f"Only {len(templates)} templates found, adding fallback templates for testing")
             
+            # First get datacenters to associate with fallback templates
+            datacenters = self.redis_client.get(VSPHERE_DATACENTERS_KEY) or []
+            datacenter_id = datacenters[0]['id'] if datacenters else "datacenter-2"
+            
             # Add at least one RHEL9 template and one other template
             if not any(t.get('name', '').lower().find('rhel9') >= 0 for t in templates):
-                templates.append({
+                rhel9_template = {
                     'id': 'vm-fallback-rhel9',
                     'name': 'rhel9-template (fallback)',
                     'is_template': True,
                     'guest_id': 'rhel9_64Guest',
                     'guest_full_name': 'Red Hat Enterprise Linux 9 (64-bit)'
-                })
+                }
+                
+                # Add datacenter association to the fallback template
+                if datacenters:
+                    rhel9_template['datacenter_id'] = datacenter_id
+                    rhel9_template['datacenter_name'] = datacenters[0]['name']
+                    
+                templates.append(rhel9_template)
                 logger.info("Added fallback RHEL9 template")
             
             # Add another template for variety
             if not any(t.get('name', '').lower().find('windows') >= 0 for t in templates):
-                templates.append({
+                win_template = {
                     'id': 'vm-fallback-win',
                     'name': 'windows-template (fallback)',
                     'is_template': True,
                     'guest_id': 'windows2019srv_64Guest',
                     'guest_full_name': 'Windows Server 2019 (64-bit)'
-                })
+                }
+                
+                # Add datacenter association to the fallback template
+                if datacenters:
+                    win_template['datacenter_id'] = datacenter_id
+                    win_template['datacenter_name'] = datacenters[0]['name']
+                    
+                templates.append(win_template)
                 logger.info("Added fallback Windows template")
         
         return templates
@@ -1116,11 +1264,34 @@ class VSphereRedisCache:
         Sync only essential vSphere objects to Redis for initial UI loading
         with parallel processing for speed
         """
-        if not self.connect_to_vsphere():
-            logger.error("Failed to connect to vSphere, cannot sync essential data")
-            return False
-
         try:
+            # Get the most up-to-date settings from environment
+            # This ensures we use the latest credentials that might have been updated in the UI
+            global VSPHERE_HOST, VSPHERE_USER, VSPHERE_PASSWORD, VSPHERE_PORT, VSPHERE_USE_SSL, VSPHERE_VERIFY_SSL
+            VSPHERE_HOST = os.environ.get('VSPHERE_SERVER', '')
+            VSPHERE_USER = os.environ.get('VSPHERE_USER', '')
+            VSPHERE_PASSWORD = os.environ.get('VSPHERE_PASSWORD', '')
+            VSPHERE_PORT = int(os.environ.get('VSPHERE_PORT', 443))
+            VSPHERE_USE_SSL = os.environ.get('VSPHERE_USE_SSL', 'true').lower() == 'true'
+            VSPHERE_VERIFY_SSL = os.environ.get('VSPHERE_VERIFY_SSL', 'true').lower() == 'true'
+            
+            # Log the current settings (without the password)
+            logger.info(f"Using vSphere settings: server={VSPHERE_HOST}, user={VSPHERE_USER}, port={VSPHERE_PORT}, SSL={VSPHERE_USE_SSL}, verify_ssl={VSPHERE_VERIFY_SSL}")
+            
+            # Handle different return types from connect_to_vsphere
+            connection_result = self.connect_to_vsphere()
+            
+            if isinstance(connection_result, tuple):
+                # Handle the case where the method returns (status, error_message)
+                connection_success, error_message = connection_result
+                if not connection_success:
+                    logger.error(f"Failed to connect to vSphere: {error_message}")
+                    return False
+            elif not connection_result:
+                # Handle the case where the method returns just a boolean
+                logger.error("Failed to connect to vSphere, cannot sync essential data")
+                return False
+
             start_time = time.time()
             
             # Define essential resources to sync in parallel
@@ -1238,15 +1409,17 @@ class VSphereRedisCache:
             
             start_time = time.time()
             
-            if not self.connect_to_vsphere():
-                logger.error("Failed to connect to vSphere, cannot sync data")
-                self.redis_client.set(VSPHERE_SYNC_STATUS_KEY, 'error')
-                self.redis_client.set(VSPHERE_SYNC_PROGRESS_KEY, {
-                    'timestamp': datetime.utcnow().isoformat(),
-                    'progress': 0,
-                    'status': 'error',
-                    'message': 'Failed to connect to vSphere server'
-                })
+            connection_result = self.connect_to_vsphere()
+            
+            if isinstance(connection_result, tuple):
+                # Handle the case where the method returns (status, error_message)
+                connection_success, error_message = connection_result
+                if not connection_success:
+                    logger.error(f"Failed to connect to vSphere: {error_message}")
+                    return False
+            elif not connection_result:
+                # Handle the case where the method returns just a boolean
+                logger.error("Failed to connect to vSphere, cannot sync all data")
                 return False
 
             # Set up progress tracking
@@ -1642,6 +1815,10 @@ class VSphereRedisCache:
                         if not self.vsphere_conn:
                             try:
                                 is_connected = self.connect_to_vsphere()
+                                if isinstance(is_connected, tuple):
+                                    # Handle new return format (status, error_message)
+                                    is_connected, connection_error = is_connected
+                                
                                 if not is_connected:
                                     connection_error = "Failed to connect to vSphere server"
                             except Exception as conn_err:
@@ -1700,6 +1877,10 @@ class VSphereRedisCache:
                 # Try to connect if not already connected
                 if not self.vsphere_conn:
                     connection_success = self.connect_to_vsphere()
+                    if isinstance(connection_success, tuple):
+                        # Handle new return format (status, error_message)
+                        connection_success, error_message = connection_success
+                        
                     if not connection_success:
                         # Check if we have VSPHERE_HOST, VSPHERE_USER, VSPHERE_PASSWORD defined
                         missing_env_vars = []

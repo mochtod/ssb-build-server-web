@@ -1450,3 +1450,518 @@ function resetDatastoreClusters() {
     datastoreClusterSelect.disabled = true;
     setLoadingStatus(datastoreLoadingStatus, 'Waiting for cluster selection...', 'default');
 }
+
+/**
+ * Initialize VSphere resource loading functionality with datacenter-to-cluster hierarchical approach
+ * - First loads available datacenters
+ * - When a datacenter is selected, fetches clusters specific to that datacenter
+ *   and also loads templates since they are datacenter-specific, not cluster-specific
+ * - When a cluster is selected, fetches resources specific to that cluster
+ * - Displays resources in a hierarchical way
+ */
+function initializeResourceLoading() {
+    // Check if we're on a page with the datacenter selection dropdown
+    const datacenterSelect = document.getElementById('datacenter');
+    const clusterSelect = document.getElementById('cluster');
+    const clusterContainer = document.getElementById('cluster_container');
+    const resourceStatusElement = document.getElementById('resource_status');
+
+    // Only proceed if we have the datacenter select
+    if (datacenterSelect) {
+        // Add loading indicator to the page
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.id = 'resources-loading-indicator';
+        loadingIndicator.className = 'notification info';
+        loadingIndicator.innerHTML = '<i class="fa fa-sync fa-spin"></i> Loading datacenters...';
+
+        // Insert loading indicator
+        const resourceStatus = document.querySelector('.resource-status');
+        if (resourceStatus) {
+            resourceStatus.appendChild(loadingIndicator);
+        }
+
+        // Fetch datacenters immediately
+        fetchDatacenters();
+
+        // Set up event listener for datacenter selection
+        datacenterSelect.addEventListener('change', function() {
+            const datacenterName = this.value;
+
+            // Clear and hide cluster selection and all resource sections
+            if (clusterSelect) {
+                // Keep only the first option (placeholder)
+                while (clusterSelect.options.length > 1) {
+                    clusterSelect.remove(1);
+                }
+                clusterSelect.value = '';
+            }
+
+            // Hide all dependent containers
+            document.getElementById('resource_pool_container').style.display = 'none';
+            document.getElementById('datastores_container').style.display = 'none';
+            document.getElementById('networks_container').style.display = 'none';
+            
+            // Important: We don't hide templates here since they depend on datacenter, not cluster
+            // This allows templates to be selected as soon as a datacenter is chosen
+
+            if (datacenterName) {
+                // Show cluster container
+                if (clusterContainer) {
+                    clusterContainer.style.display = 'flex';
+                }
+
+                // Update status
+                if (resourceStatusElement) {
+                    resourceStatusElement.textContent = `Loading clusters for datacenter "${datacenterName}"...`;
+                }
+
+                // Show loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.innerHTML = '<i class="fa fa-sync fa-spin"></i> Loading clusters...';
+                    loadingIndicator.style.display = 'block';
+                }
+
+                // Fetch clusters for selected datacenter
+                fetchClustersForDatacenter(datacenterName);
+                
+                // Load templates based on datacenter selection
+                loadTemplatesForDatacenter(datacenterName);
+                
+                // Show templates container since templates are available at datacenter level
+                document.getElementById('templates_container').style.display = 'flex';
+            } else {
+                // Hide cluster container if no datacenter selected
+                if (clusterContainer) {
+                    clusterContainer.style.display = 'none';
+                }
+
+                // Update status
+                if (resourceStatusElement) {
+                    resourceStatusElement.textContent = 'Select a datacenter to view available clusters.';
+                }
+
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                
+                // Hide templates container when no datacenter is selected
+                document.getElementById('templates_container').style.display = 'none';
+            }
+        });
+
+        // Set up event listener for cluster selection
+        if (clusterSelect) {
+            clusterSelect.addEventListener('change', function() {
+                const clusterId = this.value;
+                if (clusterId) {
+                    loadClusterResources(clusterId);
+                } else {
+                    // Hide all resource sections if no cluster is selected
+                    document.getElementById('resource_pool_container').style.display = 'none';
+                    document.getElementById('datastores_container').style.display = 'none';
+                    document.getElementById('networks_container').style.display = 'none';
+                    
+                    // Important: We don't hide templates here as they are tied to datacenter, not cluster
+                    // This allows templates to remain visible even if no cluster is selected
+
+                    if (resourceStatusElement) {
+                        resourceStatusElement.textContent = 'Select a cluster to view available resources.';
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Fetch all available datacenters from the API
+     */
+    function fetchDatacenters() {
+        fetch('/api/vsphere/datacenters')
+            .then(response => response.json())
+            .then(data => {
+                if (data.datacenters && data.datacenters.length > 0) {
+                    // Update the datacenter dropdown
+                    updateDatacenterDropdown(datacenterSelect, data.datacenters);
+
+                    // Hide loading indicator
+                    const loadingIndicator = document.getElementById('resources-loading-indicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+
+                    // Update status display
+                    if (resourceStatusElement) {
+                        resourceStatusElement.textContent = `${data.datacenters.length} datacenters loaded. Select a datacenter to continue.`;
+                    }
+
+                    console.log(`Loaded ${data.datacenters.length} datacenters`);
+                } else {
+                    // Show error message if no datacenters found
+                    if (resourceStatusElement) {
+                        resourceStatusElement.textContent = 'No datacenters found. Please check vSphere connection.';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching datacenters:', error);
+
+                // Update status to show error
+                if (resourceStatusElement) {
+                    resourceStatusElement.textContent = 'Error loading datacenters. Please refresh the page or contact an administrator.';
+                }
+
+                // Hide loading indicator
+                const loadingIndicator = document.getElementById('resources-loading-indicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+            });
+    }
+
+    /**
+     * Fetch clusters for a specific datacenter
+     */
+    function fetchClustersForDatacenter(datacenterName) {
+        fetch(`/api/vsphere/datacenters/${encodeURIComponent(datacenterName)}/clusters`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.clusters && data.clusters.length > 0) {
+                    // Update the cluster dropdown
+                    updateClusterDropdown(clusterSelect, data.clusters);
+
+                    // Hide loading indicator
+                    const loadingIndicator = document.getElementById('resources-loading-indicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+
+                    // Update status display
+                    if (resourceStatusElement) {
+                        resourceStatusElement.textContent = `${data.clusters.length} clusters loaded for datacenter "${datacenterName}". Select a cluster to continue.`;
+                    }
+
+                    console.log(`Loaded ${data.clusters.length} clusters for datacenter ${datacenterName}`);
+                } else {
+                    // Show message if no clusters found for this datacenter
+                    if (resourceStatusElement) {
+                        resourceStatusElement.textContent = `No clusters found in datacenter "${datacenterName}". Please select a different datacenter.`;
+                    }
+
+                    // Hide loading indicator
+                    const loadingIndicator = document.getElementById('resources-loading-indicator');
+                    if (loadingIndicator) {
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error(`Error fetching clusters for datacenter ${datacenterName}:`, error);
+
+                // Update status to show error
+                if (resourceStatusElement) {
+                    resourceStatusElement.textContent = `Error loading clusters for datacenter "${datacenterName}". Please refresh or select a different datacenter.`;
+                }
+
+                // Hide loading indicator
+                const loadingIndicator = document.getElementById('resources-loading-indicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+            });
+    }
+
+    /**
+     * Load templates for a specific datacenter
+     */
+    function loadTemplatesForDatacenter(datacenterName) {
+        // Show loading indicator for templates
+        const loadingIndicator = document.getElementById('resources-loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.innerHTML = '<i class="fa fa-sync fa-spin"></i> Loading templates...';
+            loadingIndicator.style.display = 'block';
+        }
+
+        // Fetch templates for the datacenter directly
+        fetch(`/api/vsphere/datacenters/${encodeURIComponent(datacenterName)}/templates`)
+            .then(response => response.json())
+            .then(data => {
+                // Check if we have templates in the response
+                if (data.templates && data.templates.length > 0) {
+                    // Get the template dropdown
+                    const templateSelect = document.getElementById('template');
+                    
+                    // Update the template dropdown with the templates
+                    updateResourceDropdown(templateSelect, data.templates);
+                    
+                    // Show the templates container
+                    document.getElementById('templates_container').style.display = 'flex';
+                    
+                    // Update the resource status
+                    if (resourceStatusElement) {
+                        resourceStatusElement.textContent += ` Found ${data.templates.length} templates for datacenter "${datacenterName}".`;
+                    }
+
+                    console.log(`Loaded ${data.templates.length} templates for datacenter ${datacenterName}`);
+                } else {
+                    console.warn(`No templates found for datacenter ${datacenterName}`);
+                    
+                    // Try to get templates from all available templates
+                    fetch('/api/vsphere/templates')
+                        .then(response => response.json())
+                        .then(fallbackData => {
+                            const templateSelect = document.getElementById('template');
+                            
+                            if (fallbackData.success && fallbackData.templates && fallbackData.templates.length > 0) {
+                                // Update templates with all available templates as fallback
+                                updateResourceDropdown(templateSelect, fallbackData.templates);
+                                document.getElementById('templates_container').style.display = 'flex';
+                                
+                                console.log(`Using ${fallbackData.templates.length} templates from fallback`);
+                                
+                                if (resourceStatusElement) {
+                                    resourceStatusElement.textContent += ` No specific templates found for this datacenter. Showing all available templates.`;
+                                }
+                            } else {
+                                // No templates available at all
+                                document.getElementById('templates_container').style.display = 'none';
+                                
+                                if (resourceStatusElement) {
+                                    resourceStatusElement.textContent += ` No templates found. This may prevent VM creation.`;
+                                }
+                            }
+                        })
+                        .catch(fallbackError => {
+                            console.error('Error fetching fallback templates:', fallbackError);
+                            document.getElementById('templates_container').style.display = 'none';
+                        });
+                }
+                
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error(`Error fetching templates for datacenter ${datacenterName}:`, error);
+                
+                // Show error in status
+                if (resourceStatusElement) {
+                    resourceStatusElement.textContent += ` Error loading templates: ${error.message}`;
+                }
+                
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+                
+                // Hide templates container on error
+                document.getElementById('templates_container').style.display = 'none';
+            });
+    }
+
+    /**
+     * Load resources for a specific cluster
+     */
+    function loadClusterResources(clusterId) {
+        // Show loading message
+        if (resourceStatusElement) {
+            resourceStatusElement.textContent = 'Loading resources for selected cluster...';
+        }
+
+        // Add loading indicator
+        const loadingIndicator = document.getElementById('resources-loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.innerHTML = '<i class="fa fa-sync fa-spin"></i> Loading cluster resources...';
+            loadingIndicator.style.display = 'block';
+        }
+
+        // Fetch resources for the selected cluster using the hierarchical loader endpoint
+        fetch(`/api/vsphere/hierarchical/clusters/${clusterId}/resources`)
+            .then(response => {
+                if (!response.ok) {
+                    // Try to parse error from response body, otherwise use status text
+                    return response.json().catch(() => null).then(errorData => {
+                        throw new Error(errorData?.error || response.statusText || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Check if the backend returned an error within the JSON
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                let resourcesFound = false; // Flag to track if any resources were actually loaded
+
+                // Update resource pools
+                if (data.resource_pools && data.resource_pools.length > 0) {
+                    const resourcePoolSelect = document.getElementById('resource_pool');
+                    updateResourceDropdown(resourcePoolSelect, data.resource_pools);
+                    document.getElementById('resource_pool_container').style.display = 'flex';
+                    resourcesFound = true;
+                    if (data.resource_pools.length === 1) {
+                        resourcePoolSelect.value = data.resource_pools[0].id;
+                    }
+                } else {
+                    document.getElementById('resource_pool_container').style.display = 'none'; // Ensure it's hidden if empty
+                }
+
+                // Update datastores
+                if (data.datastores && data.datastores.length > 0) {
+                    const datastoreSelect = document.getElementById('datastore');
+                    updateResourceDropdown(datastoreSelect, data.datastores, 'free_gb');
+                    document.getElementById('datastores_container').style.display = 'flex';
+                    resourcesFound = true;
+                } else {
+                    document.getElementById('datastores_container').style.display = 'none';
+                }
+
+                // Update networks
+                if (data.networks && data.networks.length > 0) {
+                    const networkSelect = document.getElementById('network');
+                    updateResourceDropdown(networkSelect, data.networks);
+                    document.getElementById('networks_container').style.display = 'flex';
+                    resourcesFound = true;
+                } else {
+                    document.getElementById('networks_container').style.display = 'none';
+                }
+
+                // Note: We don't update templates here as they're already loaded at the datacenter level
+                // Templates container remains visible regardless of cluster selection
+
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+
+                // Update status display based on whether resources were found
+                if (resourceStatusElement) {
+                    const clusterName = data.cluster_name || 'selected cluster';
+                    if (resourcesFound) {
+                        resourceStatusElement.textContent = `Resources loaded for ${clusterName}. Found ${data.datastores?.length || 0} datastores, ${data.networks?.length || 0} networks.`;
+                        
+                        // Add note about templates already being loaded
+                        if (document.getElementById('templates_container').style.display === 'flex') {
+                            resourceStatusElement.textContent += ' Templates are available based on datacenter selection.';
+                        }
+                    } else {
+                        resourceStatusElement.textContent = `No resources (datastores, networks) found for cluster ${clusterName}. Check vSphere configuration or select another cluster.`;
+                    }
+                }
+
+                console.log(`Loaded resources for cluster ${clusterId}. Found resources: ${resourcesFound}`);
+            })
+            .catch(error => {
+                console.error(`Error fetching or processing resources for cluster ${clusterId}:`, error);
+
+                // Update status to show a more specific error
+                if (resourceStatusElement) {
+                    resourceStatusElement.textContent = `Error loading resources: ${error.message}. Please try another cluster or refresh.`;
+                }
+
+                // Hide loading indicator
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+
+                // Ensure all resource sections are hidden on error
+                document.getElementById('resource_pool_container').style.display = 'none';
+                document.getElementById('datastores_container').style.display = 'none';
+                document.getElementById('networks_container').style.display = 'none';
+                
+                // Important: We leave templates visible if they were already loaded
+            });
+    }
+
+    /**
+     * Update the datacenter dropdown with the fetched datacenters
+     */
+    function updateDatacenterDropdown(selectElement, datacenterList) {
+        if (!selectElement || !datacenterList) return;
+
+        // Clear existing options (except the first empty option)
+        while (selectElement.options.length > 1) {
+            selectElement.remove(1);
+        }
+
+        // Sort datacenters by name
+        datacenterList.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Add all datacenters to the dropdown
+        datacenterList.forEach(datacenter => {
+            const option = document.createElement('option');
+            option.value = datacenter.name;
+            option.textContent = datacenter.name;
+            selectElement.add(option);
+        });
+    }
+
+    /**
+     * Update the cluster dropdown with the fetched clusters
+     */
+    function updateClusterDropdown(selectElement, clusterList) {
+        if (!selectElement || !clusterList) return;
+
+        // Clear existing options (except the first empty option)
+        while (selectElement.options.length > 1) {
+            selectElement.remove(1);
+        }
+
+        // Sort clusters by name
+        clusterList.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Add all clusters to the dropdown
+        clusterList.forEach(cluster => {
+            const option = document.createElement('option');
+            option.value = cluster.id;
+            option.textContent = cluster.name;
+            selectElement.add(option);
+        });
+    }
+
+    /**
+     * Update a resource dropdown with the fetched resources
+     */
+    function updateResourceDropdown(selectElement, resourceList, extraInfoField = null) {
+        if (!selectElement || !resourceList) return;
+
+        // Get the current selected value
+        const currentValue = selectElement.value;
+
+        // Clear existing options (except the first empty option)
+        while (selectElement.options.length > 1) {
+            selectElement.remove(1);
+        }
+
+        // Sort resources by name
+        resourceList.sort((a, b) => a.name.localeCompare(b.name));
+
+        // Add all resources to the dropdown
+        resourceList.forEach(resource => {
+            const option = document.createElement('option');
+            option.value = resource.id;
+            
+            // Basic text is just the resource name
+            let optionText = resource.name;
+
+            // Add extra information if specified and available
+            if (extraInfoField && resource[extraInfoField] !== undefined) {
+                if (extraInfoField === 'free_gb') {
+                    optionText += ` (${resource[extraInfoField]} GB free)`;
+                } else {
+                    optionText += ` (${resource[extraInfoField]})`;
+                }
+            }
+
+            option.textContent = optionText;
+            selectElement.add(option);
+        });
+        
+        // Restore the previously selected value if it exists
+        if (currentValue && selectElement.querySelector(`option[value="${currentValue}"]`)) {
+            selectElement.value = currentValue;
+        }
+    }
+}

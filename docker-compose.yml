@@ -61,6 +61,7 @@ services:
       - redis-data:/data
     command: >
       redis-server 
+      --requirepass ""
       --appendonly yes
       --maxmemory 256mb
       --maxmemory-policy allkeys-lru

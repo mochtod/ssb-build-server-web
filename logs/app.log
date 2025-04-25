@@ -1,16 +1,74 @@
-2025-04-24 20:10:16,337 - __main__ - INFO - Checking USERS_FILE path: /app/users.json
+2025-04-25 00:34:03,404 - __main__ - INFO - Checking USERS_FILE path: /app/users.json
  * Serving Flask app 'app'
  * Debug mode: off
-2025-04-24 20:10:16,470 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+2025-04-25 00:34:03,447 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
  * Running on all addresses (0.0.0.0)
  * Running on http://127.0.0.1:5150
- * Running on http://172.18.0.2:5150
-2025-04-24 20:10:16,470 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
-2025-04-24 20:10:30,588 - redis_client - INFO - Redis client initialized with host=redis, port=6379, compression=enabled
-2025-04-24 20:10:30,642 - vsphere_redis_cache - INFO - Retrieved 0 templates from Redis cache
-2025-04-24 20:10:30,642 - __main__ - INFO - Rendering index template with vSphere data: 1 servers available
-2025-04-24 20:10:30,642 - __main__ - INFO - Cache status: {'last_sync': None, 'last_updated': None, 'sync_status': 'running', 'sync_progress': {'timestamp': '2025-04-24T19:13:21.879100', 'started': '2025-04-24T19:12:59.814304', 'progress': 22, 'status': 'running', 'counts': {'datacenters': 5, 'clusters': 23}, 'message': 'Synced clusters: 23 items (22% complete)'}, 'cache_status': {'datacenters': {'exists': True, 'ttl': 152, 'count': 5}, 'clusters': {'exists': True, 'ttl': 171, 'count': 23}, 'hosts': {'exists': False, 'ttl': None, 'count': 0}, 'datastores': {'exists': False, 'ttl': None, 'count': 0}, 'networks': {'exists': False, 'ttl': None, 'count': 0}, 'resource_pools': {'exists': False, 'ttl': None, 'count': 0}, 'vms': {'exists': False, 'ttl': None, 'count': 0}, 'templates': {'exists': False, 'ttl': None, 'count': 0}}, 'total_objects': 0, 'connected': True, 'cache_hit_rate': '100.0%', 'memory_usage': '1.1 MB', 'sync_duration': 'Unknown'}
-2025-04-24 20:10:30,642 - __main__ - INFO - Retrieved datastore clusters: 0 available
-2025-04-24 20:10:31,003 - werkzeug - INFO - 172.18.0.1 - - [24/Apr/2025 20:10:31] "GET / HTTP/1.1" 200 -
-2025-04-24 20:10:31,163 - werkzeug - INFO - 172.18.0.1 - - [24/Apr/2025 20:10:31] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
-2025-04-24 20:10:31,433 - werkzeug - INFO - 172.18.0.1 - - [24/Apr/2025 20:10:31] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+ * Running on http://172.18.0.4:5150
+2025-04-25 00:34:03,448 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-04-25 00:34:04,533 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:04] "[32mGET /logout HTTP/1.1[0m" 302 -
+2025-04-25 00:34:04,590 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:04] "GET /login HTTP/1.1" 200 -
+2025-04-25 00:34:04,617 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:04] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-25 00:34:06,939 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:06] "GET /login HTTP/1.1" 200 -
+2025-04-25 00:34:06,956 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:06] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-25 00:34:09,237 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:09] "[32mPOST /login HTTP/1.1[0m" 302 -
+2025-04-25 00:34:09,243 - redis_client - INFO - Attempting to connect to Redis at redis:6379
+2025-04-25 00:34:09,245 - redis_client - INFO - Successfully connected to Redis at redis:6379
+2025-04-25 00:34:09,245 - redis_client - INFO - Redis client initialized with host: redis, port: 6379, compression: False
+2025-04-25 00:34:09,268 - vsphere_redis_cache - INFO - Retrieved 0 templates from Redis cache
+2025-04-25 00:34:09,268 - __main__ - INFO - Rendering index template with vSphere data: 1 servers available
+2025-04-25 00:34:09,268 - __main__ - INFO - Cache status: {'last_sync': {'timestamp': '2025-04-25T00:30:35.372082', 'type': 'essential', 'status': 'error', 'error_message': 'too many values to unpack (expected 2)'}, 'last_updated': '2025-04-25T00:30:35.372082', 'sync_status': 'running', 'sync_progress': {'timestamp': '2025-04-25T00:23:01.212222', 'progress': 0, 'status': 'running', 'message': 'Starting synchronization...'}, 'cache_status': {'datacenters': {'exists': False, 'ttl': None, 'count': 0}, 'clusters': {'exists': False, 'ttl': None, 'count': 0}, 'hosts': {'exists': False, 'ttl': None, 'count': 0}, 'datastores': {'exists': False, 'ttl': None, 'count': 0}, 'networks': {'exists': False, 'ttl': None, 'count': 0}, 'resource_pools': {'exists': False, 'ttl': None, 'count': 0}, 'vms': {'exists': False, 'ttl': None, 'count': 0}, 'templates': {'exists': False, 'ttl': None, 'count': 0}}, 'total_objects': 0, 'connected': True, 'cache_hit_rate': '100.0%', 'memory_usage': '1.1 MB', 'sync_duration': 'Unknown'}
+2025-04-25 00:34:09,268 - __main__ - INFO - Retrieved datastore clusters: 0 available
+2025-04-25 00:34:09,291 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:09] "GET / HTTP/1.1" 200 -
+2025-04-25 00:34:09,316 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:09] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-25 00:34:09,317 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:09] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-25 00:34:16,846 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: None, Cluster: None
+2025-04-25 00:34:16,848 - root - INFO - Redis connection status: True
+2025-04-25 00:34:16,849 - vsphere_redis_cache - INFO - Using provided Windows domain format: chr\\mochtodpa
+2025-04-25 00:34:16,849 - vsphere_redis_cache - INFO - Attempting to connect to vSphere server: virtualcenter.chrobinson.com with user: chr\\mochtodpa
+2025-04-25 00:34:16,907 - vsphere_redis_cache - INFO - SSL context created with verify_mode: 0, verify_ssl: False
+2025-04-25 00:34:16,907 - vsphere_redis_cache - INFO - Connecting to vSphere server virtualcenter.chrobinson.com:443 with SSL: True, Verify SSL: False
+2025-04-25 00:34:20,659 - vsphere_redis_cache - ERROR - vSphere authentication failed: Invalid username or password for user 'chr\\mochtodpa' on server 'virtualcenter.chrobinson.com'
+2025-04-25 00:34:20,659 - root - ERROR - vSphere connection error: too many values to unpack (expected 2)
+2025-04-25 00:34:20,661 - root - INFO - Total datacenters in cache: 0
+2025-04-25 00:34:20,661 - root - WARNING - No datacenters found for server virtualcenter.chrobinson.com - Redis cache may need refreshing
+2025-04-25 00:34:20,661 - vsphere_redis_cache - INFO - Using vSphere settings: server=virtualcenter.chrobinson.com, user=chr\\mochtodpa, port=443, SSL=True, verify_ssl=False
+2025-04-25 00:34:20,661 - vsphere_redis_cache - INFO - Using provided Windows domain format: chr\\mochtodpa
+2025-04-25 00:34:20,661 - vsphere_redis_cache - INFO - Attempting to connect to vSphere server: virtualcenter.chrobinson.com with user: chr\\mochtodpa
+2025-04-25 00:34:20,681 - vsphere_redis_cache - INFO - SSL context created with verify_mode: 0, verify_ssl: False
+2025-04-25 00:34:20,681 - vsphere_redis_cache - INFO - Connecting to vSphere server virtualcenter.chrobinson.com:443 with SSL: True, Verify SSL: False
+2025-04-25 00:34:25,078 - vsphere_redis_cache - ERROR - vSphere authentication failed: Invalid username or password for user 'chr\\mochtodpa' on server 'virtualcenter.chrobinson.com'
+2025-04-25 00:34:25,082 - vsphere_redis_cache - ERROR - Error syncing essential vSphere data to Redis: too many values to unpack (expected 2)
+2025-04-25 00:34:25,083 - root - INFO - Emergency essential sync triggered: Failed
+2025-04-25 00:34:25,084 - root - INFO - After sync - Total datacenters in cache: 0
+2025-04-25 00:34:25,084 - root - ERROR - No datacenter data found even after sync attempt
+2025-04-25 00:34:25,084 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:34:25] "[33mGET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com HTTP/1.1[0m" 404 -
+2025-04-25 00:37:28,356 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:37:28] "[32mPOST /submit HTTP/1.1[0m" 302 -
+2025-04-25 00:37:28,396 - vsphere_redis_cache - INFO - Retrieved 0 templates from Redis cache
+2025-04-25 00:37:28,396 - __main__ - INFO - Rendering index template with vSphere data: 1 servers available
+2025-04-25 00:37:28,397 - __main__ - INFO - Cache status: {'last_sync': {'timestamp': '2025-04-25T00:34:25.079121', 'type': 'essential', 'status': 'error', 'error_message': 'too many values to unpack (expected 2)'}, 'last_updated': '2025-04-25T00:34:25.079121', 'sync_status': 'running', 'sync_progress': {'timestamp': '2025-04-25T00:23:01.212222', 'progress': 0, 'status': 'running', 'message': 'Starting synchronization...'}, 'cache_status': {'datacenters': {'exists': False, 'ttl': None, 'count': 0}, 'clusters': {'exists': False, 'ttl': None, 'count': 0}, 'hosts': {'exists': False, 'ttl': None, 'count': 0}, 'datastores': {'exists': False, 'ttl': None, 'count': 0}, 'networks': {'exists': False, 'ttl': None, 'count': 0}, 'resource_pools': {'exists': False, 'ttl': None, 'count': 0}, 'vms': {'exists': False, 'ttl': None, 'count': 0}, 'templates': {'exists': False, 'ttl': None, 'count': 0}}, 'total_objects': 0, 'connected': True, 'cache_hit_rate': '100.0%', 'memory_usage': '1.1 MB', 'sync_duration': 'Unknown'}
+2025-04-25 00:37:28,398 - __main__ - INFO - Retrieved datastore clusters: 0 available
+2025-04-25 00:37:28,401 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:37:28] "GET / HTTP/1.1" 200 -
+2025-04-25 00:37:28,427 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:37:28] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+2025-04-25 00:37:28,431 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:37:28] "[36mGET /static/js/script.js HTTP/1.1[0m" 304 -
+2025-04-25 00:37:40,966 - root - INFO - Hierarchical API request - Server: virtualcenter.chrobinson.com, Datacenter: None, Cluster: None
+2025-04-25 00:37:40,968 - root - INFO - Redis connection status: True
+2025-04-25 00:37:40,968 - vsphere_redis_cache - INFO - Using provided Windows domain format: chr\\mochtodpa
+2025-04-25 00:37:40,969 - vsphere_redis_cache - INFO - Attempting to connect to vSphere server: virtualcenter.chrobinson.com with user: chr\\mochtodpa
+2025-04-25 00:37:41,004 - vsphere_redis_cache - INFO - SSL context created with verify_mode: 0, verify_ssl: False
+2025-04-25 00:37:41,005 - vsphere_redis_cache - INFO - Connecting to vSphere server virtualcenter.chrobinson.com:443 with SSL: True, Verify SSL: False
+2025-04-25 00:37:45,551 - vsphere_redis_cache - ERROR - vSphere authentication failed: Invalid username or password for user 'chr\\mochtodpa' on server 'virtualcenter.chrobinson.com'
+2025-04-25 00:37:45,551 - root - ERROR - vSphere connection error: too many values to unpack (expected 2)
+2025-04-25 00:37:45,555 - root - INFO - Total datacenters in cache: 0
+2025-04-25 00:37:45,555 - root - WARNING - No datacenters found for server virtualcenter.chrobinson.com - Redis cache may need refreshing
+2025-04-25 00:37:45,555 - vsphere_redis_cache - INFO - Using vSphere settings: server=virtualcenter.chrobinson.com, user=chr\\mochtodpa, port=443, SSL=True, verify_ssl=False
+2025-04-25 00:37:45,555 - vsphere_redis_cache - INFO - Using provided Windows domain format: chr\\mochtodpa
+2025-04-25 00:37:45,555 - vsphere_redis_cache - INFO - Attempting to connect to vSphere server: virtualcenter.chrobinson.com with user: chr\\mochtodpa
+2025-04-25 00:37:45,600 - vsphere_redis_cache - INFO - SSL context created with verify_mode: 0, verify_ssl: False
+2025-04-25 00:37:45,600 - vsphere_redis_cache - INFO - Connecting to vSphere server virtualcenter.chrobinson.com:443 with SSL: True, Verify SSL: False
+2025-04-25 00:37:50,035 - vsphere_redis_cache - ERROR - vSphere authentication failed: Invalid username or password for user 'chr\\mochtodpa' on server 'virtualcenter.chrobinson.com'
+2025-04-25 00:37:50,039 - vsphere_redis_cache - ERROR - Error syncing essential vSphere data to Redis: too many values to unpack (expected 2)
+2025-04-25 00:37:50,039 - root - INFO - Emergency essential sync triggered: Failed
+2025-04-25 00:37:50,040 - root - INFO - After sync - Total datacenters in cache: 0
+2025-04-25 00:37:50,041 - root - ERROR - No datacenter data found even after sync attempt
+2025-04-25 00:37:50,041 - werkzeug - INFO - 172.18.0.1 - - [25/Apr/2025 00:37:50] "[33mGET /api/vsphere/hierarchical?vsphere_server=virtualcenter.chrobinson.com HTTP/1.1[0m" 404 -

@@ -62,6 +62,50 @@
         .theme-icon {
             font-size: 20px;
         }
+        
+        /* Environment file sync status styles */
+        .env-file-info {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            padding: 5px;
+            background-color: var(--card-bg);
+            border-radius: 4px;
+        }
+        
+        .env-last-modified {
+            font-size: 0.9em;
+            margin-right: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .sync-status {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: help;
+        }
+        
+        .sync-status.synced {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .sync-status.out-of-sync {
+            background-color: #FF9800;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -115,6 +159,12 @@
                     <div class="info-content">
                         These settings affect the application's behavior and are stored in the .env file.
                         Changes made here will be applied to the application after saving.
+                        {% if env_last_modified %}
+                        <div class="env-file-info">
+                            <span class="env-last-modified">Last modified: {{ env_last_modified }}</span>
+                            <span id="env-file-status" class="sync-status synced" title="Settings are in sync with .env file">✓</span>
+                        </div>
+                        {% endif %}
                     </div>
                 </p>
                 
@@ -371,6 +421,11 @@
             // Set up clear button
             document.getElementById('clear-resource-cache').addEventListener('click', clearResourceCache);
             
+            // Set up periodic check for .env file changes
+            if (document.getElementById('env-file-status')) {
+                startEnvFileChangeDetection();
+            }
+            
             // Auto-test connections after a short delay
             setTimeout(function() {
                 // Test all connections with current settings
@@ -379,6 +434,43 @@
                 testRedisConnection();
             }, 1500); // Small delay to let page load completely
         });
+        
+        // Check if .env file has been changed outside the UI
+        function startEnvFileChangeDetection() {
+            // Store the last modified timestamp when the page loads
+            const initialModifiedTime = "{{ env_last_modified }}";
+            const envStatusElement = document.getElementById('env-file-status');
+            
+            // Set up timer to check for changes every 30 seconds
+            setInterval(function() {
+                fetch('/api/env-file-status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.last_modified !== initialModifiedTime) {
+                                // The file has been modified outside the UI
+                                envStatusElement.classList.remove('synced');
+                                envStatusElement.classList.add('out-of-sync');
+                                envStatusElement.title = 'The .env file has been modified. Reload the page to see the latest settings.';
+                                envStatusElement.textContent = '⚠️';
+                                
+                                // Show a notification
+                                const notification = document.createElement('div');
+                                notification.className = 'alert alert-warning';
+                                notification.innerHTML = 'The .env file has been modified outside the UI. <a href="#" onclick="location.reload(); return false;">Reload the page</a> to see the latest settings.';
+                                
+                                // Add notification if not already shown
+                                if (!document.querySelector('.alert-warning')) {
+                                    document.querySelector('main').insertBefore(notification, document.querySelector('main').firstChild);
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking .env file status:', error);
+                    });
+            }, 30000); // Check every 30 seconds
+        }
         
         function fetchCacheStatus() {
             const statusElement = document.getElementById('cache-status-display');

@@ -7,6 +7,7 @@ import pickle
 import redis
 from dotenv import load_dotenv
 from functools import wraps
+import socket
 
 # Set up logging
 logging.basicConfig(
@@ -18,12 +19,21 @@ logger = logging.getLogger('redis_client')
 # Load environment variables
 load_dotenv()
 
-# Redis configuration with default values
-REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')  # Using localhost to connect to Docker container from Windows
-REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))    # Port that Docker exposes to the host machine
+# Redis configuration with better defaults and connection options
+REDIS_HOSTS = [
+    os.environ.get('REDIS_HOST', 'redis'),  # First try using the service name in Docker
+    'localhost',                            # Then try localhost
+    '127.0.0.1'                             # Finally try explicit IP
+]
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 REDIS_DB = int(os.environ.get('REDIS_DB', 0))
-REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', None)
+
+# Handle empty string password properly
+password = os.environ.get('REDIS_PASSWORD', None)
+REDIS_PASSWORD = password if password and password.strip() else None
+
 REDIS_CACHE_TTL = int(os.environ.get('REDIS_CACHE_TTL', 3600))  # Default TTL: 1 hour
+REDIS_CONNECT_TIMEOUT = int(os.environ.get('REDIS_CONNECT_TIMEOUT', 5))  # 5 second connection timeout
 
 # Performance and optimization settings
 REDIS_CONNECTION_POOL_SIZE = int(os.environ.get('REDIS_CONNECTION_POOL_SIZE', 10))
@@ -54,386 +64,355 @@ def track_redis_operation(operation_name):
 
 class RedisClient:
     """
-    Enhanced Redis client for managing connections and operations with Redis
-    Features:
-    - Connection pooling
-    - Compression for large values
-    - Performance metrics
-    - Automatic retry
-    - Proper error handling
+    Redis Client Singleton for consistent Redis connections across the application
+    Uses a connection pool to efficiently manage connections
     """
     _instance = None
-    _metrics = {
-        'operations': {},
-        'hits': 0,
-        'misses': 0,
-        'errors': 0,
-        'total_bytes_saved': 0,
-        'compression_ratio': 0
-    }
-
+    
     @classmethod
     def get_instance(cls):
         """
-        Get singleton instance of RedisClient
+        Get the singleton instance of RedisClient
         """
         if cls._instance is None:
-            cls._instance = cls()
+            cls._instance = RedisClient()
         return cls._instance
-
+    
     def __init__(self):
         """
-        Initialize Redis connection pool and client
+        Initialize Redis connection with automatic reconnection
         """
-        # Create connection pool
-        self.pool = redis.ConnectionPool(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB,
-            password=REDIS_PASSWORD,
-            max_connections=REDIS_CONNECTION_POOL_SIZE,
-            decode_responses=False  # We'll handle decoding manually for compression support
-        )
-        
-        # Create client from pool
-        self.client = redis.Redis(connection_pool=self.pool)
-        self.ttl = REDIS_CACHE_TTL
-        self.use_compression = REDIS_USE_COMPRESSION
-        self.compression_threshold = REDIS_COMPRESSION_THRESHOLD
-        self.compression_level = REDIS_COMPRESSION_LEVEL
-        
-        logger.info(f"Redis client initialized with host={REDIS_HOST}, port={REDIS_PORT}, "
-                   f"compression={'enabled' if self.use_compression else 'disabled'}")
-
-    def _record_operation_metric(self, operation, duration, success=True):
-        """
-        Record operation metrics
-        """
-        if operation not in self._metrics['operations']:
-            self._metrics['operations'][operation] = {
-                'count': 0,
-                'success_count': 0,
-                'error_count': 0,
-                'total_duration': 0,
-                'avg_duration': 0
-            }
+        # Only initialize once (singleton pattern)
+        if RedisClient._instance is not None:
+            return
             
-        metrics = self._metrics['operations'][operation]
-        metrics['count'] += 1
-        metrics['total_duration'] += duration
-        metrics['avg_duration'] = metrics['total_duration'] / metrics['count']
+        # Configure from environment
+        self.host = os.environ.get('REDIS_HOST', 'redis')  # Use 'redis' as default for docker-compose
+        self.port = int(os.environ.get('REDIS_PORT', 6379))
         
-        if success:
-            metrics['success_count'] += 1
-        else:
-            metrics['error_count'] += 1
-            self._metrics['errors'] += 1
-
-    def _compress_value(self, value):
+        # Handle empty string password properly
+        password = os.environ.get('REDIS_PASSWORD', None)
+        self.password = password if password and password.strip() else None
+        
+        self.db = int(os.environ.get('REDIS_DB', 0))
+        self.use_compression = os.environ.get('REDIS_USE_COMPRESSION', 'false').lower() == 'true'
+        self.max_retries = int(os.environ.get('REDIS_MAX_RETRIES', 3))
+        self.retry_delay = int(os.environ.get('REDIS_RETRY_DELAY', 1))  # seconds
+        self.socket_timeout = int(os.environ.get('REDIS_SOCKET_TIMEOUT', 5))  # seconds
+        
+        # Maximum size for non-compressed storage (1MB default)
+        self.max_size_without_compression = int(os.environ.get('REDIS_MAX_SIZE_WITHOUT_COMPRESSION', 1024 * 1024))
+        
+        # Configure connection pool size
+        self.pool_size = int(os.environ.get('REDIS_CONNECTION_POOL_SIZE', 10))
+        
+        # Initialize connection
+        self._redis = None
+        self._connect()
+        
+        logger.info(f"Redis client initialized with host: {self.host}, port: {self.port}, compression: {self.use_compression}")
+    
+    def _connect(self):
         """
-        Compress value if it's large enough
-        Returns tuple (compressed_value, is_compressed)
+        Connect to Redis with retry logic and connection pooling
         """
-        if not self.use_compression:
-            return value, False
+        # Try multiple Redis hosts in order
+        for current_host in REDIS_HOSTS:
+            logger.info(f"Attempting to connect to Redis at {current_host}:{self.port}")
             
-        # Serialize with pickle for complex objects
-        serialized = pickle.dumps(value)
-        
-        # Only compress if value is above threshold
-        if len(serialized) < self.compression_threshold:
-            return serialized, False
-            
-        # Compress the value
-        compressed = zlib.compress(serialized, level=self.compression_level)
-        
-        # Calculate compression stats
-        original_size = len(serialized)
-        compressed_size = len(compressed)
-        bytes_saved = original_size - compressed_size
-        
-        # Update compression metrics
-        self._metrics['total_bytes_saved'] += bytes_saved
-        self._metrics['compression_ratio'] = (
-            compressed_size / original_size 
-            if original_size > 0 else 1.0
-        )
-        
-        logger.debug(f"Compressed value from {original_size} to {compressed_size} bytes "
-                    f"({self._metrics['compression_ratio']:.2%} ratio)")
-        
-        return compressed, True
-
-    def _decompress_value(self, value, is_compressed):
-        """
-        Decompress value if it was compressed
-        """
-        if not is_compressed:
-            # If it wasn't compressed but was serialized
-            if isinstance(value, bytes):
+            for attempt in range(1, self.max_retries + 1):
                 try:
-                    return pickle.loads(value)
-                except:
-                    # Fallback if it's just a simple byte string
-                    return value.decode('utf-8', errors='ignore')
-            return value
-            
-        # Decompress
-        decompressed = zlib.decompress(value)
-        
-        # Deserialize
-        return pickle.loads(decompressed)
-
-    @track_redis_operation('get')
-    def get(self, key):
-        """
-        Get value from Redis with decompression support
-        """
-        try:
-            # Get value and metadata
-            pipeline = self.client.pipeline()
-            pipeline.get(key)
-            pipeline.get(f"{key}:meta")
-            value, meta = pipeline.execute()
-            
-            if value is None:
-                self._metrics['misses'] += 1
-                return None
-                
-            self._metrics['hits'] += 1
-            
-            # Check if value was compressed
-            is_compressed = False
-            if meta:
-                try:
-                    metadata = json.loads(meta)
-                    is_compressed = metadata.get('compressed', False)
-                except:
-                    # If metadata is corrupted, assume not compressed
-                    pass
+                    # Create connection pool for better performance with concurrent operations
+                    pool_args = {
+                        "host": current_host,
+                        "port": self.port,
+                        "db": self.db,
+                        "socket_timeout": self.socket_timeout,
+                        "socket_keepalive": True,
+                        "max_connections": self.pool_size,
+                        "retry_on_timeout": True,
+                        "health_check_interval": 30
+                    }
                     
-            # Decompress if needed
-            return self._decompress_value(value, is_compressed)
-        except Exception as e:
-            logger.error(f"Redis get error for key '{key}': {str(e)}")
-            return None
-
-    @track_redis_operation('set')
-    def set(self, key, value, ttl=None):
+                    # Only include password if it's actually provided and not empty
+                    if self.password and self.password.strip():
+                        pool_args["password"] = self.password
+                    
+                    # Create the connection pool
+                    pool = redis.ConnectionPool(**pool_args)
+                    self._redis = redis.Redis(connection_pool=pool)
+                    
+                    # Test connection with ping
+                    self._redis.ping()
+                    logger.info(f"Successfully connected to Redis at {current_host}:{self.port}")
+                    self.host = current_host  # Update the host to the one that worked
+                    return True
+                
+                except redis.exceptions.AuthenticationError as e:
+                    logger.error(f"Redis authentication error for {current_host}:{self.port}: {str(e)}")
+                    # No point retrying the same host with the same credentials
+                    break  # Try next host
+                    
+                except redis.exceptions.ConnectionError as e:
+                    if attempt < self.max_retries:
+                        logger.warning(f"Redis connection attempt {attempt}/{self.max_retries} to {current_host}:{self.port} failed: {str(e)}. Retrying in {self.retry_delay} seconds...")
+                        time.sleep(self.retry_delay)
+                    else:
+                        logger.error(f"Failed to connect to Redis at {current_host}:{self.port} after {self.max_retries} attempts: {str(e)}")
+                        # Try next host rather than failing immediately
+                        break
+                        
+                except Exception as e:
+                    # Handle "DENIED" errors in a more robust way
+                    error_str = str(e).upper()
+                    if "DENIED" in error_str or "AUTHENTICATION" in error_str:
+                        logger.error(f"Redis authentication denied for {current_host}:{self.port}")
+                        break  # Try next host
+                    
+                    # Log the full error for debugging
+                    logger.error(f"Unexpected error connecting to Redis at {current_host}:{self.port}: {str(e)}", exc_info=True)
+                    
+                    if attempt < self.max_retries:
+                        logger.warning(f"Retrying in {self.retry_delay} seconds (attempt {attempt}/{self.max_retries})...")
+                        time.sleep(self.retry_delay)
+                    else:
+                        break  # Try next host
+        
+        # If we reach here, all hosts failed
+        logger.error(f"Failed to connect to any Redis server after trying {', '.join(REDIS_HOSTS)}")
+        self._redis = None
+        return False
+    
+    def get_raw_redis(self):
         """
-        Set value in Redis with compression support
+        Get the raw Redis client for direct access
+        """
+        if self._redis is None:
+            self._connect()  # Try to reconnect
+        return self._redis
+    
+    def _ensure_connection(self):
+        """
+        Ensure Redis connection is available
+        """
+        if self._redis is None:
+            return self._connect()
+        
+        # Check if connection is still working
+        try:
+            self._redis.ping()
+            return True
+        except:
+            # Try to reconnect
+            return self._connect()
+    
+    @track_redis_operation('set')
+    def set(self, key, value, expiration=None):
+        """
+        Set a value in Redis with automatic compression for large values
         """
         try:
-            # Compress value if appropriate
-            data, is_compressed = self._compress_value(value)
-            
-            # Store metadata
-            metadata = {'compressed': is_compressed}
-            
-            # Use pipeline for atomic operation
-            pipeline = self.client.pipeline()
-            pipeline.set(key, data, ex=(ttl or self.ttl))
-            pipeline.set(f"{key}:meta", json.dumps(metadata), ex=(ttl or self.ttl))
-            pipeline.execute()
-            
+            if not self._ensure_connection():
+                logger.error(f"Redis connection unavailable for setting key: {key}")
+                return False
+                
+            # Convert to JSON if not a string
+            if not isinstance(value, str):
+                value = json.dumps(value)
+                
+            # Check size and compress if needed
+            if self.use_compression and len(value) > self.max_size_without_compression:
+                compressed_value = zlib.compress(value.encode())
+                # Store with compression flag
+                self._redis.set(f"{key}:compressed", 1)
+                self._redis.set(key, compressed_value, ex=expiration)
+                logger.debug(f"Stored compressed value for key: {key}, original size: {len(value)}, compressed size: {len(compressed_value)}")
+            else:
+                # Store without compression
+                if self._redis.exists(f"{key}:compressed"):
+                    self._redis.delete(f"{key}:compressed")
+                self._redis.set(key, value, ex=expiration)
+                
             return True
         except Exception as e:
             logger.error(f"Redis set error for key '{key}': {str(e)}")
             return False
-
+    
+    @track_redis_operation('get')
+    def get(self, key):
+        """
+        Get a value from Redis with automatic decompression
+        """
+        try:
+            if not self._ensure_connection():
+                logger.error(f"Redis connection unavailable for getting key: {key}")
+                return None
+                
+            # Check if value exists
+            if not self._redis.exists(key):
+                return None
+                
+            # Check if value is compressed
+            is_compressed = self._redis.exists(f"{key}:compressed")
+            
+            # Get raw value
+            value = self._redis.get(key)
+            
+            if value is None:
+                return None
+                
+            # Handle compressed values
+            if is_compressed:
+                try:
+                    value = zlib.decompress(value)
+                    value = value.decode()
+                except Exception as decompress_err:
+                    logger.error(f"Error decompressing value for key '{key}': {str(decompress_err)}")
+                    return None
+            else:
+                # Decode bytes to string if not compressed
+                value = value.decode() if isinstance(value, bytes) else value
+            
+            # Try to parse as JSON
+            try:
+                return json.loads(value)
+            except:
+                # Return as is if not JSON
+                return value
+        except Exception as e:
+            logger.error(f"Redis get error for key '{key}': {str(e)}")
+            return None
+    
     @track_redis_operation('delete')
     def delete(self, key):
         """
-        Delete value and its metadata from Redis
+        Delete a key from Redis
         """
         try:
-            pipeline = self.client.pipeline()
-            pipeline.delete(key)
-            pipeline.delete(f"{key}:meta")
-            pipeline.execute()
+            if not self._ensure_connection():
+                logger.error(f"Redis connection unavailable for deleting key: {key}")
+                return False
+                
+            # Delete both the key and its compression flag if exists
+            self._redis.delete(key)
+            self._redis.delete(f"{key}:compressed")
             return True
         except Exception as e:
             logger.error(f"Redis delete error for key '{key}': {str(e)}")
             return False
-
+    
     @track_redis_operation('exists')
     def exists(self, key):
         """
-        Check if key exists in Redis
+        Check if a key exists in Redis
         """
         try:
-            return bool(self.client.exists(key))
+            if not self._ensure_connection():
+                logger.error(f"Redis connection unavailable for checking key: {key}")
+                return False
+                
+            return bool(self._redis.exists(key))
         except Exception as e:
             logger.error(f"Redis exists error for key '{key}': {str(e)}")
             return False
-
-    @track_redis_operation('flush')
-    def flush_db(self):
-        """
-        Clear all keys in the current database
-        """
-        try:
-            self.client.flushdb()
-            return True
-        except Exception as e:
-            logger.error(f"Redis flush error: {str(e)}")
-            return False
-
-    @track_redis_operation('keys')
-    def keys_pattern(self, pattern):
-        """
-        Get all keys matching pattern with batching for large result sets
-        """
-        try:
-            # Use SCAN instead of KEYS for production with large datasets
-            all_keys = []
-            cursor = 0  # Start with integer 0
-            while True:
-                # Convert cursor to string for Redis scan operation
-                str_cursor = str(cursor)
-                cursor, keys = self.client.scan(cursor=str_cursor, match=pattern, count=1000)
-                
-                # The cursor might be returned as bytes or integer, handle both cases
-                if isinstance(cursor, bytes):
-                    cursor = cursor.decode('utf-8')
-                
-                # Convert cursor to integer for comparison
-                cursor = int(cursor)
-                
-                # Add keys to our result list
-                all_keys.extend(keys)
-                
-                # Convert bytes to strings if needed
-                all_keys = [k.decode('utf-8') if isinstance(k, bytes) else k for k in all_keys]
-                
-                # Break when cursor is 0 (scan complete)
-                if cursor == 0:
-                    break
-                    
-            return all_keys
-        except Exception as e:
-            logger.error(f"Redis keys pattern error for '{pattern}': {str(e)}")
-            return []
-
+    
     @track_redis_operation('ping')
     def ping(self):
         """
-        Check if Redis is available
+        Ping Redis to test connection
         """
         try:
-            return self.client.ping()
+            if not self._ensure_connection():
+                return False
+                
+            return bool(self._redis.ping())
         except Exception as e:
             logger.error(f"Redis ping error: {str(e)}")
             return False
-
+    
     @track_redis_operation('ttl')
     def get_ttl(self, key):
         """
-        Get the TTL of a key
+        Get TTL (time to live) for a key
         """
         try:
-            return self.client.ttl(key)
+            if not self._ensure_connection():
+                logger.error(f"Redis connection unavailable for getting TTL of key: {key}")
+                return None
+                
+            return self._redis.ttl(key)
         except Exception as e:
-            logger.error(f"Redis TTL error for key '{key}': {str(e)}")
-            return -2  # -2 means key does not exist
-
+            logger.error(f"Redis get_ttl error for key '{key}': {str(e)}")
+            return None
+    
     @track_redis_operation('increment')
-    def increment(self, key, amount=1):
+    def increment(self, key):
         """
-        Increment a key by the given amount
+        Increment an integer value in Redis
         """
         try:
-            return self.client.incrby(key, amount)
+            if not self._ensure_connection():
+                logger.error(f"Redis connection unavailable for incrementing key: {key}")
+                return None
+                
+            return self._redis.incr(key)
         except Exception as e:
             logger.error(f"Redis increment error for key '{key}': {str(e)}")
-            return 0
-            
-    @track_redis_operation('mget')
-    def mget(self, keys):
+            return None
+    
+    @track_redis_operation('keys')
+    def keys_pattern(self, pattern):
         """
-        Get multiple values from Redis
+        Get all keys matching a pattern
         """
         try:
-            if not keys:
+            if not self._ensure_connection():
+                logger.error(f"Redis connection unavailable for getting keys with pattern: {pattern}")
                 return []
                 
-            # Get values and metadata
-            pipeline = self.client.pipeline()
-            for key in keys:
-                pipeline.get(key)
-                pipeline.get(f"{key}:meta")
-                
-            results = pipeline.execute()
-            
-            # Process results in pairs (value, metadata)
-            values = []
-            for i in range(0, len(results), 2):
-                value = results[i]
-                meta = results[i+1]
-                
-                if value is None:
-                    values.append(None)
-                    self._metrics['misses'] += 1
-                    continue
-                    
-                self._metrics['hits'] += 1
-                
-                # Check if value was compressed
-                is_compressed = False
-                if meta:
-                    try:
-                        metadata = json.loads(meta)
-                        is_compressed = metadata.get('compressed', False)
-                    except:
-                        pass
-                        
-                # Decompress if needed
-                values.append(self._decompress_value(value, is_compressed))
-                
-            return values
+            keys = self._redis.keys(pattern)
+            return [k.decode() if isinstance(k, bytes) else k for k in keys]
         except Exception as e:
-            logger.error(f"Redis mget error: {str(e)}")
-            return [None] * len(keys)
-            
-    def get_raw_redis(self):
+            logger.error(f"Redis keys_pattern error for pattern '{pattern}': {str(e)}")
+            return []
+    
+    def get_info(self):
         """
-        Get the raw Redis client for operations not covered by this class
+        Get Redis server info
         """
-        return self.client
-        
-    def get_metrics(self):
-        """
-        Get current Redis metrics
-        """
-        # Calculate hit rate
-        total_operations = self._metrics['hits'] + self._metrics['misses']
-        hit_rate = (self._metrics['hits'] / total_operations * 100) if total_operations > 0 else 0
-        
-        # Add hit rate to metrics
-        metrics = dict(self._metrics)
-        metrics['hit_rate'] = hit_rate
-        
-        # Add memory usage
         try:
-            info = self.client.info(section='memory')
-            metrics['memory_usage'] = info.get('used_memory_human', 'Unknown')
-            metrics['peak_memory'] = info.get('used_memory_peak_human', 'Unknown')
-        except:
-            metrics['memory_usage'] = 'Unknown'
-            metrics['peak_memory'] = 'Unknown'
+            if not self._ensure_connection():
+                logger.error("Redis connection unavailable for getting server info")
+                return {}
+                
+            info = self._redis.info()
+            return info
+        except Exception as e:
+            logger.error(f"Redis get_info error: {str(e)}")
+            return {}
+
+    # Performance monitoring metrics
+    def _record_operation_metric(self, operation_name, operation_time, success=True):
+        """
+        Record metrics for Redis operations
+        """
+        try:
+            # Store success/failure metrics
+            metric_key = f"redis:metrics:{operation_name}"
+            success_key = f"{metric_key}:success" if success else f"{metric_key}:failure"
             
-        # Format compression ratio as percentage
-        if 'compression_ratio' in metrics:
-            metrics['compression_ratio'] = f"{(1 - metrics['compression_ratio']) * 100:.1f}%"
+            # Increment operation count
+            self._redis.incr(success_key) if self._redis else None
             
-        # Format total bytes saved in human readable format
-        if 'total_bytes_saved' in metrics:
-            bytes_saved = metrics['total_bytes_saved']
-            if bytes_saved < 1024:
-                metrics['total_bytes_saved_human'] = f"{bytes_saved} B"
-            elif bytes_saved < 1024 * 1024:
-                metrics['total_bytes_saved_human'] = f"{bytes_saved / 1024:.1f} KB"
-            else:
-                metrics['total_bytes_saved_human'] = f"{bytes_saved / (1024 * 1024):.1f} MB"
+            # Track timing in a list with max 100 entries (for average calculation)
+            timing_key = f"{metric_key}:timing"
             
-        return metrics
+            if self._redis:
+                # Add timing to a list
+                self._redis.lpush(timing_key, operation_time)
+                # Keep list at a reasonable size
+                self._redis.ltrim(timing_key, 0, 99)
+        except Exception as e:
+            # Just log error but don't fail the calling operation
+            logger.debug(f"Error recording metrics for {operation_name}: {str(e)}")
+            pass

@@ -1,35 +1,0 @@
-Attaching to atlantis-1, redis-1, vsphere-sync-1, web-1
-Attaching to atlantis-1, redis-1, vsphere-sync-1, web-1
-redis-1         | 1:C 21 Apr 2025 17:05:05.246 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
-redis-1         | 1:C 21 Apr 2025 17:05:05.246 * Redis version=7.4.2, bits=64, commit=00000000, modified=0, pid=1, just started
-redis-1         | 1:C 21 Apr 2025 17:05:05.246 * Configuration loaded
-redis-1         | 1:M 21 Apr 2025 17:05:05.246 * monotonic clock: POSIX clock_gettime
-redis-1         | 1:M 21 Apr 2025 17:05:05.247 * Running mode=standalone, port=6379.
-redis-1         | 1:M 21 Apr 2025 17:05:05.248 * Server initialized
-redis-1         | 1:M 21 Apr 2025 17:05:05.248 * Reading RDB base file on AOF loading...
-redis-1         | 1:M 21 Apr 2025 17:05:05.248 * Loading RDB produced by version 7.4.2
-redis-1         | 1:M 21 Apr 2025 17:05:05.248 * RDB age 585918 seconds
-redis-1         | 1:M 21 Apr 2025 17:05:05.249 * RDB memory usage when created 0.90 Mb
-redis-1         | 1:M 21 Apr 2025 17:05:05.249 * RDB is base AOF
-redis-1         | 1:M 21 Apr 2025 17:05:05.249 * Done loading RDB, keys loaded: 0, keys expired: 0.
-redis-1         | 1:M 21 Apr 2025 17:05:05.249 * DB loaded from base file appendonly.aof.1.base.rdb: 0.001 seconds
-redis-1         | 1:M 21 Apr 2025 17:05:05.254 * DB loaded from incr file appendonly.aof.1.incr.aof: 0.004 seconds
-redis-1         | 1:M 21 Apr 2025 17:05:05.254 * DB loaded from append only file: 0.005 seconds
-redis-1         | 1:M 21 Apr 2025 17:05:05.254 * Opening AOF incr file appendonly.aof.1.incr.aof on server start
-redis-1         | 1:M 21 Apr 2025 17:05:05.254 * Ready to accept connections tcp
-atlantis-1      | No files found in /docker-entrypoint.d/, skipping
-redis-1         | 1:M 21 Apr 2025 17:10:06.051 * 100 changes in 300 seconds. Saving...
-redis-1         | 1:M 21 Apr 2025 17:10:06.052 * Background saving started by pid 20
-redis-1         | 20:C 21 Apr 2025 17:10:06.061 * DB saved on disk
-redis-1         | 20:C 21 Apr 2025 17:10:06.061 * Fork CoW for RDB: current 0 MB, peak 0 MB, average 0 MB
-redis-1         | 1:M 21 Apr 2025 17:10:06.153 * Background saving terminated with success
-[Kweb-1 exited with code 0
-[Katlantis-1 exited with code 0
-[Kvsphere-sync-1 exited with code 137
-redis-1         | 1:signal-handler (1745256762) Received SIGTERM scheduling shutdown...
-redis-1         | 1:M 21 Apr 2025 17:32:42.468 * User requested shutdown...
-redis-1         | 1:M 21 Apr 2025 17:32:42.468 * Calling fsync() on the AOF file.
-redis-1         | 1:M 21 Apr 2025 17:32:42.469 * Saving the final RDB snapshot before exiting.
-redis-1         | 1:M 21 Apr 2025 17:32:42.476 * DB saved on disk
-redis-1         | 1:M 21 Apr 2025 17:32:42.476 # Redis is now ready to exit, bye bye...
-[Kredis-1 exited with code 0
